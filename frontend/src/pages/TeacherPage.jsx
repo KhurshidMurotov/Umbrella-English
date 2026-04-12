@@ -153,7 +153,7 @@ export default function TeacherPage() {
   }
 
   const playerUrl = roomData
-    ? `${window.location.origin}/live/${roomData.code}?role=player&name=Student`
+    ? `${window.location.origin}/live/${roomData.code}?role=player`
     : window.location.origin;
   const hostUrl = roomData
     ? `/live/${roomData.code}?role=host&name=${encodeURIComponent(hostName)}&hostToken=${encodeURIComponent(hostToken)}`

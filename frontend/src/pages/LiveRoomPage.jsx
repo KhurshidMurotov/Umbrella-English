@@ -16,7 +16,7 @@ export default function LiveRoomPage() {
   const { search } = useLocation();
   const query = new URLSearchParams(search);
   const role = query.get("role") ?? "player";
-  const name = query.get("name") ?? (role === "host" ? "Host" : "Student");
+  const initialName = query.get("name");
   const hostToken = query.get("hostToken") ?? "";
   const socket = useMemo(() => io(API_URL, { transports: ["websocket"] }), [API_URL]);
 
@@ -27,7 +27,11 @@ export default function LiveRoomPage() {
   const [now, setNow] = useState(Date.now());
   const [timeoutKey, setTimeoutKey] = useState("");
   const [roomVerified, setRoomVerified] = useState(role === "host");
+  const [playerName, setPlayerName] = useState(initialName || "");
+  const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
   const { playCorrect, playWrong } = useFeedbackSounds();
+
+  const name = playerName || (role === "host" ? "Host" : "Student");
 
   const { violations, warning, disqualified } = useAntiCheat({
     enabled: role === "player",
@@ -202,6 +206,40 @@ export default function LiveRoomPage() {
           subtitle="This session was locked because anti-cheat detected repeated app or tab switching."
         />
       ) : null}
+
+      {role === "player" && !nameSubmitted ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 px-4">
+          <div className="w-full max-w-sm rounded-[32px] bg-white p-6 sm:p-8">
+            <h2 className="text-2xl font-extrabold text-neutral-950">Enter your name</h2>
+            <p className="mt-2 text-sm text-neutral-600">Choose a name for this exam</p>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && playerName.trim()) {
+                  setNameSubmitted(true);
+                }
+              }}
+              placeholder="Your name"
+              className="mt-4 w-full rounded-[18px] border border-neutral-200 px-4 py-3 text-base outline-none focus:border-neutral-950"
+              autoFocus
+            />
+            <button
+              onClick={() => {
+                if (playerName.trim()) {
+                  setNameSubmitted(true);
+                }
+              }}
+              disabled={!playerName.trim()}
+              className="mt-5 w-full rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="glass-card rounded-[40px] p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -212,37 +250,17 @@ export default function LiveRoomPage() {
                 {role === "host" ? "Host controls this room." : `Joined as ${name}`}
               </p>
             </div>
-            {showModeBadge || showTimerBadge ? (
-              <div className="space-y-2 text-right">
-                {showModeBadge ? (
-                  <div className="rounded-full bg-amber-300 px-4 py-3 text-sm font-extrabold uppercase text-neutral-950">
-                    {room.mode}
-                  </div>
-                ) : null}
-                {showTimerBadge ? (
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm">
-                    <Clock3 size={16} />
-                    <span>
-                      {role === "host" && room?.mode === "student-paced"
-                        ? `${room?.questionTime ?? 15}s / question`
-                        : `${remainingSeconds}s left`}
-                    </span>
-                  </div>
-                ) : null}
+            {showTimerBadge ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm">
+                <Clock3 size={16} />
+                <span>
+                  {role === "host" && room?.mode === "student-paced"
+                    ? `${room?.questionTime ?? 15}s / question`
+                    : `${remainingSeconds}s left`}
+                </span>
               </div>
             ) : null}
           </div>
-
-          {role === "player" && !disqualified ? (
-            <div className="mt-4">
-              <button
-                onClick={() => window.history.back()}
-                className="w-full rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition"
-              >
-                ← Leave room
-              </button>
-            </div>
-          ) : null}
 
           <div className="mt-6">
             <ProgressBar value={progressValue} max={totalQuestions} tone="amber" />
