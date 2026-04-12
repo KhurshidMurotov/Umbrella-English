@@ -11,20 +11,40 @@ import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
 
-function renderQuestionPrompt(prompt, className, detailClassName) {
-  const separatorIndex = prompt.indexOf(":");
+function splitQuestionPrompt(prompt) {
+  const separators = [":", "?", "!"];
+  const matches = separators
+    .map((separator) => ({ separator, index: prompt.indexOf(separator) }))
+    .filter((item) => item.index !== -1)
+    .sort((first, second) => first.index - second.index);
 
-  if (separatorIndex === -1) {
+  if (!matches.length) {
+    return null;
+  }
+
+  const separatorIndex = matches[0].index;
+  const separator = matches[0].separator;
+  const title = prompt.slice(0, separatorIndex + separator.length).trim();
+  const detail = prompt.slice(separatorIndex + separator.length).trim();
+
+  if (!title || !detail) {
+    return null;
+  }
+
+  return { title, detail };
+}
+
+function renderQuestionPrompt(prompt, className, detailClassName) {
+  const splitPrompt = splitQuestionPrompt(prompt);
+
+  if (!splitPrompt) {
     return <h2 className={className}>{prompt}</h2>;
   }
 
-  const title = prompt.slice(0, separatorIndex + 1).trim();
-  const detail = prompt.slice(separatorIndex + 1).trim();
-
   return (
     <div className="space-y-3">
-      <h2 className={className}>{title}</h2>
-      <p className={detailClassName}>{detail}</p>
+      <h2 className={className}>{splitPrompt.title}</h2>
+      <p className={detailClassName}>{splitPrompt.detail}</p>
     </div>
   );
 }
