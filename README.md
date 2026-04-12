@@ -6,7 +6,7 @@ Public version of the site shows sample quizzes, a leaderboard and a join page f
 
 - Frontend: React + Vite + Tailwind CSS + Framer Motion
 - Backend: Node.js + Express + Socket.IO
-- Data layer: in-memory store
+- Data layer: PostgreSQL when `DATABASE_URL` is set, otherwise in-memory fallback for local development
 
 ## Run
 
@@ -29,6 +29,18 @@ npm run dev
 ```
 
 Backend runs on `http://localhost:4000` and accepts connections from your local network.
+
+### PostgreSQL / Railway
+
+- Set `DATABASE_URL` in Railway or in your local environment.
+- On startup the backend now creates the required tables automatically:
+  - `quizzes`
+  - `quiz_questions`
+  - `live_rooms`
+  - `live_room_players`
+  - `quiz_results`
+- The default sample quizzes are seeded automatically into PostgreSQL.
+- If `DATABASE_URL` is missing, the app falls back to the previous in-memory mode.
 
 ## Open from another device
 

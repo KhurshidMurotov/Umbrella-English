@@ -1,3 +1,4 @@
+import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
 import { roomStore } from "../models/roomStore.js";
 
 const BASE_CORRECT_POINTS = 60;
@@ -123,11 +124,16 @@ function advanceStudentPlayer(room, player) {
   player.questionStartedAt = player.completed ? null : Date.now();
 }
 
+async function persistAndBroadcast(io, room) {
+  await saveRoom(room);
+  io.to(room.code).emit("roomState", roomPayload(room));
+}
+
 export function registerLiveExamSocket(io) {
   io.on("connection", (socket) => {
-    socket.on("joinRoom", ({ roomCode, name, role, hostToken }) => {
+    socket.on("joinRoom", async ({ roomCode, name, role, hostToken }) => {
       const code = roomCode.toUpperCase();
-      const room = roomStore.get(code);
+      const room = await getRoomByCode(code);
       if (!room) {
         socket.emit("roomError", { message: "Room not found." });
         return;
@@ -159,11 +165,11 @@ export function registerLiveExamSocket(io) {
         });
       }
 
-      io.to(code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("startExam", ({ roomCode }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("startExam", async ({ roomCode }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can start this exam." });
         return;
@@ -190,11 +196,11 @@ export function registerLiveExamSocket(io) {
         completed: false
       }));
 
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("revealAnswers", ({ roomCode }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("revealAnswers", async ({ roomCode }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can reveal answers." });
         return;
@@ -211,11 +217,11 @@ export function registerLiveExamSocket(io) {
         answeredCurrent: false
       }));
       resetInstructorClock(room);
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("submitAnswer", ({ roomCode, answer, name }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("submitAnswer", async ({ roomCode, answer, name }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
       }
@@ -233,7 +239,7 @@ export function registerLiveExamSocket(io) {
       const currentQuestion = room.questions[questionIndex];
       if (!currentQuestion) {
         player.completed = true;
-        io.to(room.code).emit("roomState", roomPayload(room));
+        await persistAndBroadcast(io, room);
         return;
       }
 
@@ -259,7 +265,7 @@ export function registerLiveExamSocket(io) {
           timedOut: true,
           responseTimeSeconds: Number((room.questionTime).toFixed(2))
         });
-        io.to(room.code).emit("roomState", roomPayload(room));
+        await persistAndBroadcast(io, room);
         return;
       }
 
@@ -279,11 +285,11 @@ export function registerLiveExamSocket(io) {
         advanceStudentPlayer(room, player);
       }
 
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("questionTimeout", ({ roomCode, name }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("questionTimeout", async ({ roomCode, name }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
       }
@@ -311,11 +317,11 @@ export function registerLiveExamSocket(io) {
         timedOut: true,
         responseTimeSeconds: Number(room.questionTime.toFixed(2))
       });
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("nextQuestion", ({ roomCode }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("nextQuestion", async ({ roomCode }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can move to the next question." });
         return;
@@ -341,11 +347,11 @@ export function registerLiveExamSocket(io) {
         room.questionDeadlineAt = null;
       }
 
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("antiCheatFlag", ({ roomCode, name, count }) => {
-      const room = roomStore.get(roomCode.toUpperCase());
+    socket.on("antiCheatFlag", async ({ roomCode, name, count }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
       }
@@ -354,19 +360,26 @@ export function registerLiveExamSocket(io) {
       if (player) {
         player.violations = count;
       }
-      io.to(room.code).emit("roomState", roomPayload(room));
+      await persistAndBroadcast(io, room);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       for (const room of roomStore.values()) {
+        let changed = false;
+
         if (room.hostSocketId === socket.id) {
           room.hostSocketId = null;
+          changed = true;
         }
 
         const nextPlayers = room.players.filter((player) => player.socketId !== socket.id);
         if (nextPlayers.length !== room.players.length) {
           room.players = nextPlayers;
-          io.to(room.code).emit("roomState", roomPayload(room));
+          changed = true;
+        }
+
+        if (changed) {
+          await persistAndBroadcast(io, room);
         }
       }
     });

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
-import { quizzes } from "../data/quizStore.js";
-import { roomStore } from "../models/roomStore.js";
+import { getQuizById } from "../db/quizRepository.js";
+import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
 
 const router = Router();
 const TEACHER_ACCESS_CODE = "teacher";
@@ -36,7 +36,7 @@ function roomSummary(room) {
   };
 }
 
-router.post("/create", (request, response) => {
+router.post("/create", async (request, response) => {
   const { hostName = "Teacher", accessCode = "", mode = "instructor-paced", quizId, questionTime = 15 } = request.body;
 
   if (accessCode !== TEACHER_ACCESS_CODE) {
@@ -44,7 +44,12 @@ router.post("/create", (request, response) => {
     return;
   }
 
-  const quiz = quizzes.find((item) => item.id === quizId) ?? quizzes[0];
+  const quiz = await getQuizById(quizId);
+  if (!quiz) {
+    response.status(404).json({ error: "Quiz not found." });
+    return;
+  }
+
   const code = nanoid(6).toUpperCase();
   const hostToken = nanoid(24);
   const safeQuestionTime = Math.min(60, Math.max(5, Number(questionTime) || 15));
@@ -68,18 +73,22 @@ router.post("/create", (request, response) => {
     createdAt: Date.now()
   };
 
-  roomStore.set(code, room);
+  await saveRoom(room);
   response.json({ room: roomSummary(room), hostToken });
 });
 
-router.get("/:code", (request, response) => {
-  const room = roomStore.get(request.params.code.toUpperCase());
-  if (!room) {
-    response.status(404).json({ error: "Room not found" });
-    return;
-  }
+router.get("/:code", async (request, response) => {
+  try {
+    const room = await getRoomByCode(request.params.code.toUpperCase());
+    if (!room) {
+      response.status(404).json({ error: "Room not found" });
+      return;
+    }
 
-  response.json({ room: roomSummary(room) });
+    response.json({ room: roomSummary(room) });
+  } catch (error) {
+    response.status(500).json({ error: "Failed to load room.", details: error.message });
+  }
 });
 
 export default router;

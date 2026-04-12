@@ -5,11 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
+import { initializeDatabase } from "./db/schema.js";
+import { loadLocalEnv } from "./lib/env.js";
 import liveRoutes from "./routes/liveRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import { registerLiveExamSocket } from "./socket/liveExamSocket.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadLocalEnv();
 
 const app = express();
 const server = createServer(app);
@@ -24,7 +27,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_request, response) => {
-  response.json({ status: "ok" });
+  response.json({ status: "ok", database: Boolean(process.env.DATABASE_URL) ? "configured" : "memory" });
 });
 
 app.use("/api/quizzes", quizRoutes);
@@ -42,6 +45,8 @@ app.get(/^(?!\/api|\/socket\.io).*/, (_request, response) => {
 registerLiveExamSocket(io);
 
 const PORT = process.env.PORT || 4000;
+
+await initializeDatabase();
 
 server.listen(PORT, () => {
   console.log(`Umbrella quiz backend running on port ${PORT}`);
