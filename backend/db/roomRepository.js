@@ -192,6 +192,39 @@ export async function getTopLivePlayers(limit = 4) {
   }));
 }
 
+export async function getRoomPlayerStats() {
+  if (!hasDatabase()) {
+    return [];
+  }
+
+  const result = await query(
+    `SELECT p.room_code, r.quiz_title, r.mode, r.created_at, p.name, p.score,
+            p.correct_answers, p.answered_questions, p.total_response_time_ms,
+            p.violations, p.current_question_index, p.completed
+     FROM live_room_players p
+     JOIN live_rooms r ON r.code = p.room_code
+     ORDER BY r.created_at DESC, p.score DESC, p.name ASC`);
+
+  return result.rows.map((row, index) => ({
+    id: `${row.room_code}-${row.name}-${index}`,
+    roomCode: row.room_code,
+    quizTitle: row.quiz_title,
+    mode: row.mode,
+    name: row.name,
+    score: row.score,
+    correctAnswers: row.correct_answers,
+    answeredQuestions: row.answered_questions,
+    totalResponseTimeMs: row.total_response_time_ms,
+    averageResponseTimeSeconds:
+      row.answered_questions > 0
+        ? Number((row.total_response_time_ms / row.answered_questions / 1000).toFixed(2))
+        : 0,
+    violations: row.violations,
+    currentQuestionIndex: row.current_question_index,
+    completed: row.completed
+  }));
+}
+
 export async function removeRoom(code) {
   roomStore.delete(code);
 

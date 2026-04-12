@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
 import { getQuizById } from "../db/quizRepository.js";
-import { getRoomByCode, getTopLivePlayers, saveRoom } from "../db/roomRepository.js";
+import { getRoomByCode, getRoomPlayerStats, getTopLivePlayers, saveRoom } from "../db/roomRepository.js";
 
 const router = Router();
 const TEACHER_ACCESS_CODE = "teacher";
@@ -42,6 +42,21 @@ router.get("/leaderboard", async (_request, response) => {
     response.json({ players });
   } catch (error) {
     response.status(500).json({ error: "Failed to load leaderboard.", details: error.message });
+  }
+});
+
+router.get("/stats", async (request, response) => {
+  const accessCode = String(request.query.accessCode ?? "");
+  if (accessCode !== TEACHER_ACCESS_CODE) {
+    response.status(403).json({ error: "Teacher access required." });
+    return;
+  }
+
+  try {
+    const stats = await getRoomPlayerStats();
+    response.json({ stats });
+  } catch (error) {
+    response.status(500).json({ error: "Failed to load student statistics.", details: error.message });
   }
 });
 
