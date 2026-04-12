@@ -206,6 +206,11 @@ export default function LiveRoomPage() {
       (currentQuestion || (role === "host" && room?.mode === "student-paced"))
   );
 
+  const layoutClass =
+    role === "host"
+      ? "mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
+      : "mx-auto max-w-4xl";
+
   return (
     <ShellLayout>
       {role === "player" && disqualified ? (
@@ -248,7 +253,7 @@ export default function LiveRoomPage() {
         </div>
       ) : null}
 
-      <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className={layoutClass}>
         <div className="glass-card rounded-[40px] p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -325,12 +330,9 @@ export default function LiveRoomPage() {
                 <Presentation size={20} />
                 <span className="text-sm font-bold uppercase tracking-[0.24em]">Board view</span>
               </div>
-              <h2 className="mt-6 text-4xl font-extrabold leading-tight">
+              <h2 className="mt-6 max-w-4xl text-4xl font-extrabold leading-[1.15] tracking-[-0.02em] break-words">
                 {currentQuestion.prompt}
               </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-300">
-                Students are reading the question on the board. Reveal answers when you are ready.
-              </p>
               <button
                 onClick={() => socket.emit("revealAnswers", { roomCode })}
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-amber-300 px-6 py-4 font-bold text-neutral-950"
@@ -351,10 +353,9 @@ export default function LiveRoomPage() {
             </div>
           ) : currentQuestion ? (
             <div className="mt-8">
-              <h2 className="text-3xl font-extrabold text-neutral-950">{currentQuestion.prompt}</h2>
-              <p className="mt-3 text-sm text-neutral-500">
-                {role === "host" ? "Watch the room and move to the next question when ready." : "Answer before the timer reaches zero."}
-              </p>
+              <h2 className="max-w-4xl text-3xl font-extrabold leading-[1.2] tracking-[-0.02em] break-words text-neutral-950">
+                {currentQuestion.prompt}
+              </h2>
               <div className="mt-6 space-y-4">
                 {currentQuestion.options.map((option) => {
                   let state = "default";
@@ -402,7 +403,7 @@ export default function LiveRoomPage() {
           )}
         </div>
 
-        <LiveLeaderboard players={players} />
+        {role === "host" ? <LiveLeaderboard players={players} /> : null}
       </div>
     </ShellLayout>
   );
