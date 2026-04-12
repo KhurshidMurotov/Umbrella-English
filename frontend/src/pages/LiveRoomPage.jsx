@@ -392,10 +392,6 @@ export default function LiveRoomPage() {
             </div>
           ) : role === "host" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] bg-neutral-950 p-8 text-white">
-              <div className="flex items-center gap-3 text-amber-300">
-                <Presentation size={20} />
-                <span className="text-sm font-bold uppercase tracking-[0.24em]">Board view</span>
-              </div>
               <div className="mt-6">
                 {renderQuestionPrompt(
                   currentQuestion.prompt,
