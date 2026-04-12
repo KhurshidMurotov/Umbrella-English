@@ -6,15 +6,8 @@ import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
 import { quizCatalog } from "../lib/quizzes";
 
-const sampleLeaderboard = [
-  { id: "1", name: "Amina", score: 920, accuracy: 100 },
-  { id: "2", name: "Leo", score: 880, accuracy: 90 },
-  { id: "3", name: "Nika", score: 850, accuracy: 90 },
-  { id: "4", name: "Sam", score: 790, accuracy: 80 }
-];
-
 export default function HomePage() {
-  const [leaderboard, setLeaderboard] = useState(sampleLeaderboard);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -86,31 +79,19 @@ export default function HomePage() {
         </div>
 
         <div className="glass-card rounded-[28px] sm:rounded-[36px] p-4 sm:p-6">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
             <div className="rounded-[14px] sm:rounded-[18px] bg-neutral-950 p-2 sm:p-3 text-white">
               <Trophy size={14} className="sm:w-[18px] sm:h-[18px]" />
             </div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-neutral-500">Leaderboard</p>
-              <h2 className="mt-0.5 text-lg font-extrabold text-neutral-950 sm:text-3xl sm:mt-1">Top sample scores</h2>
-            </div>
+            <h2 className="text-lg font-extrabold tracking-tight text-neutral-950 sm:text-3xl">
+              Leaderboard
+            </h2>
           </div>
 
-          <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
-            {leaderboard.map((player, index) => (
-              <div key={player.id} className="flex items-center justify-between rounded-[18px] sm:rounded-[24px] border border-neutral-200 bg-white px-3 py-2 sm:px-4 sm:py-4">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <span className="flex h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 font-extrabold text-neutral-950 text-xs sm:text-base">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-neutral-950 text-xs sm:text-base truncate">{player.name}</p>
-                    <p className="text-xs text-neutral-500">{player.accuracy}% accuracy</p>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-neutral-500 ml-2 whitespace-nowrap sm:text-sm">{player.score} pts</span>
-              </div>
-            ))}
+          <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-8 text-center">
+            <p className="text-sm text-neutral-500">
+              Live leaderboard scores will appear here once students start playing.
+            </p>
           </div>
         </div>
       </section>
