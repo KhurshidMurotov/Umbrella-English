@@ -340,11 +340,7 @@ export default function LiveRoomPage() {
         <div className="glass-card rounded-[40px] p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Room {roomCode}</p>
-              <h1 className="mt-3 text-3xl font-extrabold">{room?.quizTitle ?? "Loading room..."}</h1>
-              <p className="mt-2 text-sm text-neutral-500">
-                {role === "host" ? "Host controls this room." : `Joined as ${name}`}
-              </p>
+              <h1 className="text-3xl font-extrabold">{room?.quizTitle ?? "Loading room..."}</h1>
             </div>
             {showTimerBadge ? (
               <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm">
@@ -417,16 +413,16 @@ export default function LiveRoomPage() {
                   { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400" }
                 )}
               </div>
-              <div className="mt-8 flex items-end gap-4">
+              <div className="mt-8 inline-flex items-end gap-4 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
                     Answers open in
                   </p>
-                  <div className="mt-2 text-6xl font-extrabold leading-none text-white">
+                  <div className="mt-2 text-6xl font-extrabold leading-none text-white tabular-nums">
                     {displayBoardCountdown}
                   </div>
                 </div>
-                <p className="pb-1 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
                   seconds
                 </p>
               </div>
