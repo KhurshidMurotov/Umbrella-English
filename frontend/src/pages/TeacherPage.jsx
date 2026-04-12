@@ -5,7 +5,7 @@ import ErrorAlert from "../components/ErrorAlert";
 import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
-import { defaultQuiz } from "../lib/quizzes";
+import { quizCatalog } from "../lib/quizzes";
 import { getTeacherSession, loginTeacher, logoutTeacher } from "../lib/teacherAuth";
 const TIMER_OPTIONS = [10, 15, 20, 30];
 
@@ -93,10 +93,13 @@ export default function TeacherPage() {
   const [hostName, setHostName] = useState("Teacher");
   const [mode, setMode] = useState("instructor-paced");
   const [questionTime, setQuestionTime] = useState(15);
+  const [selectedQuizId, setSelectedQuizId] = useState(quizCatalog[0]?.id ?? "");
   const [roomData, setRoomData] = useState(null);
   const [hostToken, setHostToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const selectedQuiz = quizCatalog.find((quiz) => quiz.id === selectedQuizId) ?? quizCatalog[0];
 
   useEffect(() => {
     const session = getTeacherSession();
@@ -124,7 +127,7 @@ export default function TeacherPage() {
           accessCode: teacherSession.accessCode,
           mode,
           questionTime,
-          quizId: defaultQuiz.id
+          quizId: selectedQuiz.id
         })
       });
 
@@ -194,6 +197,37 @@ export default function TeacherPage() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <div>
+                <label className="text-sm font-bold text-neutral-950">Test to host</label>
+                <div className="mt-2 grid gap-3">
+                  {quizCatalog.map((quiz) => (
+                    <button
+                      key={quiz.id}
+                      type="button"
+                      onClick={() => setSelectedQuizId(quiz.id)}
+                      className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                        selectedQuizId === quiz.id
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-neutral-200 bg-white hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-extrabold text-neutral-950">{quiz.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-neutral-500">{quiz.description}</p>
+                        </div>
+                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">
+                          {quiz.difficulty}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+                        {quiz.questions.length} questions / {quiz.estimatedTime}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="text-sm font-bold text-neutral-950">Exam mode</label>
                 <div className="mt-2 flex flex-wrap gap-3">
                   {["instructor-paced", "student-paced"].map((item) => (
@@ -211,7 +245,7 @@ export default function TeacherPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="flex items-center gap-2 text-sm font-bold text-neutral-950">
                   <TimerReset size={16} />
                   Time per question
@@ -237,6 +271,9 @@ export default function TeacherPage() {
               <p className="text-sm font-bold text-neutral-950">Scoring</p>
               <p className="mt-2 text-sm leading-6 text-neutral-500">
                 Correct answers earn up to 100 points. Faster answers score higher, wrong or late answers score 0.
+              </p>
+              <p className="mt-3 text-sm font-semibold text-neutral-900">
+                Selected test: {selectedQuiz.title}
               </p>
             </div>
 

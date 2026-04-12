@@ -18,6 +18,45 @@ export const defaultQuiz = {
   ]
 };
 
+export const a1Unit4Quiz = {
+  id: "a1-unit-4-busy-week",
+  title: "A1 Unit 4 Test",
+  description: "Adapted from the PDF unit test with objective grammar, routine and transport tasks.",
+  difficulty: "A1",
+  estimatedTime: "10 min",
+  questions: [
+    { id: "u4q1", prompt: "Part 1: Kenta is a very busy person. On ___, he gets up at 6:00 a.m.", options: ["Monday", "Friday", "Saturday", "Sunday"], correctAnswer: "Monday" },
+    { id: "u4q2", prompt: "Part 1: He ___ at 6:00 a.m.", options: ["gets up", "get up", "goes out", "watches"], correctAnswer: "gets up" },
+    { id: "u4q3", prompt: "Part 1: He goes to work by ___.", options: ["bus", "car", "train", "ferry"], correctAnswer: "bus" },
+    { id: "u4q4", prompt: "Part 1: In the evening, he ___ German at a language school.", options: ["studies", "study", "watches", "drives"], correctAnswer: "studies" },
+    { id: "u4q5", prompt: "Part 1: On ___ night, he likes to go out with his friends after work.", options: ["Friday", "Monday", "Saturday", "Tuesday"], correctAnswer: "Friday" },
+    { id: "u4q6", prompt: "Part 1: He likes to ___ with his friends after work.", options: ["go out", "watch", "study", "drive"], correctAnswer: "go out" },
+    { id: "u4q7", prompt: "Part 1: On ___, he stays home.", options: ["Saturday", "Monday", "Friday", "Wednesday"], correctAnswer: "Saturday" },
+    { id: "u4q8", prompt: "Part 1: He plays the ___.", options: ["guitar", "motorbike", "bus", "sport"], correctAnswer: "guitar" },
+    { id: "u4q9", prompt: "Part 1: He likes to ___ films on TV.", options: ["watch", "play", "drive", "cycle"], correctAnswer: "watch" },
+    { id: "u4q10", prompt: "Part 2: He ___ very early on Monday.", options: ["gets up", "get up", "doesn't get up", "getting up"], correctAnswer: "gets up" },
+    { id: "u4q11", prompt: "Part 2: He ___ to work because he doesn't have a car.", options: ["doesn't drive", "drives", "drive", "isn't drive"], correctAnswer: "doesn't drive" },
+    { id: "u4q12", prompt: "Part 2: He ___ German in the evenings.", options: ["studies", "study", "doesn't studies", "studying"], correctAnswer: "studies" },
+    { id: "u4q13", prompt: "Part 2: My grandmother ___ sports because she is eighty-four.", options: ["doesn't play", "don't play", "isn't play", "plays"], correctAnswer: "doesn't play" },
+    { id: "u4q14", prompt: "Part 2: She ___ the newspaper every day.", options: ["reads", "read", "doesn't read", "reading"], correctAnswer: "reads" },
+    { id: "u4q15", prompt: "Part 2: Choose the correct question form.", options: ["Does my grandfather watch TV?", "Do my grandfather watch TV?", "My grandfather watches TV?", "Is my grandfather watch TV?"], correctAnswer: "Does my grandfather watch TV?" },
+    { id: "u4q16", prompt: "Part 2: My grandmother ___ the old car.", options: ["doesn't drive", "drives", "don't drive", "isn't drive"], correctAnswer: "doesn't drive" },
+    { id: "u4q17", prompt: "Part 2: My grandfather ___ old cars, so he is the driver.", options: ["likes", "like", "doesn't like", "liking"], correctAnswer: "likes" },
+    { id: "u4q18", prompt: "Part 2: They ___ in a big house; they have a small house in Santiago.", options: ["don't live", "doesn't live", "aren't live", "live"], correctAnswer: "don't live" },
+    { id: "u4q19", prompt: "Part 3: Kenta ___ to the university because he hasn't got a car.", options: ["doesn't drive", "doesn't drives", "don't drives", "isn't drive"], correctAnswer: "doesn't drive" },
+    { id: "u4q20", prompt: "Part 3: ___ on his bicycle when it is sunny?", options: ["Does he cycle", "Does he cycles", "Do he cycle", "He does cycle"], correctAnswer: "Does he cycle" },
+    { id: "u4q21", prompt: "Part 3: His house is ___ the bus stop.", options: ["near", "far", "behind", "under"], correctAnswer: "near" },
+    { id: "u4q22", prompt: "Part 3: His house is near the bus stop, so he often takes the ___.", options: ["bus", "train", "ferry", "taxi"], correctAnswer: "bus" },
+    { id: "u4q23", prompt: "Part 3: When they travel to the island, they go by ___.", options: ["ferry", "motorbike", "bus", "bicycle"], correctAnswer: "ferry" },
+    { id: "u4q24", prompt: "Part 3: Choose the correct pair. ___ Lucia walk to work? Yes, she ___.", options: ["Does / does", "Do / do", "Does / do", "Do / does"], correctAnswer: "Does / does" },
+    { id: "u4q25", prompt: "Part 3: My grandparents ___ in a small house.", options: ["live", "lives", "living", "doesn't live"], correctAnswer: "live" },
+    { id: "u4q26", prompt: "Part 3: Diego ___ the guitar in his free time.", options: ["plays", "play", "doesn't play", "playing"], correctAnswer: "plays" },
+    { id: "u4q27", prompt: "Part 3: ___ they go out in their old car?", options: ["Do", "Does", "Is", "Are"], correctAnswer: "Do" },
+    { id: "u4q28", prompt: "Part 3: I haven't got a car, but I ___ a bike.", options: ["have got", "has got", "haven't got", "doesn't have got"], correctAnswer: "have got" },
+    { id: "u4q29", prompt: "Part 3: She ___ German on Sundays.", options: ["doesn't study", "isn't study", "don't study", "studies not"], correctAnswer: "doesn't study" }
+  ]
+};
+
 export const quizCatalog = [
   defaultQuiz,
   {
@@ -27,5 +66,6 @@ export const quizCatalog = [
     difficulty: "Beginner",
     estimatedTime: "4 min",
     questions: defaultQuiz.questions
-  }
+  },
+  a1Unit4Quiz
 ];
