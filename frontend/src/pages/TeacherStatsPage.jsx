@@ -18,30 +18,6 @@ function formatAverageTime(value) {
   return `${seconds >= 10 ? seconds.toFixed(1) : seconds.toFixed(2)}s`;
 }
 
-function getStudentStatus(student) {
-  if (student.completed) {
-    return student.passed ? "Passed" : "Completed";
-  }
-
-  if (student.connected === false) {
-    return "Offline";
-  }
-
-  return "In progress";
-}
-
-function getStatusClass(student) {
-  if (student.passed) {
-    return "bg-emerald-50 text-emerald-800";
-  }
-
-  if (student.completed) {
-    return "bg-neutral-100 text-neutral-700";
-  }
-
-  return "bg-amber-50 text-amber-900";
-}
-
 export default function TeacherStatsPage() {
   const [teacherSession, setTeacherSession] = useState(null);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -210,9 +186,6 @@ export default function TeacherStatsPage() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                                  <span className={`rounded-full px-3 py-2 font-semibold ${getStatusClass(student)}`}>
-                                    {getStudentStatus(student)}
-                                  </span>
                                   <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
                                     Score {student.score}
                                   </span>
@@ -223,7 +196,7 @@ export default function TeacherStatsPage() {
                                     Avg {formatAverageTime(student.averageResponseTimeSeconds)}
                                   </span>
                                   <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
-                                    Flags {student.violations ?? 0}
+                                    Violations {student.violations ?? 0}
                                   </span>
                                 </div>
                               </div>

@@ -39,9 +39,6 @@ export default function HomePage() {
     <ShellLayout>
       <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-[1.15fr_0.85fr]">
         <div className="glass-card rounded-[36px] p-4 sm:p-6 lg:p-8">
-          <span className="inline-flex rounded-full bg-amber-300 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-neutral-950">
-            Umbrella English
-          </span>
           <h1 className="mt-4 max-w-3xl text-2xl font-extrabold leading-tight text-neutral-950 sm:text-3xl md:text-5xl lg:text-6xl">
             Sample quizzes, live join and a clean leaderboard in one place.
           </h1>
