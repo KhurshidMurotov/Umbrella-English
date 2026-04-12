@@ -41,7 +41,9 @@ function mapRoomRow(roomRow, playerRows) {
 }
 
 export async function saveRoom(room) {
-  roomStore.set(room.code, room);
+  const normalizedCode = String(room.code ?? "").toUpperCase();
+  room.code = normalizedCode;
+  roomStore.set(normalizedCode, room);
 
   if (!hasDatabase()) {
     return;
@@ -226,11 +228,12 @@ export async function getRoomPlayerStats() {
 }
 
 export async function removeRoom(code) {
-  roomStore.delete(code);
+  const normalizedCode = String(code ?? "").toUpperCase();
+  roomStore.delete(normalizedCode);
 
   if (!hasDatabase()) {
     return;
   }
 
-  await query("DELETE FROM live_rooms WHERE code = $1", [code]);
+  await query("DELETE FROM live_rooms WHERE code = $1", [normalizedCode]);
 }

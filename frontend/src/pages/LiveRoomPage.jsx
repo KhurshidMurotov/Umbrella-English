@@ -36,7 +36,8 @@ function splitQuestionPrompt(prompt) {
   return { title, detail };
 }
 
-function renderQuestionPrompt(prompt, className, detailClassName) {
+function renderQuestionPrompt(prompt, className, detailClassName, options = {}) {
+  const { showTitle = true, titleClassName } = options;
   const splitPrompt = splitQuestionPrompt(prompt);
 
   if (!splitPrompt) {
@@ -45,8 +46,10 @@ function renderQuestionPrompt(prompt, className, detailClassName) {
 
   return (
     <div className="space-y-3">
-      <h2 className={className}>{splitPrompt.title}</h2>
-      <p className={detailClassName}>{splitPrompt.detail}</p>
+      {showTitle ? (
+        <h2 className={titleClassName ?? className}>{splitPrompt.title}</h2>
+      ) : null}
+      <p className={showTitle ? detailClassName : className}>{splitPrompt.detail}</p>
     </div>
   );
 }
@@ -396,8 +399,9 @@ export default function LiveRoomPage() {
               <div className="mt-6">
                 {renderQuestionPrompt(
                   currentQuestion.prompt,
+                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-300",
                   "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white",
-                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white"
+                  { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-300" }
                 )}
               </div>
               <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-300">
@@ -419,7 +423,8 @@ export default function LiveRoomPage() {
               {renderQuestionPrompt(
                 currentQuestion.prompt,
                 "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
-                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950"
+                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
+                { showTitle: false }
               )}
               <div className="mt-6 space-y-4">
                 {currentQuestion.options.map((option) => {
