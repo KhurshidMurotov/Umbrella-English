@@ -252,6 +252,12 @@ export default function TeacherPage() {
             >
               {loading ? "Creating room..." : "Create live room"}
             </button>
+            <Link
+              to="/teacher/stats"
+              className="mt-4 inline-flex items-center justify-center rounded-full bg-amber-300 px-6 py-4 text-sm font-extrabold text-neutral-950"
+            >
+              View session stats
+            </Link>
           </div>
         </div>
 
@@ -279,18 +285,6 @@ export default function TeacherPage() {
                   title="Student QR"
                   caption="Students can scan this QR to join the room directly."
                 />
-                <div className="mt-5 rounded-[24px] border border-neutral-200 bg-white p-4">
-                  <p className="text-sm font-bold text-neutral-950">Teacher analytics</p>
-                  <p className="mt-2 text-sm text-neutral-500">
-                    View detailed student test statistics in the protected teacher area.
-                  </p>
-                  <Link
-                    to="/teacher/stats"
-                    className="mt-4 inline-flex items-center justify-center rounded-full bg-amber-300 px-5 py-3 text-sm font-bold text-neutral-950"
-                  >
-                    Open student stats
-                  </Link>
-                </div>
               </>
             ) : (
               <div className="rounded-[26px] border border-dashed border-neutral-200 bg-white p-6 text-sm leading-7 text-neutral-500">

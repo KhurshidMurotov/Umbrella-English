@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
 import { getQuizById } from "../db/quizRepository.js";
-import { getRoomByCode, getRoomPlayerStats, getTopLivePlayers, saveRoom } from "../db/roomRepository.js";
+import { getRoomByCode, getRoomSessionStats, getTopLivePlayers, saveRoom } from "../db/roomRepository.js";
 
 const router = Router();
 const TEACHER_ACCESS_CODE = "teacher";
@@ -53,7 +53,7 @@ router.get("/stats", async (request, response) => {
   }
 
   try {
-    const stats = await getRoomPlayerStats();
+    const stats = await getRoomSessionStats();
     response.json({ stats });
   } catch (error) {
     response.status(500).json({ error: "Failed to load student statistics.", details: error.message });
