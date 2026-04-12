@@ -16,6 +16,24 @@ import { saveResult } from "../lib/storage";
 const QUESTION_TIME = 15;
 const FEEDBACK_DELAY_MS = 1200;
 
+function renderQuestionPrompt(prompt) {
+  const separatorIndex = prompt.indexOf(":");
+
+  if (separatorIndex === -1) {
+    return <h2 className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{prompt}</h2>;
+  }
+
+  const title = prompt.slice(0, separatorIndex + 1).trim();
+  const detail = prompt.slice(separatorIndex + 1).trim();
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{title}</h2>
+      <p className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{detail}</p>
+    </div>
+  );
+}
+
 export default function QuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -218,7 +236,7 @@ export default function QuizPage() {
 
           <AnimatePresence mode="wait">
             <motion.div key={currentQuestion.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
-              <h2 className="text-3xl font-extrabold leading-tight">{currentQuestion.prompt}</h2>
+              {renderQuestionPrompt(currentQuestion.prompt)}
               <p className="mt-3 text-sm text-neutral-500">Each correct answer gives 60 base points plus a speed bonus.</p>
               <div className="mt-8 space-y-4">
                 {currentQuestion.options.map((option) => {

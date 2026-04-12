@@ -11,6 +11,24 @@ import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
 
+function renderQuestionPrompt(prompt, className, detailClassName) {
+  const separatorIndex = prompt.indexOf(":");
+
+  if (separatorIndex === -1) {
+    return <h2 className={className}>{prompt}</h2>;
+  }
+
+  const title = prompt.slice(0, separatorIndex + 1).trim();
+  const detail = prompt.slice(separatorIndex + 1).trim();
+
+  return (
+    <div className="space-y-3">
+      <h2 className={className}>{title}</h2>
+      <p className={detailClassName}>{detail}</p>
+    </div>
+  );
+}
+
 export default function LiveRoomPage() {
   const { roomCode } = useParams();
   const { search } = useLocation();
@@ -330,9 +348,13 @@ export default function LiveRoomPage() {
                 <Presentation size={20} />
                 <span className="text-sm font-bold uppercase tracking-[0.24em]">Board view</span>
               </div>
-              <h2 className="mt-6 max-w-4xl text-4xl font-extrabold leading-[1.15] tracking-[-0.02em] break-words">
-                {currentQuestion.prompt}
-              </h2>
+              <div className="mt-6">
+                {renderQuestionPrompt(
+                  currentQuestion.prompt,
+                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white",
+                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white"
+                )}
+              </div>
               <button
                 onClick={() => socket.emit("revealAnswers", { roomCode })}
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-amber-300 px-6 py-4 font-bold text-neutral-950"
@@ -353,9 +375,11 @@ export default function LiveRoomPage() {
             </div>
           ) : currentQuestion ? (
             <div className="mt-8">
-              <h2 className="max-w-4xl text-3xl font-extrabold leading-[1.2] tracking-[-0.02em] break-words text-neutral-950">
-                {currentQuestion.prompt}
-              </h2>
+              {renderQuestionPrompt(
+                currentQuestion.prompt,
+                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
+                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950"
+              )}
               <div className="mt-6 space-y-4">
                 {currentQuestion.options.map((option) => {
                   let state = "default";
