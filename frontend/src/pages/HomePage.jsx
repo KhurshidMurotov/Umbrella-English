@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import QuizCard from "../components/QuizCard";
 import ShellLayout from "../components/ShellLayout";
+import { API_URL } from "../lib/api";
 import { quizCatalog } from "../lib/quizzes";
 
 const sampleLeaderboard = [
@@ -12,6 +14,33 @@ const sampleLeaderboard = [
 ];
 
 export default function HomePage() {
+  const [leaderboard, setLeaderboard] = useState(sampleLeaderboard);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchLeaderboard() {
+      try {
+        const response = await fetch(`${API_URL}/api/live/leaderboard`);
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        if (active && Array.isArray(data.players) && data.players.length) {
+          setLeaderboard(data.players);
+        }
+      } catch {
+        // keep sample leaderboard on failure
+      }
+    }
+
+    fetchLeaderboard();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <ShellLayout>
       <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-[1.15fr_0.85fr]">
@@ -68,7 +97,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
-            {sampleLeaderboard.map((player, index) => (
+            {leaderboard.map((player, index) => (
               <div key={player.id} className="flex items-center justify-between rounded-[18px] sm:rounded-[24px] border border-neutral-200 bg-white px-3 py-2 sm:px-4 sm:py-4">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <span className="flex h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 font-extrabold text-neutral-950 text-xs sm:text-base">

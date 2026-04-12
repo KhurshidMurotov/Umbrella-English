@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
 import { getQuizById } from "../db/quizRepository.js";
-import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
+import { getRoomByCode, getTopLivePlayers, saveRoom } from "../db/roomRepository.js";
 
 const router = Router();
 const TEACHER_ACCESS_CODE = "teacher";
@@ -35,6 +35,15 @@ function roomSummary(room) {
     currentQuestionIndex: room.currentQuestionIndex
   };
 }
+
+router.get("/leaderboard", async (_request, response) => {
+  try {
+    const players = await getTopLivePlayers(4);
+    response.json({ players });
+  } catch (error) {
+    response.status(500).json({ error: "Failed to load leaderboard.", details: error.message });
+  }
+});
 
 router.post("/create", async (request, response) => {
   const { hostName = "Teacher", accessCode = "", mode = "instructor-paced", quizId, questionTime = 15 } = request.body;

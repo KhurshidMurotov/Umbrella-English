@@ -122,7 +122,12 @@ export async function saveRoom(room) {
 }
 
 export async function getRoomByCode(code) {
-  const cachedRoom = roomStore.get(code);
+  const normalizedCode = String(code ?? "").toUpperCase();
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const cachedRoom = roomStore.get(normalizedCode);
   if (cachedRoom) {
     return cachedRoom;
   }
@@ -131,15 +136,40 @@ export async function getRoomByCode(code) {
     return null;
   }
 
-  const roomResult = await query("SELECT * FROM live_rooms WHERE code = $1", [code]);
+  const roomResult = await query("SELECT * FROM live_rooms WHERE code = $1", [normalizedCode]);
   if (!roomResult.rows.length) {
     return null;
   }
 
-  const playerResult = await query("SELECT * FROM live_room_players WHERE room_code = $1", [code]);
+  const playerResult = await query("SELECT * FROM live_room_players WHERE room_code = $1", [normalizedCode]);
   const room = mapRoomRow(roomResult.rows[0], playerResult.rows);
-  roomStore.set(code, room);
+  roomStore.set(normalizedCode, room);
   return room;
+}
+
+export async function getTopLivePlayers(limit = 4) {
+  if (!hasDatabase()) {
+    return [];
+  }
+
+  const result = await query(
+    `SELECT room_code, name, score, correct_answers, answered_questions
+     FROM live_room_players
+     ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
+     LIMIT $1`,
+    [limit]
+  );
+
+  return result.rows.map((player) => ({
+    id: `${player.room_code}-${player.name}`,
+    roomCode: player.room_code,
+    name: player.name,
+    score: player.score,
+    accuracy:
+      player.answered_questions > 0
+        ? Math.round((player.correct_answers / player.answered_questions) * 100)
+        : 0
+  }));
 }
 
 export async function removeRoom(code) {
