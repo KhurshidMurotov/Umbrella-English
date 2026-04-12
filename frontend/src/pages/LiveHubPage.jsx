@@ -1,6 +1,7 @@
 import { AlertTriangle, Keyboard, QrCode, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ErrorAlert from "../components/ErrorAlert";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
 
@@ -66,9 +67,8 @@ export default function LiveHubPage() {
             />
 
             {error ? (
-              <div className="mt-4 flex items-center gap-3 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                <AlertTriangle size={16} />
-                <span>{error}</span>
+              <div className="mt-4">
+                <ErrorAlert message={error} onDismiss={() => setError("")} />
               </div>
             ) : null}
 

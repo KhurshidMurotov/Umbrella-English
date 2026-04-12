@@ -14,7 +14,7 @@ const sampleLeaderboard = [
 export default function HomePage() {
   return (
     <ShellLayout>
-      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-[1.15fr_0.85fr]">
         <div className="glass-card rounded-[36px] p-8 sm:p-10">
           <span className="inline-flex rounded-full bg-amber-300 px-4 py-2 text-xs font-black uppercase tracking-[0.32em] text-neutral-950">
             Umbrella English

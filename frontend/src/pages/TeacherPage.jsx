@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, LockKeyhole, LogOut, MonitorPlay, TimerReset, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import ErrorAlert from "../components/ErrorAlert";
 import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
@@ -71,10 +72,7 @@ function TeacherLogin({ onLogin }) {
             </div>
 
             {error ? (
-              <div className="flex items-center gap-3 rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                <AlertTriangle size={16} />
-                <span>{error}</span>
-              </div>
+              <ErrorAlert message={error} onDismiss={() => setError("")} />
             ) : null}
 
             <button
@@ -163,7 +161,7 @@ export default function TeacherPage() {
 
   return (
     <ShellLayout showNav={false}>
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="glass-card rounded-[36px] p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -243,10 +241,7 @@ export default function TeacherPage() {
             </div>
 
             {error ? (
-              <div className="flex items-center gap-3 rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                <AlertTriangle size={16} />
-                <span>{error}</span>
-              </div>
+              <ErrorAlert message={error} onDismiss={() => setError("")} />
             ) : null}
 
             <button

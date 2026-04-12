@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Clock3, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import ErrorAlert from "../components/ErrorAlert";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
 import StatPill from "../components/StatPill";

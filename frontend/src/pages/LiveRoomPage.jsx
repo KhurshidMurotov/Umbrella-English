@@ -202,7 +202,7 @@ export default function LiveRoomPage() {
           subtitle="This session was locked because anti-cheat detected repeated app or tab switching."
         />
       ) : null}
-      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="glass-card rounded-[40px] p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -232,6 +232,17 @@ export default function LiveRoomPage() {
               </div>
             ) : null}
           </div>
+
+          {role === "player" && !disqualified ? (
+            <div className="mt-4">
+              <button
+                onClick={() => window.history.back()}
+                className="w-full rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition"
+              >
+                ← Leave room
+              </button>
+            </div>
+          ) : null}
 
           <div className="mt-6">
             <ProgressBar value={progressValue} max={totalQuestions} tone="amber" />
