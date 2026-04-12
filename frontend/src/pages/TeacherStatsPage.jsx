@@ -100,7 +100,7 @@ export default function TeacherStatsPage() {
   };
 
   return (
-    <ShellLayout>
+    <ShellLayout showNav={false}>
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-4 rounded-[36px] border border-neutral-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
