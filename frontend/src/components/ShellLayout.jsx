@@ -4,7 +4,6 @@ import { Link, useLocation } from "react-router-dom";
 export default function ShellLayout({ children, showNav = true }) {
   const location = useLocation();
   const links = [
-    { to: "/", label: "Find Quiz", icon: "🔍" },
     { to: "/live", label: "Join Live", icon: "🎯" }
   ];
 
