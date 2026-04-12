@@ -136,38 +136,38 @@ export default function QuizPage() {
 
   return (
     <ShellLayout>
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.28em] text-neutral-500">Solo quiz</p>
-            <h1 className="text-3xl font-extrabold">{playableQuiz.title}</h1>
+      <div className="mx-auto max-w-4xl px-0">
+        <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.28em] text-neutral-500">Solo quiz</p>
+            <h1 className="text-xl sm:text-3xl font-extrabold mt-1 truncate">{playableQuiz.title}</h1>
           </div>
-          <div className="flex items-center gap-3 rounded-full bg-white px-4 py-3 shadow-sm">
-            <Clock3 size={18} />
-            <span className="font-bold">{timeLeft}s left</span>
+          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-sm flex-shrink-0">
+            <Clock3 size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="font-bold text-sm sm:text-base">{timeLeft}s</span>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-2 grid-cols-2 sm:gap-4 sm:grid-cols-4">
           <StatPill label="Question" value={`${currentIndex + 1}/${playableQuiz.questions.length}`} />
           <StatPill label="Score" value={currentScore} />
           <StatPill label="Streak" value={streak} />
           <StatPill label="Violations" value={violations} />
         </div>
 
-        <div className="mt-5">
+        <div className="mt-4 sm:mt-5">
           <ProgressBar value={currentIndex + 1} max={playableQuiz.questions.length} />
         </div>
 
         {warning ? (
-          <div className="mt-5 flex items-center gap-3 rounded-[24px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            <AlertTriangle size={18} />
+          <div className="mt-4 sm:mt-5 flex items-center gap-2 sm:gap-3 rounded-[20px] sm:rounded-[24px] border border-amber-300 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-amber-950">
+            <AlertTriangle size={16} className="flex-shrink-0 sm:w-[18px] sm:h-[18px]" />
             <span>{warning}</span>
           </div>
         ) : null}
 
-        <div className="mt-6 glass-card rounded-[36px] p-6 sm:p-8">
-          <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="mt-5 sm:mt-6 glass-card rounded-[28px] sm:rounded-[36px] p-4 sm:p-6 lg:p-8">
+          <div className="mb-4 sm:mb-5 flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 text-sm text-neutral-500">
               <Shield size={18} />
               <span>Anti-cheat is active during the quiz.</span>
