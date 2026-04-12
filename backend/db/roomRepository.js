@@ -1,13 +1,32 @@
 import { roomStore } from "../models/roomStore.js";
 import { hasDatabase, query, withTransaction } from "./client.js";
 
+const PASS_THRESHOLD = 6;
+
 function toNullableBigInt(value) {
   return value ?? null;
+}
+
+function createSessionId(room) {
+  return room.sessionId ?? `${room.code}-${room.createdAt}`;
+}
+
+function createQuizResultId(room, player) {
+  return `${createSessionId(room)}-${player.name}`;
+}
+
+function calculateQuizAccuracy(player) {
+  if (!player.answeredQuestions) {
+    return 0;
+  }
+
+  return Math.round((player.correctAnswers / player.answeredQuestions) * 100);
 }
 
 function mapRoomRow(roomRow, playerRows) {
   return {
     code: roomRow.code,
+    sessionId: roomRow.session_id ?? `${roomRow.code}-${roomRow.created_at}`,
     hostName: roomRow.host_name,
     hostToken: roomRow.host_token,
     hostSocketId: roomRow.host_socket_id,
@@ -27,6 +46,9 @@ function mapRoomRow(roomRow, playerRows) {
       .map((player) => ({
         socketId: player.socket_id,
         name: player.name,
+        connected: player.connected,
+        joinedAt: player.joined_at ? Number(player.joined_at) : null,
+        disconnectedAt: player.disconnected_at ? Number(player.disconnected_at) : null,
         score: player.score,
         correctAnswers: player.correct_answers,
         answeredQuestions: player.answered_questions,
@@ -38,20 +60,6 @@ function mapRoomRow(roomRow, playerRows) {
         completed: player.completed
       }))
   };
-}
-
-const PASS_THRESHOLD = 6;
-
-function createQuizResultId(room, player) {
-  return `${room.code}-${player.name}-${room.createdAt}`;
-}
-
-function calculateQuizAccuracy(player) {
-  if (!player.answeredQuestions) {
-    return 0;
-  }
-
-  return Math.round((player.correctAnswers / player.answeredQuestions) * 100);
 }
 
 async function saveQuizResults(client, room) {
@@ -70,11 +78,14 @@ async function saveQuizResults(client, room) {
     await client.query(
       `
         INSERT INTO quiz_results (
-          id, room_code, quiz_id, player_name, score, accuracy,
+          id, room_code, quiz_id, quiz_title, player_name, score, accuracy,
           correct_answers, wrong_answers, total_questions, streak,
           violations, ended_by, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         ON CONFLICT (id) DO UPDATE SET
+          room_code = EXCLUDED.room_code,
+          quiz_id = EXCLUDED.quiz_id,
+          quiz_title = EXCLUDED.quiz_title,
           score = EXCLUDED.score,
           accuracy = EXCLUDED.accuracy,
           correct_answers = EXCLUDED.correct_answers,
@@ -89,6 +100,7 @@ async function saveQuizResults(client, room) {
         resultId,
         room.code,
         room.quizId,
+        room.quizTitle,
         player.name,
         player.score ?? 0,
         accuracy,
@@ -104,9 +116,88 @@ async function saveQuizResults(client, room) {
   }
 }
 
+async function saveSessionArchive(client, room) {
+  if (!room?.started) {
+    return;
+  }
+
+  const sessionId = createSessionId(room);
+  const completed = room.currentQuestionIndex >= room.questions.length;
+
+  await client.query(
+    `
+      INSERT INTO game_sessions (
+        id, room_code, quiz_id, quiz_title, mode, question_time,
+        total_questions, started, completed, created_at, completed_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        room_code = EXCLUDED.room_code,
+        quiz_id = EXCLUDED.quiz_id,
+        quiz_title = EXCLUDED.quiz_title,
+        mode = EXCLUDED.mode,
+        question_time = EXCLUDED.question_time,
+        total_questions = EXCLUDED.total_questions,
+        started = EXCLUDED.started,
+        completed = EXCLUDED.completed,
+        completed_at = EXCLUDED.completed_at;
+    `,
+    [
+      sessionId,
+      room.code,
+      room.quizId,
+      room.quizTitle,
+      room.mode,
+      room.questionTime,
+      room.questions.length,
+      room.started,
+      completed,
+      room.createdAt,
+      completed ? Date.now() : null
+    ]
+  );
+
+  for (const player of room.players) {
+    await client.query(
+      `
+        INSERT INTO game_session_players (
+          session_id, name, connected, joined_at, disconnected_at, score,
+          correct_answers, answered_questions, total_response_time_ms,
+          violations, current_question_index, completed
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (session_id, name) DO UPDATE SET
+          connected = EXCLUDED.connected,
+          joined_at = COALESCE(game_session_players.joined_at, EXCLUDED.joined_at),
+          disconnected_at = EXCLUDED.disconnected_at,
+          score = EXCLUDED.score,
+          correct_answers = EXCLUDED.correct_answers,
+          answered_questions = EXCLUDED.answered_questions,
+          total_response_time_ms = EXCLUDED.total_response_time_ms,
+          violations = EXCLUDED.violations,
+          current_question_index = EXCLUDED.current_question_index,
+          completed = EXCLUDED.completed;
+      `,
+      [
+        sessionId,
+        player.name,
+        player.connected ?? false,
+        toNullableBigInt(player.joinedAt),
+        toNullableBigInt(player.disconnectedAt),
+        player.score ?? 0,
+        player.correctAnswers ?? 0,
+        player.answeredQuestions ?? 0,
+        player.totalResponseTimeMs ?? 0,
+        player.violations ?? 0,
+        player.currentQuestionIndex ?? 0,
+        player.completed ?? false
+      ]
+    );
+  }
+}
+
 export async function saveRoom(room) {
   const normalizedCode = String(room.code ?? "").toUpperCase();
   room.code = normalizedCode;
+  room.sessionId = createSessionId(room);
   roomStore.set(normalizedCode, room);
 
   if (!hasDatabase()) {
@@ -117,12 +208,13 @@ export async function saveRoom(room) {
     await client.query(
       `
         INSERT INTO live_rooms (
-          code, host_name, host_token, host_socket_id, mode, quiz_id, quiz_title,
+          code, session_id, host_name, host_token, host_socket_id, mode, quiz_id, quiz_title,
           question_time, questions_json, current_question_index, question_phase,
           question_started_at, question_deadline_at, started, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16)
         ON CONFLICT (code) DO UPDATE SET
+          session_id = EXCLUDED.session_id,
           host_name = EXCLUDED.host_name,
           host_token = EXCLUDED.host_token,
           host_socket_id = EXCLUDED.host_socket_id,
@@ -139,6 +231,7 @@ export async function saveRoom(room) {
       `,
       [
         room.code,
+        room.sessionId,
         room.hostName,
         room.hostToken,
         room.hostSocketId,
@@ -162,16 +255,19 @@ export async function saveRoom(room) {
       await client.query(
         `
           INSERT INTO live_room_players (
-            room_code, name, socket_id, score, correct_answers, answered_questions,
-            total_response_time_ms, answered_current, violations, current_question_index,
-            question_started_at, completed
+            room_code, name, socket_id, connected, joined_at, disconnected_at,
+            score, correct_answers, answered_questions, total_response_time_ms,
+            answered_current, violations, current_question_index, question_started_at, completed
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
         `,
         [
           room.code,
           player.name,
           player.socketId,
+          player.connected ?? Boolean(player.socketId),
+          toNullableBigInt(player.joinedAt ?? room.createdAt),
+          toNullableBigInt(player.disconnectedAt),
           player.score ?? 0,
           player.correctAnswers ?? 0,
           player.answeredQuestions ?? 0,
@@ -185,6 +281,7 @@ export async function saveRoom(room) {
       );
     }
 
+    await saveSessionArchive(client, room);
     await saveQuizResults(client, room);
   });
 }
@@ -220,18 +317,17 @@ export async function getTopLivePlayers(limit = 4) {
     return [];
   }
 
-  const liveResult = await query(
-    `SELECT room_code, name, score, correct_answers, answered_questions
-     FROM live_room_players
+  const archiveResult = await query(
+    `SELECT session_id, name, score, correct_answers, answered_questions
+     FROM game_session_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
      LIMIT $1`,
     [limit]
   );
 
-  if (liveResult.rows.length) {
-    return liveResult.rows.map((player) => ({
-      id: `${player.room_code}-${player.name}`,
-      roomCode: player.room_code,
+  if (archiveResult.rows.length) {
+    return archiveResult.rows.map((player) => ({
+      id: `${player.session_id}-${player.name}`,
       name: player.name,
       score: player.score,
       accuracy:
@@ -265,22 +361,22 @@ export async function getRoomSessionStats() {
     return [];
   }
 
-  const activeResult = await query(
-    `SELECT p.room_code, r.quiz_title, r.mode, r.created_at,
-            p.name, p.score, p.correct_answers, p.answered_questions,
-            p.total_response_time_ms, p.violations, p.current_question_index,
-            p.completed
-     FROM live_room_players p
-     JOIN live_rooms r ON r.code = p.room_code
-     ORDER BY r.created_at DESC, p.score DESC, p.name ASC`);
+  const sessionResult = await query(
+    `SELECT gs.id AS session_id, gs.room_code, gs.quiz_title, gs.mode, gs.created_at,
+            gsp.name, gsp.score, gsp.correct_answers, gsp.answered_questions,
+            gsp.total_response_time_ms, gsp.violations, gsp.current_question_index,
+            gsp.completed, gsp.connected
+     FROM game_sessions gs
+     JOIN game_session_players gsp ON gsp.session_id = gs.id
+     ORDER BY gs.created_at DESC, gsp.score DESC, gsp.name ASC`
+  );
 
   const sessions = new Map();
 
-  for (const row of activeResult.rows) {
-    const sessionKey = `${row.room_code}-${row.created_at}`;
-    if (!sessions.has(sessionKey)) {
-      sessions.set(sessionKey, {
-        id: sessionKey,
+  for (const row of sessionResult.rows) {
+    if (!sessions.has(row.session_id)) {
+      sessions.set(row.session_id, {
+        id: row.session_id,
         roomCode: row.room_code,
         quizTitle: row.quiz_title,
         mode: row.mode,
@@ -291,7 +387,7 @@ export async function getRoomSessionStats() {
       });
     }
 
-    const session = sessions.get(sessionKey);
+    const session = sessions.get(row.session_id);
     const passed = (row.correct_answers ?? 0) >= PASS_THRESHOLD;
     session.totalStudents += 1;
     if (passed) {
@@ -299,7 +395,7 @@ export async function getRoomSessionStats() {
     }
 
     session.details.push({
-      id: `${sessionKey}-${row.name}`,
+      id: `${row.session_id}-${row.name}`,
       name: row.name,
       score: row.score,
       correctAnswers: row.correct_answers,
@@ -311,57 +407,7 @@ export async function getRoomSessionStats() {
       violations: row.violations,
       currentQuestionIndex: row.current_question_index,
       completed: row.completed,
-      passed
-    });
-  }
-
-  const historyResult = await query(
-    `SELECT qr.room_code,
-            COALESCE(q.title, qr.quiz_id) AS quiz_title,
-            qr.player_name,
-            qr.score,
-            qr.correct_answers,
-            qr.wrong_answers,
-            qr.total_questions,
-            qr.accuracy,
-            qr.violations,
-            qr.created_at
-     FROM quiz_results qr
-     LEFT JOIN quizzes q ON q.id = qr.quiz_id
-     ORDER BY qr.created_at DESC, qr.room_code ASC, qr.player_name ASC`);
-
-  for (const row of historyResult.rows) {
-    const sessionKey = `${row.room_code}-${row.created_at}`;
-    if (!sessions.has(sessionKey)) {
-      sessions.set(sessionKey, {
-        id: sessionKey,
-        roomCode: row.room_code,
-        quizTitle: row.quiz_title,
-        mode: null,
-        createdAt: Number(row.created_at),
-        totalStudents: 0,
-        passedStudents: 0,
-        details: []
-      });
-    }
-
-    const session = sessions.get(sessionKey);
-    const passed = (row.correct_answers ?? 0) >= PASS_THRESHOLD;
-    session.totalStudents += 1;
-    if (passed) {
-      session.passedStudents += 1;
-    }
-
-    session.details.push({
-      id: `${sessionKey}-${row.player_name}`,
-      name: row.player_name,
-      score: row.score,
-      correctAnswers: row.correct_answers,
-      answeredQuestions: row.total_questions,
-      averageResponseTimeSeconds: 0,
-      violations: row.violations,
-      currentQuestionIndex: null,
-      completed: true,
+      connected: row.connected,
       passed
     });
   }

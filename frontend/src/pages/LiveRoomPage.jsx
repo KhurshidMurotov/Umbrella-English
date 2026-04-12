@@ -180,10 +180,11 @@ export default function LiveRoomPage() {
   }, [hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
 
   const players = room?.players ?? [];
+  const connectedPlayers = players.filter((player) => player.connected !== false);
   const selfPlayer = players.find((player) => player.socketId === socket.id) ?? players.find((player) => player.name === name);
   const totalQuestions = room?.questions?.length ?? 10;
-  const studentCount = players.length;
-  const participantCount = room?.participantCount ?? (players.length + (role === "host" ? 1 : 0));
+  const studentCount = connectedPlayers.length;
+  const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
 
   const questionIndex =
     room?.mode === "student-paced" && role !== "host"
@@ -206,8 +207,8 @@ export default function LiveRoomPage() {
   const progressValue =
     room?.mode === "student-paced"
       ? role === "host"
-        ? players.length
-          ? players.reduce((total, player) => total + Math.min(player.currentQuestionIndex, totalQuestions), 0) / players.length
+        ? connectedPlayers.length
+          ? connectedPlayers.reduce((total, player) => total + Math.min(player.currentQuestionIndex, totalQuestions), 0) / connectedPlayers.length
           : 0
         : currentQuestion
           ? Math.min((selfPlayer?.currentQuestionIndex ?? 0) + 1, totalQuestions)

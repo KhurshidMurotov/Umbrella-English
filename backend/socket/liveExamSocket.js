@@ -34,6 +34,7 @@ function sanitizePlayers(players) {
       correctAnswers: player.correctAnswers ?? 0,
       answeredQuestions: player.answeredQuestions ?? 0,
       averageResponseTimeSeconds: getAverageResponseTimeSeconds(player),
+      connected: player.connected ?? Boolean(player.socketId),
       violations: player.violations,
       currentQuestionIndex: player.currentQuestionIndex,
       completed: player.completed,
@@ -43,6 +44,8 @@ function sanitizePlayers(players) {
 }
 
 function roomPayload(room) {
+  const connectedPlayers = room.players.filter((player) => player.connected !== false);
+
   return {
     code: room.code,
     hostName: room.hostName,
@@ -57,7 +60,7 @@ function roomPayload(room) {
     questionStartedAt: room.questionStartedAt,
     questionDeadlineAt: room.questionDeadlineAt,
     started: room.started,
-    participantCount: room.players.length + (room.hostSocketId ? 1 : 0),
+    participantCount: connectedPlayers.length + (room.hostSocketId ? 1 : 0),
     players: sanitizePlayers(room.players)
   };
 }
@@ -149,20 +152,34 @@ export function registerLiveExamSocket(io) {
 
       socket.join(code);
 
-      if (role !== "host" && !room.players.find((player) => player.socketId === socket.id)) {
-        room.players.push({
-          socketId: socket.id,
-          name,
-          score: 0,
-          correctAnswers: 0,
-          answeredQuestions: 0,
-          totalResponseTimeMs: 0,
-          answeredCurrent: false,
-          violations: 0,
-          currentQuestionIndex: 0,
-          questionStartedAt: room.started && room.mode === "student-paced" ? Date.now() : null,
-          completed: false
-        });
+      if (role !== "host") {
+        const existingPlayer = room.players.find((player) => player.name === name || player.socketId === socket.id);
+
+        if (existingPlayer) {
+          existingPlayer.socketId = socket.id;
+          existingPlayer.connected = true;
+          existingPlayer.disconnectedAt = null;
+          if (!existingPlayer.joinedAt) {
+            existingPlayer.joinedAt = Date.now();
+          }
+        } else {
+          room.players.push({
+            socketId: socket.id,
+            name,
+            connected: true,
+            joinedAt: Date.now(),
+            disconnectedAt: null,
+            score: 0,
+            correctAnswers: 0,
+            answeredQuestions: 0,
+            totalResponseTimeMs: 0,
+            answeredCurrent: false,
+            violations: 0,
+            currentQuestionIndex: 0,
+            questionStartedAt: room.started && room.mode === "student-paced" ? Date.now() : null,
+            completed: false
+          });
+        }
       }
 
       await persistAndBroadcast(io, room);
@@ -186,6 +203,7 @@ export function registerLiveExamSocket(io) {
       }
       room.players = room.players.map((player) => ({
         ...player,
+        connected: player.connected ?? Boolean(player.socketId),
         score: 0,
         correctAnswers: 0,
         answeredQuestions: 0,
@@ -372,9 +390,12 @@ export function registerLiveExamSocket(io) {
           changed = true;
         }
 
-        const nextPlayers = room.players.filter((player) => player.socketId !== socket.id);
-        if (nextPlayers.length !== room.players.length) {
-          room.players = nextPlayers;
+        const disconnectedAt = Date.now();
+        const player = room.players.find((item) => item.socketId === socket.id);
+        if (player) {
+          player.socketId = null;
+          player.connected = false;
+          player.disconnectedAt = disconnectedAt;
           changed = true;
         }
 

@@ -28,6 +28,7 @@ async function createTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS live_rooms (
       code TEXT PRIMARY KEY,
+      session_id TEXT UNIQUE,
       host_name TEXT NOT NULL,
       host_token TEXT NOT NULL,
       host_socket_id TEXT,
@@ -50,6 +51,9 @@ async function createTables() {
       room_code TEXT NOT NULL REFERENCES live_rooms(code) ON DELETE CASCADE,
       name TEXT NOT NULL,
       socket_id TEXT,
+      connected BOOLEAN NOT NULL DEFAULT TRUE,
+      joined_at BIGINT,
+      disconnected_at BIGINT,
       score INTEGER NOT NULL DEFAULT 0,
       correct_answers INTEGER NOT NULL DEFAULT 0,
       answered_questions INTEGER NOT NULL DEFAULT 0,
@@ -60,6 +64,40 @@ async function createTables() {
       question_started_at BIGINT,
       completed BOOLEAN NOT NULL DEFAULT FALSE,
       PRIMARY KEY (room_code, name)
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS game_sessions (
+      id TEXT PRIMARY KEY,
+      room_code TEXT NOT NULL,
+      quiz_id TEXT,
+      quiz_title TEXT,
+      mode TEXT,
+      question_time INTEGER NOT NULL,
+      total_questions INTEGER NOT NULL DEFAULT 0,
+      started BOOLEAN NOT NULL DEFAULT FALSE,
+      completed BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at BIGINT NOT NULL,
+      completed_at BIGINT
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS game_session_players (
+      session_id TEXT NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      connected BOOLEAN NOT NULL DEFAULT FALSE,
+      joined_at BIGINT,
+      disconnected_at BIGINT,
+      score INTEGER NOT NULL DEFAULT 0,
+      correct_answers INTEGER NOT NULL DEFAULT 0,
+      answered_questions INTEGER NOT NULL DEFAULT 0,
+      total_response_time_ms INTEGER NOT NULL DEFAULT 0,
+      violations INTEGER NOT NULL DEFAULT 0,
+      current_question_index INTEGER NOT NULL DEFAULT 0,
+      completed BOOLEAN NOT NULL DEFAULT FALSE,
+      PRIMARY KEY (session_id, name)
     );
   `);
 
@@ -84,6 +122,10 @@ async function createTables() {
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS room_code TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_id TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_title TEXT;`);
+  await query(`ALTER TABLE live_rooms ADD COLUMN IF NOT EXISTS session_id TEXT;`);
+  await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS connected BOOLEAN NOT NULL DEFAULT TRUE;`);
+  await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS joined_at BIGINT;`);
+  await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS disconnected_at BIGINT;`);
 }
 
 async function seedQuizzes() {

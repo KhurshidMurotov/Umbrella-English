@@ -41,6 +41,10 @@ Backend runs on `http://localhost:4000` and accepts connections from your local 
   - `quiz_results`
 - The default sample quizzes are seeded automatically into PostgreSQL.
 - If `DATABASE_URL` is missing, the app falls back to the previous in-memory mode.
+- Live exam state now survives deploy/restart more safely:
+  - disconnected students are marked as offline instead of being deleted
+  - active room state is preserved in `live_rooms` and `live_room_players`
+  - historical game snapshots are archived in `game_sessions` and `game_session_players`
 
 ## Open from another device
 
