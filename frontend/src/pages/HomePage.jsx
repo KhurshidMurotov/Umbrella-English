@@ -28,9 +28,15 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/live"
-              className="rounded-full bg-amber-300 px-6 py-4 text-sm font-bold text-neutral-950"
+              className="rounded-full bg-amber-300 px-6 py-4 text-sm font-bold text-neutral-950 hover:scale-105 transition-transform"
             >
               Join live
+            </Link>
+            <Link
+              to="/teacher"
+              className="rounded-full bg-neutral-950 px-6 py-4 text-sm font-bold text-white hover:scale-105 transition-transform"
+            >
+              🔑 Teacher area
             </Link>
           </div>
 
