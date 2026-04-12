@@ -18,7 +18,7 @@ export function useQuizTimer({ duration, questionKey, onExpire }) {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [timeLeft, onExpire]);
+  }, [onExpire]);
 
   return timeLeft;
 }

@@ -1,6 +1,6 @@
 const TEACHER_SESSION_KEY = "umbrella-teacher-session";
-const TEACHER_USERNAME = "admin";
-const TEACHER_PASSWORD = "teacher";
+const TEACHER_USERNAME = import.meta.env.VITE_TEACHER_USERNAME || "admin";
+const TEACHER_PASSWORD = import.meta.env.VITE_TEACHER_PASSWORD || "teacher";
 
 export function getTeacherSession() {
   if (typeof window === "undefined") {

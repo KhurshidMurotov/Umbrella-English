@@ -18,7 +18,7 @@ export default function LiveRoomPage() {
   const role = query.get("role") ?? "player";
   const name = query.get("name") ?? (role === "host" ? "Host" : "Student");
   const hostToken = query.get("hostToken") ?? "";
-  const socket = useMemo(() => io(API_URL, { transports: ["websocket"] }), []);
+  const socket = useMemo(() => io(API_URL, { transports: ["websocket"] }), [API_URL]);
 
   const [room, setRoom] = useState(null);
   const [selectedOption, setSelectedOption] = useState("");

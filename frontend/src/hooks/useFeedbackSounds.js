@@ -31,6 +31,14 @@ export function useFeedbackSounds() {
 
     const context = audioContextRef.current ?? new AudioContextClass();
     audioContextRef.current = context;
+
+    // Resume suspended audio context (common on user-gated sites)
+    if (context.state === "suspended") {
+      context.resume().catch((err) => {
+        console.warn("Failed to resume audio context", err);
+      });
+    }
+
     return context;
   }
 

@@ -6,6 +6,11 @@ export function saveResult(result) {
 }
 
 export function getResults() {
-  const raw = localStorage.getItem(RESULTS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  try {
+    const raw = localStorage.getItem(RESULTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.error("Failed to parse quiz results from storage", error);
+    return [];
+  }
 }
