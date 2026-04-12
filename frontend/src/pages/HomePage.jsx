@@ -87,8 +87,8 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8">
-          <LiveLeaderboard players={leaderboard} />
-        </div>
+            <LiveLeaderboard players={leaderboard} showTitle={false} />
+          </div>
         </div>
       </section>
 

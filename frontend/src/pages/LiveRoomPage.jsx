@@ -413,18 +413,18 @@ export default function LiveRoomPage() {
                   { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400" }
                 )}
               </div>
-              <div className="mt-8 inline-flex items-end gap-4 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                    Answers open in
-                  </p>
-                  <div className="mt-2 text-6xl font-extrabold leading-none text-white tabular-nums">
+              <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
+                  Answers open in
+                </p>
+                <div className="flex items-end gap-4">
+                  <div className="text-7xl font-extrabold leading-none text-white tabular-nums">
                     {displayBoardCountdown}
                   </div>
+                  <p className="pb-2 text-base font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                    seconds
+                  </p>
                 </div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                  seconds
-                </p>
               </div>
             </div>
           ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (

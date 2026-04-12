@@ -318,7 +318,8 @@ export async function getTopLivePlayers(limit = 4) {
   }
 
   const archiveResult = await query(
-    `SELECT session_id, name, score, correct_answers, answered_questions
+    `SELECT session_id, name, score, correct_answers, answered_questions,
+            total_response_time_ms, violations
      FROM game_session_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
      LIMIT $1`,
@@ -330,6 +331,12 @@ export async function getTopLivePlayers(limit = 4) {
       id: `${player.session_id}-${player.name}`,
       name: player.name,
       score: player.score,
+      correctAnswers: player.correct_answers ?? 0,
+      averageResponseTimeSeconds:
+        player.answered_questions > 0
+          ? Number((player.total_response_time_ms / player.answered_questions / 1000).toFixed(2))
+          : 0,
+      violations: player.violations ?? 0,
       accuracy:
         player.answered_questions > 0
           ? Math.round((player.correct_answers / player.answered_questions) * 100)
@@ -338,7 +345,7 @@ export async function getTopLivePlayers(limit = 4) {
   }
 
   const result = await query(
-    `SELECT player_name, score, correct_answers, total_questions, created_at
+    `SELECT player_name, score, correct_answers, total_questions, violations, created_at
      FROM quiz_results
      ORDER BY score DESC, correct_answers DESC, total_questions DESC
      LIMIT $1`,
@@ -349,6 +356,9 @@ export async function getTopLivePlayers(limit = 4) {
     id: `result-${player.player_name}-${player.created_at}-${index}`,
     name: player.player_name,
     score: player.score,
+    correctAnswers: player.correct_answers ?? 0,
+    averageResponseTimeSeconds: 0,
+    violations: player.violations ?? 0,
     accuracy:
       player.total_questions > 0
         ? Math.round((player.correct_answers / player.total_questions) * 100)
