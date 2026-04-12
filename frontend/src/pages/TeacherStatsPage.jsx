@@ -13,6 +13,35 @@ function formatDate(timestamp) {
   });
 }
 
+function formatAverageTime(value) {
+  const seconds = Number(value ?? 0);
+  return `${seconds >= 10 ? seconds.toFixed(1) : seconds.toFixed(2)}s`;
+}
+
+function getStudentStatus(student) {
+  if (student.completed) {
+    return student.passed ? "Passed" : "Completed";
+  }
+
+  if (student.connected === false) {
+    return "Offline";
+  }
+
+  return "In progress";
+}
+
+function getStatusClass(student) {
+  if (student.passed) {
+    return "bg-emerald-50 text-emerald-800";
+  }
+
+  if (student.completed) {
+    return "bg-neutral-100 text-neutral-700";
+  }
+
+  return "bg-amber-50 text-amber-900";
+}
+
 export default function TeacherStatsPage() {
   const [teacherSession, setTeacherSession] = useState(null);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -95,9 +124,9 @@ export default function TeacherStatsPage() {
     );
   }
 
-  const toggleExpanded = (sessionId) => {
+  function toggleExpanded(sessionId) {
     setExpandedRoom(expandedRoom === sessionId ? null : sessionId);
-  };
+  }
 
   return (
     <ShellLayout showNav={false}>
@@ -107,7 +136,7 @@ export default function TeacherStatsPage() {
             <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Teacher analytics</p>
             <h1 className="mt-2 text-3xl font-extrabold text-neutral-950">Student session summary</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-neutral-600">
-              Only test date and number of passed students are shown here. Click a room to see details.
+              Open a session to see each student in one clean row with status, score, correct answers, speed and flags.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -142,59 +171,70 @@ export default function TeacherStatsPage() {
                 No sessions available yet.
               </div>
             ) : (
-              stats.map((session) => (
-                <div key={session.id} className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                    onClick={() => toggleExpanded(session.id)}
-                  >
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Test date</div>
-                      <p className="mt-1 text-lg font-semibold text-neutral-950">{formatDate(session.createdAt)}</p>
-                      <p className="mt-1 text-sm text-neutral-500">{session.quizTitle} · {session.roomCode}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-950">
-                        {session.passedStudents} / {session.totalStudents} passed
-                      </div>
-                      {expandedRoom === session.id ? (
-                        <ChevronUp className="text-neutral-500" />
-                      ) : (
-                        <ChevronDown className="text-neutral-500" />
-                      )}
-                    </div>
-                  </button>
+              stats.map((session) => {
+                const passedStudents = Number(session.passedStudents ?? 0);
+                const totalStudents = Number(session.totalStudents ?? session.details?.length ?? 0);
 
-                  {expandedRoom === session.id ? (
-                    <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-4">
-                      <div className="grid gap-3">
-                        {session.details.map((student) => (
-                          <div key={student.id} className="rounded-[20px] border border-neutral-200 bg-white p-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <p className="font-semibold text-neutral-950">{student.name}</p>
-                                <p className="text-sm text-neutral-500">
-                                  {student.passed ? "Passed" : "Failed"}
-                                </p>
-                              </div>
-                              <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-2 text-sm font-semibold text-neutral-700">
-                                Score: {student.score}
-                              </div>
-                            </div>
-                            <div className="mt-3 grid gap-3 sm:grid-cols-3 text-sm text-neutral-500">
-                              <div>Correct: {student.correctAnswers}</div>
-                              <div>Answered: {student.answeredQuestions}</div>
-                              <div>Avg time: {student.averageResponseTimeSeconds}s</div>
-                            </div>
-                            <div className="mt-3 text-sm text-neutral-500">Violations: {student.violations}</div>
-                          </div>
-                        ))}
+                return (
+                  <div key={session.id} className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                      onClick={() => toggleExpanded(session.id)}
+                    >
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Test date</div>
+                        <p className="mt-1 text-lg font-semibold text-neutral-950">{formatDate(session.createdAt)}</p>
+                        <p className="mt-1 text-sm text-neutral-500">{session.quizTitle} / {session.roomCode}</p>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              ))
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-950">
+                          {passedStudents}/{totalStudents} passed
+                        </div>
+                        {expandedRoom === session.id ? (
+                          <ChevronUp className="text-neutral-500" />
+                        ) : (
+                          <ChevronDown className="text-neutral-500" />
+                        )}
+                      </div>
+                    </button>
+
+                    {expandedRoom === session.id ? (
+                      <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-4">
+                        <div className="grid gap-3">
+                          {session.details.map((student) => (
+                            <div key={student.id} className="rounded-[20px] border border-neutral-200 bg-white p-4">
+                              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                                <div className="min-w-0">
+                                  <p className="truncate text-lg font-semibold text-neutral-950">{student.name}</p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 text-sm">
+                                  <span className={`rounded-full px-3 py-2 font-semibold ${getStatusClass(student)}`}>
+                                    {getStudentStatus(student)}
+                                  </span>
+                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                    Score {student.score}
+                                  </span>
+                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                    Correct {student.correctAnswers}
+                                  </span>
+                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                    Avg {formatAverageTime(student.averageResponseTimeSeconds)}
+                                  </span>
+                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                    Flags {student.violations ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

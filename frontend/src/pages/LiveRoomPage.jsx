@@ -195,7 +195,7 @@ export default function LiveRoomPage() {
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
-  const displayBoardCountdown = Math.max(1, boardCountdown);
+  const displayBoardCountdown = Math.max(1, Math.ceil(boardCountdown));
 
   const deadlineAt =
     room?.mode === "student-paced" && role !== "host"
@@ -412,14 +412,24 @@ export default function LiveRoomPage() {
               <div className="mt-6">
                 {renderQuestionPrompt(
                   currentQuestion.prompt,
-                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-300",
+                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400",
                   "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white",
-                  { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-300" }
+                  { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400" }
                 )}
               </div>
-              <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-300">
-                Answers open automatically in {displayBoardCountdown}s
-              </p>
+              <div className="mt-8 flex items-end gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
+                    Answers open in
+                  </p>
+                  <div className="mt-2 text-6xl font-extrabold leading-none text-white">
+                    {displayBoardCountdown}
+                  </div>
+                </div>
+                <p className="pb-1 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                  seconds
+                </p>
+              </div>
             </div>
           ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] border border-neutral-200 bg-white p-8 text-center">
