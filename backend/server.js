@@ -2,10 +2,14 @@ import cors from "cors";
 import express from "express";
 import { createServer } from "node:http";
 import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import liveRoutes from "./routes/liveRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import { registerLiveExamSocket } from "./socket/liveExamSocket.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const server = createServer(app);
@@ -25,6 +29,15 @@ app.get("/health", (_request, response) => {
 
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/live", liveRoutes);
+
+// Serve static files from frontend/dist
+const frontendDistPath = path.join(__dirname, "../frontend/dist");
+app.use(express.static(frontendDistPath));
+
+// SPA fallback: serve index.html for all non-API routes
+app.get("*", (_request, response) => {
+  response.sendFile(path.join(frontendDistPath, "index.html"));
+});
 
 registerLiveExamSocket(io);
 
