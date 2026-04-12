@@ -152,7 +152,7 @@ export async function getTopLivePlayers(limit = 4) {
     return [];
   }
 
-  const result = await query(
+  const liveResult = await query(
     `SELECT room_code, name, score, correct_answers, answered_questions
      FROM live_room_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
@@ -160,14 +160,34 @@ export async function getTopLivePlayers(limit = 4) {
     [limit]
   );
 
-  return result.rows.map((player) => ({
-    id: `${player.room_code}-${player.name}`,
-    roomCode: player.room_code,
-    name: player.name,
+  if (liveResult.rows.length) {
+    return liveResult.rows.map((player) => ({
+      id: `${player.room_code}-${player.name}`,
+      roomCode: player.room_code,
+      name: player.name,
+      score: player.score,
+      accuracy:
+        player.answered_questions > 0
+          ? Math.round((player.correct_answers / player.answered_questions) * 100)
+          : 0
+    }));
+  }
+
+  const result = await query(
+    `SELECT player_name, score, correct_answers, total_questions, created_at
+     FROM quiz_results
+     ORDER BY score DESC, correct_answers DESC, total_questions DESC
+     LIMIT $1`,
+    [limit]
+  );
+
+  return result.rows.map((player, index) => ({
+    id: `result-${player.player_name}-${player.created_at}-${index}`,
+    name: player.player_name,
     score: player.score,
     accuracy:
-      player.answered_questions > 0
-        ? Math.round((player.correct_answers / player.answered_questions) * 100)
+      player.total_questions > 0
+        ? Math.round((player.correct_answers / player.total_questions) * 100)
         : 0
   }));
 }

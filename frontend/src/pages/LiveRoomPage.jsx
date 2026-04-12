@@ -468,7 +468,7 @@ export default function LiveRoomPage() {
           )}
         </div>
 
-        <LiveLeaderboard players={players} />
+        {role === "host" ? <LiveLeaderboard players={players} /> : null}
       </div>
     </ShellLayout>
   );
