@@ -86,12 +86,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mt-8">
-        <div className="mb-4">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Sample tests</p>
-          <h2 className="mt-2 text-3xl font-extrabold text-neutral-950">Choose a quiz</h2>
+      <section className="mt-6 sm:mt-8">
+        <div className="mb-3 sm:mb-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-neutral-500">Sample tests</p>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-neutral-950">Choose a quiz</h2>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
           {quizCatalog.map((quiz) => (
             <QuizCard key={quiz.id} quiz={quiz} />
           ))}
