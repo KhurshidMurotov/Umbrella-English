@@ -17,7 +17,7 @@ export default function LiveLeaderboard({ players = [] }) {
   return (
     <div className="glass-card rounded-[28px] p-6">
       <h3 className="text-lg font-extrabold text-neutral-950">Leaderboard</h3>
-      <div className="mt-4 hidden grid-cols-[minmax(0,1.5fr)_0.9fr_0.8fr_0.9fr] gap-3 px-4 text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:grid">
+      <div className="mt-4 hidden grid-cols-[minmax(0,1.9fr)_0.85fr_0.8fr_0.9fr] gap-3 px-4 text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:grid">
         <div>Player</div>
         <div>Avg time</div>
         <div>Correct</div>
@@ -34,21 +34,13 @@ export default function LiveLeaderboard({ players = [] }) {
                 index === 0 ? "border-amber-200 bg-amber-50" : "border-neutral-200 bg-white"
               }`}
             >
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_0.9fr_0.8fr_0.9fr] md:items-center">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 text-sm font-extrabold text-neutral-950">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1.9fr)_0.85fr_0.8fr_0.9fr] md:items-center">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-sm font-extrabold text-neutral-950">
                     {index + 1}
                   </div>
                   <div className="min-w-0">
-                    <p className="break-words font-semibold text-neutral-950">{player.name}</p>
-                    <p className="text-sm text-neutral-500">
-                      Violations: {player.violations ?? 0}
-                      {typeof player.currentQuestionIndex === "number"
-                        ? player.completed
-                          ? " / Done"
-                          : ` / Q${player.currentQuestionIndex + 1}`
-                        : ""}
-                    </p>
+                    <p className="break-words text-xl font-semibold text-neutral-950">{player.name}</p>
                   </div>
                 </div>
 
