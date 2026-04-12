@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
-import FallingLettersOverlay from "../components/FallingLettersOverlay";
+import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
@@ -197,7 +197,7 @@ export default function LiveRoomPage() {
   return (
     <ShellLayout>
       {role === "player" && disqualified ? (
-        <FallingLettersOverlay
+        <CheatingDetectedOverlay
           title="Cheating detected"
           subtitle="This session was locked because anti-cheat detected repeated app or tab switching."
         />
