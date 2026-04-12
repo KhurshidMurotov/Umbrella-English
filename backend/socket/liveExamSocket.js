@@ -34,6 +34,7 @@ function roomPayload(room) {
     questionTime: room.questionTime,
     questions: sanitizeQuestions(room.questions),
     currentQuestionIndex: room.currentQuestionIndex,
+    questionPhase: room.questionPhase,
     questionStartedAt: room.questionStartedAt,
     questionDeadlineAt: room.questionDeadlineAt,
     started: room.started,
@@ -126,7 +127,13 @@ export function registerLiveExamSocket(io) {
 
       room.started = true;
       room.currentQuestionIndex = 0;
-      resetInstructorClock(room);
+      room.questionPhase = room.mode === "instructor-paced" ? "prompt" : "answers";
+      if (room.mode === "instructor-paced") {
+        room.questionStartedAt = null;
+        room.questionDeadlineAt = null;
+      } else {
+        resetInstructorClock(room);
+      }
       room.players = room.players.map((player) => ({
         ...player,
         answeredCurrent: false,
@@ -138,9 +145,34 @@ export function registerLiveExamSocket(io) {
       io.to(room.code).emit("roomState", roomPayload(room));
     });
 
+    socket.on("revealAnswers", ({ roomCode }) => {
+      const room = roomStore.get(roomCode.toUpperCase());
+      if (!room || !isAuthorizedHost(room, socket)) {
+        socket.emit("roomError", { message: "Only the teacher can reveal answers." });
+        return;
+      }
+
+      if (room.mode !== "instructor-paced") {
+        socket.emit("roomError", { message: "Answer reveal is only used in instructor-paced mode." });
+        return;
+      }
+
+      room.questionPhase = "answers";
+      room.players = room.players.map((player) => ({
+        ...player,
+        answeredCurrent: false
+      }));
+      resetInstructorClock(room);
+      io.to(room.code).emit("roomState", roomPayload(room));
+    });
+
     socket.on("submitAnswer", ({ roomCode, answer, name }) => {
       const room = roomStore.get(roomCode.toUpperCase());
       if (!room) {
+        return;
+      }
+
+      if (room.mode === "instructor-paced" && room.questionPhase !== "answers") {
         return;
       }
 
@@ -212,13 +244,15 @@ export function registerLiveExamSocket(io) {
       }
 
       room.currentQuestionIndex = Math.min(room.currentQuestionIndex + 1, room.questions.length);
+      room.questionPhase = room.currentQuestionIndex < room.questions.length ? "prompt" : "answers";
       room.players = room.players.map((player) => ({
         ...player,
         answeredCurrent: false
       }));
 
       if (room.currentQuestionIndex < room.questions.length) {
-        resetInstructorClock(room);
+        room.questionStartedAt = null;
+        room.questionDeadlineAt = null;
       } else {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;

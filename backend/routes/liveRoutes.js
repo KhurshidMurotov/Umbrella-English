@@ -30,6 +30,7 @@ function roomSummary(room) {
     quizId: room.quizId,
     quizTitle: room.quizTitle,
     questionTime: room.questionTime,
+    questionPhase: room.questionPhase,
     started: room.started,
     currentQuestionIndex: room.currentQuestionIndex
   };
@@ -59,6 +60,7 @@ router.post("/create", (request, response) => {
     questionTime: safeQuestionTime,
     questions: buildQuestions(quiz),
     currentQuestionIndex: 0,
+    questionPhase: mode === "instructor-paced" ? "prompt" : "answers",
     questionStartedAt: null,
     questionDeadlineAt: null,
     started: false,

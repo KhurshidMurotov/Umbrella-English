@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
-import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation, Sparkles } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
@@ -92,7 +92,7 @@ export default function LiveRoomPage() {
   }, [role, roomCode]);
 
   useEffect(() => {
-    if (role !== "host" && !roomVerified) {
+    if (role !== "host" && (!roomVerified || !nameSubmitted)) {
       return undefined;
     }
 
@@ -129,7 +129,7 @@ export default function LiveRoomPage() {
       socket.off("answerFeedback");
       socket.off("roomError");
     };
-  }, [hostToken, name, role, roomCode, roomVerified, socket]);
+  }, [hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
 
   const players = room?.players ?? [];
   const selfPlayer = players.find((player) => player.socketId === socket.id) ?? players.find((player) => player.name === name);
@@ -143,6 +143,9 @@ export default function LiveRoomPage() {
       : (room?.currentQuestionIndex ?? 0);
   const currentQuestion = room?.questions?.[questionIndex];
   const questionKey = `${roomCode}-${role}-${questionIndex}-${room?.started ? "started" : "waiting"}`;
+  const isInstructorPaced = room?.mode === "instructor-paced";
+  const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
+  const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
 
   const deadlineAt =
     room?.mode === "student-paced" && role !== "host"
@@ -171,7 +174,7 @@ export default function LiveRoomPage() {
   }, [questionKey]);
 
   useEffect(() => {
-    if (role !== "player" || !room?.started || !currentQuestion || selectedOption || remainingSeconds > 0) {
+    if (role !== "player" || !room?.started || !currentQuestion || !canAnswerNow || selectedOption || remainingSeconds > 0) {
       return;
     }
 
@@ -181,7 +184,7 @@ export default function LiveRoomPage() {
 
     socket.emit("questionTimeout", { roomCode, name });
     setTimeoutKey(questionKey);
-  }, [currentQuestion, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
+  }, [canAnswerNow, currentQuestion, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
 
   function submitAnswer(option) {
     setSelectedOption(option);
@@ -195,8 +198,11 @@ export default function LiveRoomPage() {
         ? "bg-amber-50 text-amber-900"
         : "bg-rose-50 text-rose-900";
 
-  const showModeBadge = Boolean(room?.started && room?.mode);
-  const showTimerBadge = Boolean(room?.started && (currentQuestion || (role === "host" && room?.mode === "student-paced")));
+  const showTimerBadge = Boolean(
+    room?.started &&
+      room?.questionPhase === "answers" &&
+      (currentQuestion || (role === "host" && room?.mode === "student-paced"))
+  );
 
   return (
     <ShellLayout>
@@ -311,6 +317,36 @@ export default function LiveRoomPage() {
                 Students advance independently. Each question uses the configured timer, and correct answers earn up to 100 points depending on speed.
               </p>
             </div>
+          ) : role === "host" && isQuestionBoardPhase && currentQuestion ? (
+            <div className="mt-8 rounded-[32px] bg-neutral-950 p-8 text-white">
+              <div className="flex items-center gap-3 text-amber-300">
+                <Presentation size={20} />
+                <span className="text-sm font-bold uppercase tracking-[0.24em]">Board view</span>
+              </div>
+              <h2 className="mt-6 text-4xl font-extrabold leading-tight">
+                {currentQuestion.prompt}
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-300">
+                Students are reading the question on the board. Reveal answers when you are ready.
+              </p>
+              <button
+                onClick={() => socket.emit("revealAnswers", { roomCode })}
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-amber-300 px-6 py-4 font-bold text-neutral-950"
+              >
+                <Sparkles size={18} />
+                Reveal answers
+              </button>
+            </div>
+          ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (
+            <div className="mt-8 rounded-[32px] border border-neutral-200 bg-white p-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-neutral-950">
+                <Presentation size={24} />
+              </div>
+              <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">Question on the board</h2>
+              <p className="mt-3 text-sm leading-7 text-neutral-600">
+                Read the question on the host screen. Answer choices will appear here as soon as the host reveals them.
+              </p>
+            </div>
           ) : currentQuestion ? (
             <div className="mt-8">
               <h2 className="text-3xl font-extrabold text-neutral-950">{currentQuestion.prompt}</h2>
@@ -331,7 +367,7 @@ export default function LiveRoomPage() {
                       key={option}
                       label={option}
                       onClick={() => submitAnswer(option)}
-                      disabled={role === "host" || selectedOption !== "" || remainingSeconds <= 0}
+                      disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0}
                       state={state}
                     />
                   );
