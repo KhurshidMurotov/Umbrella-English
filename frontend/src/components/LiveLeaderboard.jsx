@@ -1,49 +1,74 @@
+function formatAverageSeconds(value) {
+  if (!value) {
+    return "0.0s";
+  }
+
+  return `${value >= 10 ? value.toFixed(1) : value.toFixed(2)}s`;
+}
+
 export default function LiveLeaderboard({ players = [] }) {
-  // Sort players by score (highest first)
-  const sortedPlayers = [...players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
-  const getPlacementColor = (index) => {
-    if (index === 0) return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
-    if (index === 1) return "bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200";
-    if (index === 2) return "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200";
-    return "bg-white border-neutral-200";
-  };
-
-  const getMedalEmoji = (index) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return "";
-  };
+  const sortedPlayers = [...players].sort(
+    (first, second) =>
+      (second.score ?? 0) - (first.score ?? 0) ||
+      (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
+      (first.averageResponseTimeSeconds ?? 0) - (second.averageResponseTimeSeconds ?? 0)
+  );
 
   return (
     <div className="glass-card rounded-[28px] p-6">
-      <h3 className="text-lg font-extrabold">Leaderboard</h3>
-      <div className="mt-4 space-y-2" role="list" aria-label="Live quiz leaderboard">
+      <h3 className="text-lg font-extrabold text-neutral-950">Leaderboard</h3>
+      <div className="mt-4 hidden grid-cols-[minmax(0,1.5fr)_0.9fr_0.8fr_0.9fr] gap-3 px-4 text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:grid">
+        <div>Player</div>
+        <div>Avg time</div>
+        <div>Correct</div>
+        <div>Points</div>
+      </div>
+
+      <div className="mt-3 space-y-3" role="list" aria-label="Live quiz leaderboard">
         {sortedPlayers.length ? (
           sortedPlayers.map((player, index) => (
             <div
               key={player.socketId}
               role="listitem"
-              className={`flex items-center justify-between rounded-[20px] border px-4 py-3 transition ${getPlacementColor(index)}`}
+              className={`rounded-[20px] border px-4 py-4 ${
+                index === 0 ? "border-amber-200 bg-amber-50" : "border-neutral-200 bg-white"
+              }`}
             >
-              <div className="flex items-center gap-3 flex-1">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 font-extrabold text-sm">
-                  {getMedalEmoji(index) || index + 1}
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_0.9fr_0.8fr_0.9fr] md:items-center">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 text-sm font-extrabold text-neutral-950">
+                    {index + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="break-words font-semibold text-neutral-950">{player.name}</p>
+                    <p className="text-sm text-neutral-500">
+                      Violations: {player.violations ?? 0}
+                      {typeof player.currentQuestionIndex === "number"
+                        ? player.completed
+                          ? " / Done"
+                          : ` / Q${player.currentQuestionIndex + 1}`
+                        : ""}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <span className="font-semibold text-neutral-900 break-words">{player.name}</span>
-                  <p className="text-sm text-neutral-600">
-                    Violations: {player.violations ?? 0}
-                    {typeof player.currentQuestionIndex === "number"
-                      ? player.completed
-                        ? " / Done"
-                        : ` / Q${player.currentQuestionIndex + 1}`
-                      : ""}
-                  </p>
+
+                <div className="md:text-left">
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:hidden">Avg time</div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    {formatAverageSeconds(player.averageResponseTimeSeconds ?? 0)}
+                  </div>
+                </div>
+
+                <div className="md:text-left">
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:hidden">Correct</div>
+                  <div className="text-sm font-semibold text-neutral-900">{player.correctAnswers ?? 0}</div>
+                </div>
+
+                <div className="md:text-left">
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500 md:hidden">Points</div>
+                  <div className="text-lg font-bold text-neutral-950">{player.score ?? 0}</div>
                 </div>
               </div>
-              <span className="text-lg font-bold text-neutral-900 ml-2 whitespace-nowrap">{player.score ?? 0} pts</span>
             </div>
           ))
         ) : (

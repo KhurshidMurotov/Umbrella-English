@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Clock3, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
-import ErrorAlert from "../components/ErrorAlert";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
 import StatPill from "../components/StatPill";
@@ -15,6 +14,7 @@ import { quizCatalog } from "../lib/quizzes";
 import { saveResult } from "../lib/storage";
 
 const QUESTION_TIME = 15;
+const FEEDBACK_DELAY_MS = 1200;
 
 export default function QuizPage() {
   const { quizId } = useParams();
@@ -28,10 +28,20 @@ export default function QuizPage() {
   const [streak, setStreak] = useState(0);
   const [streakPeak, setStreakPeak] = useState(0);
   const [locked, setLocked] = useState(false);
+  const [feedbackState, setFeedbackState] = useState(null);
   const { playCorrect, playWrong } = useFeedbackSounds();
+  const transitionTimeoutRef = useRef(null);
 
   const currentQuestion = playableQuiz.questions[currentIndex];
   const currentScore = computeScore(questionScores);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function finishQuiz(reason = "completed", summary = {}) {
     const finalCorrectAnswers = summary.correctAnswers ?? correctAnswers;
@@ -56,6 +66,7 @@ export default function QuizPage() {
   function goNext() {
     setSelectedOption("");
     setLocked(false);
+    setFeedbackState(null);
     if (currentIndex === playableQuiz.questions.length - 1) {
       finishQuiz();
       return;
@@ -66,6 +77,7 @@ export default function QuizPage() {
   const timeLeft = useQuizTimer({
     duration: QUESTION_TIME,
     questionKey: `${currentQuestion.id}-${currentIndex}`,
+    isActive: !locked,
     onExpire: () => {
       if (locked) {
         return;
@@ -73,16 +85,26 @@ export default function QuizPage() {
 
       setLocked(true);
       setStreak(0);
+      const nextQuestionScores = [...questionScores, 0];
+      setQuestionScores(nextQuestionScores);
+      setFeedbackState({
+        type: "timeout",
+        text: "Time is up. +0 points"
+      });
       playWrong();
 
       if (currentIndex === playableQuiz.questions.length - 1) {
-        window.setTimeout(() => finishQuiz(), 700);
+        transitionTimeoutRef.current = window.setTimeout(() => {
+          finishQuiz("completed", {
+            questionScores: nextQuestionScores
+          });
+        }, FEEDBACK_DELAY_MS);
         return;
       }
 
-      window.setTimeout(() => {
+      transitionTimeoutRef.current = window.setTimeout(() => {
         goNext();
-      }, 700);
+      }, FEEDBACK_DELAY_MS);
     }
   });
 
@@ -102,7 +124,7 @@ export default function QuizPage() {
     const isCorrect = option === currentQuestion.correctAnswer;
     const awardedScore = isCorrect ? calculateQuestionScore(timeLeft, QUESTION_TIME) : 0;
     const nextCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
-    const nextQuestionScores = isCorrect ? [...questionScores, awardedScore] : questionScores;
+    const nextQuestionScores = [...questionScores, awardedScore];
 
     if (isCorrect) {
       setCorrectAnswers(nextCorrectAnswers);
@@ -112,27 +134,43 @@ export default function QuizPage() {
         setStreakPeak((peak) => Math.max(peak, next));
         return next;
       });
+      setFeedbackState({
+        type: "correct",
+        text: `Correct answer. +${awardedScore} points`
+      });
       playCorrect();
     } else {
+      setQuestionScores(nextQuestionScores);
       setStreak(0);
+      setFeedbackState({
+        type: "wrong",
+        text: "Incorrect answer. +0 points"
+      });
       playWrong();
     }
 
     const isLastQuestion = currentIndex === playableQuiz.questions.length - 1;
     if (isLastQuestion) {
-      window.setTimeout(() => {
+      transitionTimeoutRef.current = window.setTimeout(() => {
         finishQuiz("completed", {
           correctAnswers: nextCorrectAnswers,
           questionScores: nextQuestionScores
         });
-      }, 900);
+      }, FEEDBACK_DELAY_MS);
       return;
     }
 
-    window.setTimeout(() => {
+    transitionTimeoutRef.current = window.setTimeout(() => {
       goNext();
-    }, 900);
+    }, FEEDBACK_DELAY_MS);
   }
+
+  const feedbackToneClass =
+    feedbackState?.type === "correct"
+      ? "bg-emerald-50 text-emerald-900"
+      : feedbackState?.type === "timeout"
+        ? "bg-amber-50 text-amber-900"
+        : "bg-rose-50 text-rose-900";
 
   return (
     <ShellLayout>
@@ -174,14 +212,14 @@ export default function QuizPage() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
               <Sparkles size={16} />
-              Up to 100 points
+              60 base + speed bonus
             </div>
           </div>
 
           <AnimatePresence mode="wait">
             <motion.div key={currentQuestion.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
               <h2 className="text-3xl font-extrabold leading-tight">{currentQuestion.prompt}</h2>
-              <p className="mt-3 text-sm text-neutral-500">Answer faster to earn a higher score.</p>
+              <p className="mt-3 text-sm text-neutral-500">Each correct answer gives 60 base points plus a speed bonus.</p>
               <div className="mt-8 space-y-4">
                 {currentQuestion.options.map((option) => {
                   let state = "default";
@@ -194,6 +232,11 @@ export default function QuizPage() {
                   return <AnswerButton key={option} label={option} state={state} onClick={() => handleAnswer(option)} disabled={locked} />;
                 })}
               </div>
+              {feedbackState ? (
+                <div className={`mt-5 rounded-[24px] px-4 py-3 text-sm font-semibold ${feedbackToneClass}`}>
+                  {feedbackState.text}
+                </div>
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </div>

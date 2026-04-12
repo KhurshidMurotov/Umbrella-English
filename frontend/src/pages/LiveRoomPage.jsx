@@ -103,11 +103,11 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds }) => {
       if (correct) {
         setFeedbackState({
           type: "correct",
-          text: `Correct answer. +${awardedScore} points`
+          text: `Correct answer in ${responseTimeSeconds}s. +${awardedScore} points`
         });
         playCorrect();
         return;
@@ -115,7 +115,9 @@ export default function LiveRoomPage() {
 
       setFeedbackState({
         type: timedOut ? "timeout" : "wrong",
-        text: timedOut ? "Time is over for this question." : "Incorrect answer. +0 points"
+        text: timedOut
+          ? `Time is over. ${responseTimeSeconds}s used. +0 points`
+          : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
       });
       playWrong();
     });

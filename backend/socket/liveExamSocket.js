@@ -1,5 +1,8 @@
 import { roomStore } from "../models/roomStore.js";
 
+const BASE_CORRECT_POINTS = 60;
+const MAX_SPEED_BONUS = 40;
+
 function sanitizeQuestions(questions) {
   return questions.map((question) => ({
     id: question.id,
@@ -8,13 +11,28 @@ function sanitizeQuestions(questions) {
   }));
 }
 
+function getAverageResponseTimeSeconds(player) {
+  if (!player.answeredQuestions) {
+    return 0;
+  }
+
+  return Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2));
+}
+
 function sanitizePlayers(players) {
   return [...players]
-    .sort((first, second) => second.score - first.score)
+    .sort((first, second) =>
+      (second.score ?? 0) - (first.score ?? 0) ||
+      (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
+      getAverageResponseTimeSeconds(first) - getAverageResponseTimeSeconds(second)
+    )
     .map((player) => ({
       socketId: player.socketId,
       name: player.name,
       score: player.score,
+      correctAnswers: player.correctAnswers ?? 0,
+      answeredQuestions: player.answeredQuestions ?? 0,
+      averageResponseTimeSeconds: getAverageResponseTimeSeconds(player),
       violations: player.violations,
       currentQuestionIndex: player.currentQuestionIndex,
       completed: player.completed,
@@ -65,14 +83,37 @@ function getDeadlineAt(room, player) {
   return room.questionDeadlineAt ?? Date.now();
 }
 
-function calculateAwardedScore(room, deadlineAt, answeredAt) {
+function clampResponseTimeMs(room, responseTimeMs) {
+  return Math.max(0, Math.min(room.questionTime * 1000, responseTimeMs));
+}
+
+function getResponseTimeMs(room, player, answeredAt) {
+  const startedAt = room.mode === "student-paced"
+    ? (player.questionStartedAt ?? answeredAt)
+    : (room.questionStartedAt ?? answeredAt);
+
+  return clampResponseTimeMs(room, answeredAt - startedAt);
+}
+
+function calculateAwardedScore(room, responseTimeMs) {
   const duration = room.questionTime * 1000;
-  const remaining = Math.max(0, deadlineAt - answeredAt);
-  if (!remaining || !duration) {
-    return 0;
+  if (!duration) {
+    return BASE_CORRECT_POINTS;
   }
 
-  return Math.min(100, Math.max(1, Math.ceil((remaining / duration) * 100)));
+  const safeResponseTime = clampResponseTimeMs(room, responseTimeMs);
+  const speedRatio = Math.max(0, 1 - safeResponseTime / duration);
+  return BASE_CORRECT_POINTS + Math.round(speedRatio * MAX_SPEED_BONUS);
+}
+
+function applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore }) {
+  player.answeredQuestions = (player.answeredQuestions ?? 0) + 1;
+  player.totalResponseTimeMs = (player.totalResponseTimeMs ?? 0) + responseTimeMs;
+  player.score += awardedScore;
+
+  if (correct) {
+    player.correctAnswers = (player.correctAnswers ?? 0) + 1;
+  }
 }
 
 function advanceStudentPlayer(room, player) {
@@ -107,6 +148,9 @@ export function registerLiveExamSocket(io) {
           socketId: socket.id,
           name,
           score: 0,
+          correctAnswers: 0,
+          answeredQuestions: 0,
+          totalResponseTimeMs: 0,
           answeredCurrent: false,
           violations: 0,
           currentQuestionIndex: 0,
@@ -136,6 +180,10 @@ export function registerLiveExamSocket(io) {
       }
       room.players = room.players.map((player) => ({
         ...player,
+        score: 0,
+        correctAnswers: 0,
+        answeredQuestions: 0,
+        totalResponseTimeMs: 0,
         answeredCurrent: false,
         currentQuestionIndex: 0,
         questionStartedAt: Date.now(),
@@ -191,17 +239,41 @@ export function registerLiveExamSocket(io) {
 
       const answeredAt = Date.now();
       const deadlineAt = getDeadlineAt(room, player);
+      const responseTimeMs = getResponseTimeMs(room, player, answeredAt);
       if (answeredAt > deadlineAt) {
-        socket.emit("answerFeedback", { correct: false, awardedScore: 0, timedOut: true });
+        applyPlayerMetrics(player, {
+          correct: false,
+          responseTimeMs: room.questionTime * 1000,
+          awardedScore: 0
+        });
+
+        if (room.mode === "student-paced") {
+          advanceStudentPlayer(room, player);
+        } else {
+          player.answeredCurrent = true;
+        }
+
+        socket.emit("answerFeedback", {
+          correct: false,
+          awardedScore: 0,
+          timedOut: true,
+          responseTimeSeconds: Number((room.questionTime).toFixed(2))
+        });
+        io.to(room.code).emit("roomState", roomPayload(room));
         return;
       }
 
       player.answeredCurrent = true;
       const correct = currentQuestion.correctAnswer === answer;
-      const awardedScore = correct ? calculateAwardedScore(room, deadlineAt, answeredAt) : 0;
-      player.score += awardedScore;
+      const awardedScore = correct ? calculateAwardedScore(room, responseTimeMs) : 0;
+      applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore });
 
-      socket.emit("answerFeedback", { correct, awardedScore, timedOut: false });
+      socket.emit("answerFeedback", {
+        correct,
+        awardedScore,
+        timedOut: false,
+        responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2))
+      });
 
       if (room.mode === "student-paced") {
         advanceStudentPlayer(room, player);
@@ -217,9 +289,15 @@ export function registerLiveExamSocket(io) {
       }
 
       const player = getPlayer(room, socket, name);
-      if (!player || player.completed) {
+      if (!player || player.completed || player.answeredCurrent) {
         return;
       }
+
+      applyPlayerMetrics(player, {
+        correct: false,
+        responseTimeMs: room.questionTime * 1000,
+        awardedScore: 0
+      });
 
       if (room.mode === "student-paced") {
         advanceStudentPlayer(room, player);
@@ -227,7 +305,12 @@ export function registerLiveExamSocket(io) {
         player.answeredCurrent = true;
       }
 
-      socket.emit("answerFeedback", { correct: false, awardedScore: 0, timedOut: true });
+      socket.emit("answerFeedback", {
+        correct: false,
+        awardedScore: 0,
+        timedOut: true,
+        responseTimeSeconds: Number(room.questionTime.toFixed(2))
+      });
       io.to(room.code).emit("roomState", roomPayload(room));
     });
 

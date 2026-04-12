@@ -1,3 +1,6 @@
+const BASE_CORRECT_POINTS = 60;
+const MAX_SPEED_BONUS = 40;
+
 export function shuffleArray(items) {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -18,12 +21,14 @@ export function buildPlayableQuiz(quiz) {
 }
 
 export function calculateQuestionScore(timeLeft, duration) {
-  const safeTime = Math.max(0, timeLeft);
-  if (!safeTime || !duration) {
-    return 0;
+  if (!duration) {
+    return BASE_CORRECT_POINTS;
   }
 
-  return Math.min(100, Math.max(1, Math.ceil((safeTime / duration) * 100)));
+  const safeTime = Math.max(0, Math.min(duration, timeLeft));
+  const speedRatio = safeTime / duration;
+  const speedBonus = Math.round(speedRatio * MAX_SPEED_BONUS);
+  return BASE_CORRECT_POINTS + speedBonus;
 }
 
 export function computeScore(questionScores) {
