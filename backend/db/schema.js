@@ -66,6 +66,7 @@ async function createTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS quiz_results (
       id TEXT PRIMARY KEY,
+      room_code TEXT,
       quiz_id TEXT,
       player_name TEXT,
       score INTEGER NOT NULL,
@@ -79,6 +80,10 @@ async function createTables() {
       created_at BIGINT NOT NULL
     );
   `);
+
+  await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS room_code TEXT;`);
+  await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_id TEXT;`);
+  await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_title TEXT;`);
 }
 
 async function seedQuizzes() {

@@ -40,6 +40,70 @@ function mapRoomRow(roomRow, playerRows) {
   };
 }
 
+const PASS_THRESHOLD = 6;
+
+function createQuizResultId(room, player) {
+  return `${room.code}-${player.name}-${room.createdAt}`;
+}
+
+function calculateQuizAccuracy(player) {
+  if (!player.answeredQuestions) {
+    return 0;
+  }
+
+  return Math.round((player.correctAnswers / player.answeredQuestions) * 100);
+}
+
+async function saveQuizResults(client, room) {
+  if (!room?.questions?.length || room.currentQuestionIndex < room.questions.length || !room.started) {
+    return;
+  }
+
+  const totalQuestions = room.questions.length;
+  for (const player of room.players) {
+    const correctAnswers = player.correctAnswers ?? 0;
+    const answeredQuestions = player.answeredQuestions ?? 0;
+    const wrongAnswers = Math.max(0, answeredQuestions - correctAnswers);
+    const resultId = createQuizResultId(room, player);
+    const accuracy = calculateQuizAccuracy(player);
+
+    await client.query(
+      `
+        INSERT INTO quiz_results (
+          id, room_code, quiz_id, player_name, score, accuracy,
+          correct_answers, wrong_answers, total_questions, streak,
+          violations, ended_by, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (id) DO UPDATE SET
+          score = EXCLUDED.score,
+          accuracy = EXCLUDED.accuracy,
+          correct_answers = EXCLUDED.correct_answers,
+          wrong_answers = EXCLUDED.wrong_answers,
+          total_questions = EXCLUDED.total_questions,
+          streak = EXCLUDED.streak,
+          violations = EXCLUDED.violations,
+          ended_by = EXCLUDED.ended_by,
+          created_at = EXCLUDED.created_at;
+      `,
+      [
+        resultId,
+        room.code,
+        room.quizId,
+        player.name,
+        player.score ?? 0,
+        accuracy,
+        correctAnswers,
+        wrongAnswers,
+        totalQuestions,
+        0,
+        player.violations ?? 0,
+        "completed",
+        Date.now()
+      ]
+    );
+  }
+}
+
 export async function saveRoom(room) {
   const normalizedCode = String(room.code ?? "").toUpperCase();
   room.code = normalizedCode;
@@ -120,6 +184,8 @@ export async function saveRoom(room) {
         ]
       );
     }
+
+    await saveQuizResults(client, room);
   });
 }
 
@@ -199,7 +265,7 @@ export async function getRoomSessionStats() {
     return [];
   }
 
-  const result = await query(
+  const activeResult = await query(
     `SELECT p.room_code, r.quiz_title, r.mode, r.created_at,
             p.name, p.score, p.correct_answers, p.answered_questions,
             p.total_response_time_ms, p.violations, p.current_question_index,
@@ -210,29 +276,30 @@ export async function getRoomSessionStats() {
 
   const sessions = new Map();
 
-  for (const row of result.rows) {
-    const roomKey = row.room_code;
-    if (!sessions.has(roomKey)) {
-      sessions.set(roomKey, {
-        id: roomKey,
+  for (const row of activeResult.rows) {
+    const sessionKey = `${row.room_code}-${row.created_at}`;
+    if (!sessions.has(sessionKey)) {
+      sessions.set(sessionKey, {
+        id: sessionKey,
         roomCode: row.room_code,
         quizTitle: row.quiz_title,
         mode: row.mode,
         createdAt: Number(row.created_at),
         totalStudents: 0,
-        completedStudents: 0,
+        passedStudents: 0,
         details: []
       });
     }
 
-    const session = sessions.get(roomKey);
+    const session = sessions.get(sessionKey);
+    const passed = (row.correct_answers ?? 0) >= PASS_THRESHOLD;
     session.totalStudents += 1;
-    if (row.completed) {
-      session.completedStudents += 1;
+    if (passed) {
+      session.passedStudents += 1;
     }
 
     session.details.push({
-      id: `${roomKey}-${row.name}`,
+      id: `${sessionKey}-${row.name}`,
       name: row.name,
       score: row.score,
       correctAnswers: row.correct_answers,
@@ -243,7 +310,59 @@ export async function getRoomSessionStats() {
           : 0,
       violations: row.violations,
       currentQuestionIndex: row.current_question_index,
-      completed: row.completed
+      completed: row.completed,
+      passed
+    });
+  }
+
+  const historyResult = await query(
+    `SELECT qr.room_code,
+            COALESCE(q.title, qr.quiz_id) AS quiz_title,
+            qr.player_name,
+            qr.score,
+            qr.correct_answers,
+            qr.wrong_answers,
+            qr.total_questions,
+            qr.accuracy,
+            qr.violations,
+            qr.created_at
+     FROM quiz_results qr
+     LEFT JOIN quizzes q ON q.id = qr.quiz_id
+     ORDER BY qr.created_at DESC, qr.room_code ASC, qr.player_name ASC`);
+
+  for (const row of historyResult.rows) {
+    const sessionKey = `${row.room_code}-${row.created_at}`;
+    if (!sessions.has(sessionKey)) {
+      sessions.set(sessionKey, {
+        id: sessionKey,
+        roomCode: row.room_code,
+        quizTitle: row.quiz_title,
+        mode: null,
+        createdAt: Number(row.created_at),
+        totalStudents: 0,
+        passedStudents: 0,
+        details: []
+      });
+    }
+
+    const session = sessions.get(sessionKey);
+    const passed = (row.correct_answers ?? 0) >= PASS_THRESHOLD;
+    session.totalStudents += 1;
+    if (passed) {
+      session.passedStudents += 1;
+    }
+
+    session.details.push({
+      id: `${sessionKey}-${row.player_name}`,
+      name: row.player_name,
+      score: row.score,
+      correctAnswers: row.correct_answers,
+      answeredQuestions: row.total_questions,
+      averageResponseTimeSeconds: 0,
+      violations: row.violations,
+      currentQuestionIndex: null,
+      completed: true,
+      passed
     });
   }
 

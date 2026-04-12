@@ -95,8 +95,8 @@ export default function TeacherStatsPage() {
     );
   }
 
-  const toggleExpanded = (roomCode) => {
-    setExpandedRoom(expandedRoom === roomCode ? null : roomCode);
+  const toggleExpanded = (sessionId) => {
+    setExpandedRoom(expandedRoom === sessionId ? null : sessionId);
   };
 
   return (
@@ -107,7 +107,7 @@ export default function TeacherStatsPage() {
             <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Teacher analytics</p>
             <h1 className="mt-2 text-3xl font-extrabold text-neutral-950">Student session summary</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-neutral-600">
-              Only test date and number of completed students are shown here. Click a room to see details.
+              Only test date and number of passed students are shown here. Click a room to see details.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -143,11 +143,11 @@ export default function TeacherStatsPage() {
               </div>
             ) : (
               stats.map((session) => (
-                <div key={session.roomCode} className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
+                <div key={session.id} className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
                   <button
                     type="button"
                     className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                    onClick={() => toggleExpanded(session.roomCode)}
+                    onClick={() => toggleExpanded(session.id)}
                   >
                     <div>
                       <div className="text-xs uppercase tracking-[0.3em] text-neutral-500">Test date</div>
@@ -156,9 +156,9 @@ export default function TeacherStatsPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-950">
-                        {session.completedStudents} / {session.totalStudents} passed
+                        {session.passedStudents} / {session.totalStudents} passed
                       </div>
-                      {expandedRoom === session.roomCode ? (
+                      {expandedRoom === session.id ? (
                         <ChevronUp className="text-neutral-500" />
                       ) : (
                         <ChevronDown className="text-neutral-500" />
@@ -166,7 +166,7 @@ export default function TeacherStatsPage() {
                     </div>
                   </button>
 
-                  {expandedRoom === session.roomCode ? (
+                  {expandedRoom === session.id ? (
                     <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-4">
                       <div className="grid gap-3">
                         {session.details.map((student) => (
@@ -174,7 +174,9 @@ export default function TeacherStatsPage() {
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <p className="font-semibold text-neutral-950">{student.name}</p>
-                                <p className="text-sm text-neutral-500">{student.completed ? "Completed" : "In progress"}</p>
+                                <p className="text-sm text-neutral-500">
+                                  {student.passed ? "Passed" : "Failed"}
+                                </p>
                               </div>
                               <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-2 text-sm font-semibold text-neutral-700">
                                 Score: {student.score}

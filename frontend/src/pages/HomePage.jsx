@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
+import LiveLeaderboard from "../components/LiveLeaderboard";
 import QuizCard from "../components/QuizCard";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
@@ -88,11 +89,9 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-8 text-center">
-            <p className="text-sm text-neutral-500">
-              Live leaderboard scores will appear here once students start playing.
-            </p>
-          </div>
+          <div className="mt-8">
+          <LiveLeaderboard players={leaderboard} />
+        </div>
         </div>
       </section>
 
