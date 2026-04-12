@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
@@ -10,6 +10,8 @@ import ShellLayout from "../components/ShellLayout";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
+
+const BOARD_REVEAL_DELAY_MS = 3000;
 
 function splitQuestionPrompt(prompt) {
   const separators = [":", "?", "!"];
@@ -68,6 +70,7 @@ export default function LiveRoomPage() {
   const [playerName, setPlayerName] = useState(initialName || "");
   const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
   const { playCorrect, playWrong } = useFeedbackSounds();
+  const boardRevealTimeoutRef = useRef(null);
 
   const name = playerName || (role === "host" ? "Host" : "Student");
 
@@ -212,6 +215,28 @@ export default function LiveRoomPage() {
     setFeedbackState(null);
     setTimeoutKey("");
   }, [questionKey]);
+
+  useEffect(() => {
+    if (boardRevealTimeoutRef.current) {
+      window.clearTimeout(boardRevealTimeoutRef.current);
+      boardRevealTimeoutRef.current = null;
+    }
+
+    if (role !== "host" || !isQuestionBoardPhase || !currentQuestion) {
+      return undefined;
+    }
+
+    boardRevealTimeoutRef.current = window.setTimeout(() => {
+      socket.emit("revealAnswers", { roomCode });
+    }, BOARD_REVEAL_DELAY_MS);
+
+    return () => {
+      if (boardRevealTimeoutRef.current) {
+        window.clearTimeout(boardRevealTimeoutRef.current);
+        boardRevealTimeoutRef.current = null;
+      }
+    };
+  }, [currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
 
   useEffect(() => {
     if (role !== "player" || !room?.started || !currentQuestion || !canAnswerNow || selectedOption || remainingSeconds > 0) {
@@ -375,13 +400,9 @@ export default function LiveRoomPage() {
                   "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white"
                 )}
               </div>
-              <button
-                onClick={() => socket.emit("revealAnswers", { roomCode })}
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-amber-300 px-6 py-4 font-bold text-neutral-950"
-              >
-                <Sparkles size={18} />
-                Reveal answers
-              </button>
+              <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-300">
+                Answers open automatically in 3s
+              </p>
             </div>
           ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] border border-neutral-200 bg-white p-8 text-center">
