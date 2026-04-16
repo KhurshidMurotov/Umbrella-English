@@ -36,22 +36,13 @@ export default function LeaderboardPage() {
     <ShellLayout>
       <section className="mx-auto max-w-5xl space-y-6">
         <div className="glass-card rounded-[36px] p-6 sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Leaderboard</p>
-              <h1 className="mt-3 text-4xl font-extrabold text-neutral-950">Top 10 live players</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">
-                Browse the current leaderboard with the top 10 players, special highlighting for the first three places, and smooth scrolling when the room is full.
-              </p>
-            </div>
-            <div className="rounded-[20px] bg-amber-100 px-4 py-3 text-sm font-bold text-neutral-950">
-              🏆 Top 10 with medals
-            </div>
+          <div>
+            <h1 className="text-4xl font-extrabold text-neutral-950">Live players</h1>
           </div>
         </div>
 
         <div className="glass-card rounded-[36px] p-6 sm:p-8">
-          <LiveLeaderboard players={leaderboard} />
+          <LiveLeaderboard players={leaderboard} showTitle={false} />
         </div>
       </section>
     </ShellLayout>

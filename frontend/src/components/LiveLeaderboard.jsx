@@ -7,14 +7,12 @@ function formatAverageSeconds(value) {
 }
 
 export default function LiveLeaderboard({ players = [], showTitle = true }) {
-  const sortedPlayers = [...players]
-    .sort(
-      (first, second) =>
-        (second.score ?? 0) - (first.score ?? 0) ||
-        (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
-        (first.averageResponseTimeSeconds ?? 0) - (second.averageResponseTimeSeconds ?? 0)
-    )
-    .slice(0, 10);
+  const sortedPlayers = [...players].sort(
+    (first, second) =>
+      (second.score ?? 0) - (first.score ?? 0) ||
+      (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
+      (first.averageResponseTimeSeconds ?? 0) - (second.averageResponseTimeSeconds ?? 0)
+  );
 
   const rankBadge = (index) => {
     if (index === 0) return "🥇";
@@ -32,7 +30,7 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
 
   return (
     <div className="glass-card rounded-[28px] p-6">
-      {showTitle ? <h3 className="text-base font-extrabold text-neutral-950 sm:text-lg">Top 10 leaderboard</h3> : null}
+      {showTitle ? <h3 className="text-base font-extrabold text-neutral-950 sm:text-lg">Live ranking</h3> : null}
       <div className={`${showTitle ? "mt-4" : "mt-0"} hidden grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr] gap-3 px-4 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500 lg:grid xl:text-xs`}>
         <div>Player</div>
         <div>Avg time</div>
