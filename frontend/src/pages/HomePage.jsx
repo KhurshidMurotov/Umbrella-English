@@ -47,12 +47,6 @@ export default function HomePage() {
           </p>
           <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
             <Link
-              to="/live"
-              className="rounded-full bg-amber-300 px-4 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm font-bold text-neutral-950 hover:scale-105 transition-transform"
-            >
-              Join live
-            </Link>
-            <Link
               to="/teacher"
               className="rounded-full bg-neutral-950 px-4 py-2 sm:px-6 sm:py-4 text-xs sm:text-sm font-bold text-white hover:scale-105 transition-transform"
             >

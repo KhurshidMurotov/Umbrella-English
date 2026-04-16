@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Clock3, Play, Radio, ShieldCheck } from "lucide-react";
+import { Clock3, Play, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function QuizCard({ quiz }) {
@@ -27,10 +27,6 @@ export default function QuizCard({ quiz }) {
         <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center gap-1 sm:gap-2 rounded-full bg-neutral-950 px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-neutral-800">
           <Play size={14} className="sm:w-[16px] sm:h-[16px]" />
           Start quiz
-        </Link>
-        <Link to="/live" className="inline-flex items-center gap-1 sm:gap-2 rounded-full border border-neutral-900 px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-bold text-neutral-900 transition hover:bg-amber-200">
-          <Radio size={14} className="sm:w-[16px] sm:h-[16px]" />
-          Join live
         </Link>
       </div>
     </motion.div>
