@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, LockKeyhole, LogOut, MonitorPlay, TimerReset, UserRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { LockKeyhole, LogOut, TimerReset, UserRound } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import ErrorAlert from "../components/ErrorAlert";
-import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
 import { quizCatalog } from "../lib/quizzes";
@@ -94,10 +93,9 @@ export default function TeacherPage() {
   const [mode, setMode] = useState("instructor-paced");
   const [questionTime, setQuestionTime] = useState(15);
   const [selectedQuizId, setSelectedQuizId] = useState(quizCatalog[0]?.id ?? "");
-  const [roomData, setRoomData] = useState(null);
-  const [hostToken, setHostToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const selectedQuiz = quizCatalog.find((quiz) => quiz.id === selectedQuizId) ?? quizCatalog[0];
 
@@ -115,8 +113,6 @@ export default function TeacherPage() {
   async function createRoom() {
     setLoading(true);
     setError("");
-    setRoomData(null);
-    setHostToken("");
 
     try {
       const response = await fetch(`${API_URL}/api/live/create`, {
@@ -138,8 +134,13 @@ export default function TeacherPage() {
         return;
       }
 
-      setRoomData(data.room);
-      setHostToken(data.hostToken);
+      navigate("/teacher/room", {
+        state: {
+          room: data.room,
+          hostToken: data.hostToken,
+          hostName
+        }
+      });
     } catch {
       setError("Server is unavailable. Start the backend and try again.");
     }
@@ -150,22 +151,12 @@ export default function TeacherPage() {
   function handleLogout() {
     logoutTeacher();
     setTeacherSession(null);
-    setRoomData(null);
-    setHostToken("");
     setError("");
   }
 
-  const playerUrl = roomData
-    ? `${window.location.origin}/live/${roomData.code}?role=player`
-    : window.location.origin;
-  const hostUrl = roomData
-    ? `/live/${roomData.code}?role=host&name=${encodeURIComponent(hostName)}&hostToken=${encodeURIComponent(hostToken)}`
-    : "";
-
   return (
     <ShellLayout showNav={false}>
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="glass-card rounded-[36px] p-8">
+      <div className="glass-card rounded-[36px] p-8 mx-auto max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Teacher panel</p>
@@ -297,40 +288,6 @@ export default function TeacherPage() {
             </Link>
           </div>
         </div>
-
-        <div className="space-y-6">
-          <div className="glass-card rounded-[36px] p-6">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Session output</p>
-            {roomData ? (
-              <>
-                <div className="mt-4 rounded-[26px] bg-neutral-950 p-5 text-white">
-                  <p className="text-xs uppercase tracking-[0.26em] text-amber-300">Room code</p>
-                  <div className="mt-2 text-4xl font-extrabold">{roomData.code}</div>
-                  <p className="mt-3 text-sm text-neutral-300">
-                    {roomData.mode} / {roomData.questionTime}s per question
-                  </p>
-                  <Link
-                    to={hostUrl}
-                    className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-neutral-950"
-                  >
-                    <MonitorPlay size={16} />
-                    Open host room
-                  </Link>
-                </div>
-                <QRCodePanel
-                  value={playerUrl}
-                  title="Student QR"
-                  caption="Students can scan this QR to join the room directly."
-                />
-              </>
-            ) : (
-              <div className="rounded-[26px] border border-dashed border-neutral-200 bg-white p-6 text-sm leading-7 text-neutral-500">
-                Create a room to generate the host link, room code and QR for students.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </ShellLayout>
   );
 }

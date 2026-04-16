@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Trophy } from "lucide-react";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
@@ -34,13 +33,7 @@ export default function LeaderboardPage() {
 
   return (
     <ShellLayout>
-      <section className="mx-auto max-w-5xl space-y-6">
-        <div className="glass-card rounded-[36px] p-6 sm:p-8">
-          <div>
-            <h1 className="text-4xl font-extrabold text-neutral-950">Live players</h1>
-          </div>
-        </div>
-
+      <section className="mx-auto max-w-5xl">
         <div className="glass-card rounded-[36px] p-6 sm:p-8">
           <LiveLeaderboard players={leaderboard} showTitle={false} />
         </div>

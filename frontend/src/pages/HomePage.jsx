@@ -8,7 +8,7 @@ export default function HomePage() {
 
   return (
     <ShellLayout>
-      <section className="grid gap-6 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="space-y-6">
         <div className="glass-card rounded-[36px] p-4 sm:p-6 lg:p-8">
           <h1 className="mt-4 max-w-3xl text-2xl font-extrabold leading-tight text-neutral-950 sm:text-3xl md:text-5xl lg:text-6xl">
             Sample quizzes, live join and a clean leaderboard in one place.
@@ -41,30 +41,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="glass-card rounded-[28px] sm:rounded-[36px] p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="rounded-[14px] sm:rounded-[18px] bg-neutral-950 p-2 sm:p-3 text-white">
-              <Trophy size={14} className="sm:w-[18px] sm:h-[18px]" />
-            </div>
-            <div>
-              <h2 className="text-lg font-extrabold tracking-tight text-neutral-950 sm:text-3xl">
-                Leaderboard
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-neutral-500 sm:text-base">
-                Visit the full leaderboard page to see the top 10 live players with medals and scrolling.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <Link
-              to="/leaderboard"
-              className="inline-flex items-center justify-center rounded-full bg-amber-300 px-4 py-3 text-sm font-bold text-neutral-950 transition hover:bg-amber-200"
-            >
-              View leaderboard
-            </Link>
-          </div>
-        </div>
       </section>
 
       <section className="mt-6 sm:mt-8">
