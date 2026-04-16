@@ -18,7 +18,7 @@ export default function ShellLayout({ children, showNav = true }) {
     >
       <div className="mx-auto max-w-6xl">
         {showNav ? (
-          <nav className="mb-4 sm:mb-6 flex flex-col items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white/90 px-3 py-3 sm:flex-row sm:justify-between sm:gap-4 sm:px-4 sm:py-3 shadow-sm backdrop-blur" aria-label="Main navigation">
+          <nav className="mb-4 sm:mb-6 flex flex-wrap items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white/90 px-3 py-3 sm:gap-4 sm:px-4 sm:py-3 shadow-sm backdrop-blur" aria-label="Main navigation">
             <Link to="/" className="text-base font-extrabold tracking-tight text-neutral-950 hover:opacity-80 transition focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg px-2 py-1 outline-none sm:text-lg">
               Umbrella English
             </Link>

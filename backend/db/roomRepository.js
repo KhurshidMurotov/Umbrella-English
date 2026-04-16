@@ -312,19 +312,17 @@ export async function getRoomByCode(code) {
   return room;
 }
 
-export async function getTopLivePlayers(limit = 4) {
+export async function getTopLivePlayers(limit = null) {
   if (!hasDatabase()) {
     return [];
   }
 
-  const archiveResult = await query(
-    `SELECT session_id, name, score, correct_answers, answered_questions,
+  const archiveQuery = `SELECT session_id, name, score, correct_answers, answered_questions,
             total_response_time_ms, violations
      FROM game_session_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
-     LIMIT $1`,
-    [limit]
-  );
+     ${limit ? "LIMIT $1" : ""}`;
+  const archiveResult = await query(archiveQuery, limit ? [limit] : []);
 
   if (archiveResult.rows.length) {
     return archiveResult.rows.map((player) => ({
@@ -344,13 +342,11 @@ export async function getTopLivePlayers(limit = 4) {
     }));
   }
 
-  const result = await query(
-    `SELECT player_name, score, correct_answers, total_questions, violations, created_at
+  const resultQuery = `SELECT player_name, score, correct_answers, total_questions, violations, created_at
      FROM quiz_results
      ORDER BY score DESC, correct_answers DESC, total_questions DESC
-     LIMIT $1`,
-    [limit]
-  );
+     ${limit ? "LIMIT $1" : ""}`;
+  const result = await query(resultQuery, limit ? [limit] : []);
 
   return result.rows.map((player, index) => ({
     id: `result-${player.player_name}-${player.created_at}-${index}`,

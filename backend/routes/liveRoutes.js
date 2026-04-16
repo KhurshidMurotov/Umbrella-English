@@ -38,7 +38,7 @@ function roomSummary(room) {
 
 router.get("/leaderboard", async (_request, response) => {
   try {
-    const players = await getTopLivePlayers(4);
+    const players = await getTopLivePlayers();
     response.json({ players });
   } catch (error) {
     response.status(500).json({ error: "Failed to load leaderboard.", details: error.message });
