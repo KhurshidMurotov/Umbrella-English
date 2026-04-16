@@ -47,6 +47,7 @@ function mapRoomRow(roomRow, playerRows) {
         socketId: player.socket_id,
         name: player.name,
         connected: player.connected,
+        disqualified: player.disqualified,
         joinedAt: player.joined_at ? Number(player.joined_at) : null,
         disconnectedAt: player.disconnected_at ? Number(player.disconnected_at) : null,
         score: player.score,
@@ -109,7 +110,7 @@ async function saveQuizResults(client, room) {
         totalQuestions,
         0,
         player.violations ?? 0,
-        "completed",
+        player.disqualified ? "anti-cheat" : "completed",
         Date.now()
       ]
     );
@@ -160,12 +161,13 @@ async function saveSessionArchive(client, room) {
     await client.query(
       `
         INSERT INTO game_session_players (
-          session_id, name, connected, joined_at, disconnected_at, score,
+          session_id, name, connected, disqualified, joined_at, disconnected_at, score,
           correct_answers, answered_questions, total_response_time_ms,
           violations, current_question_index, completed
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ON CONFLICT (session_id, name) DO UPDATE SET
           connected = EXCLUDED.connected,
+          disqualified = EXCLUDED.disqualified,
           joined_at = COALESCE(game_session_players.joined_at, EXCLUDED.joined_at),
           disconnected_at = EXCLUDED.disconnected_at,
           score = EXCLUDED.score,
@@ -180,6 +182,7 @@ async function saveSessionArchive(client, room) {
         sessionId,
         player.name,
         player.connected ?? false,
+        player.disqualified ?? false,
         toNullableBigInt(player.joinedAt),
         toNullableBigInt(player.disconnectedAt),
         player.score ?? 0,
@@ -255,17 +258,18 @@ export async function saveRoom(room) {
       await client.query(
         `
           INSERT INTO live_room_players (
-            room_code, name, socket_id, connected, joined_at, disconnected_at,
+            room_code, name, socket_id, connected, disqualified, joined_at, disconnected_at,
             score, correct_answers, answered_questions, total_response_time_ms,
             answered_current, violations, current_question_index, question_started_at, completed
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
+          ) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
         `,
         [
           room.code,
           player.name,
           player.socketId,
           player.connected ?? Boolean(player.socketId),
+          player.disqualified ?? false,
           toNullableBigInt(player.joinedAt ?? room.createdAt),
           toNullableBigInt(player.disconnectedAt),
           player.score ?? 0,
@@ -371,7 +375,7 @@ export async function getRoomSessionStats() {
     `SELECT gs.id AS session_id, gs.room_code, gs.quiz_title, gs.mode, gs.created_at,
             gsp.name, gsp.score, gsp.correct_answers, gsp.answered_questions,
             gsp.total_response_time_ms, gsp.violations, gsp.current_question_index,
-            gsp.completed, gsp.connected
+            gsp.completed, gsp.connected, gsp.disqualified
      FROM game_sessions gs
      JOIN game_session_players gsp ON gsp.session_id = gs.id
      ORDER BY gs.created_at DESC, gsp.score DESC, gsp.name ASC`
@@ -411,6 +415,7 @@ export async function getRoomSessionStats() {
           ? Number((row.total_response_time_ms / row.answered_questions / 1000).toFixed(2))
           : 0,
       violations: row.violations,
+      disqualified: row.disqualified,
       currentQuestionIndex: row.current_question_index,
       completed: row.completed,
       connected: row.connected,

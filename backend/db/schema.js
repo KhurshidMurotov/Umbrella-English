@@ -52,6 +52,7 @@ async function createTables() {
       name TEXT NOT NULL,
       socket_id TEXT,
       connected BOOLEAN NOT NULL DEFAULT TRUE,
+      disqualified BOOLEAN NOT NULL DEFAULT FALSE,
       joined_at BIGINT,
       disconnected_at BIGINT,
       score INTEGER NOT NULL DEFAULT 0,
@@ -88,6 +89,7 @@ async function createTables() {
       session_id TEXT NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       connected BOOLEAN NOT NULL DEFAULT FALSE,
+      disqualified BOOLEAN NOT NULL DEFAULT FALSE,
       joined_at BIGINT,
       disconnected_at BIGINT,
       score INTEGER NOT NULL DEFAULT 0,
@@ -124,8 +126,10 @@ async function createTables() {
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_title TEXT;`);
   await query(`ALTER TABLE live_rooms ADD COLUMN IF NOT EXISTS session_id TEXT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS connected BOOLEAN NOT NULL DEFAULT TRUE;`);
+  await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS disqualified BOOLEAN NOT NULL DEFAULT FALSE;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS joined_at BIGINT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS disconnected_at BIGINT;`);
+  await query(`ALTER TABLE game_session_players ADD COLUMN IF NOT EXISTS disqualified BOOLEAN NOT NULL DEFAULT FALSE;`);
 }
 
 async function seedQuizzes() {

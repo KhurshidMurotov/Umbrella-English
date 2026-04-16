@@ -3,6 +3,7 @@ import { roomStore } from "../models/roomStore.js";
 
 const BASE_CORRECT_POINTS = 60;
 const MAX_SPEED_BONUS = 40;
+const MAX_ANTI_CHEAT_VIOLATIONS = 2;
 
 function sanitizeQuestions(questions) {
   return questions.map((question) => ({
@@ -35,6 +36,7 @@ function sanitizePlayers(players) {
       answeredQuestions: player.answeredQuestions ?? 0,
       averageResponseTimeSeconds: getAverageResponseTimeSeconds(player),
       connected: player.connected ?? Boolean(player.socketId),
+      disqualified: player.disqualified ?? false,
       violations: player.violations,
       currentQuestionIndex: player.currentQuestionIndex,
       completed: player.completed,
@@ -127,6 +129,18 @@ function advanceStudentPlayer(room, player) {
   player.questionStartedAt = player.completed ? null : Date.now();
 }
 
+function disqualifyPlayer(room, player, count) {
+  player.violations = Math.max(player.violations ?? 0, count);
+  player.disqualified = true;
+  player.completed = true;
+  player.answeredCurrent = true;
+  player.questionStartedAt = null;
+
+  if (room.mode === "student-paced") {
+    player.currentQuestionIndex = room.questions.length;
+  }
+}
+
 async function persistAndBroadcast(io, room) {
   await saveRoom(room);
   io.to(room.code).emit("roomState", roomPayload(room));
@@ -160,13 +174,14 @@ export function registerLiveExamSocket(io) {
           existingPlayer.connected = true;
           existingPlayer.disconnectedAt = null;
           if (!existingPlayer.joinedAt) {
-            existingPlayer.joinedAt = Date.now();
+          existingPlayer.joinedAt = Date.now();
           }
         } else {
           room.players.push({
             socketId: socket.id,
             name,
             connected: true,
+            disqualified: false,
             joinedAt: Date.now(),
             disconnectedAt: null,
             score: 0,
@@ -183,6 +198,13 @@ export function registerLiveExamSocket(io) {
       }
 
       await persistAndBroadcast(io, room);
+
+      if (role !== "host") {
+        const player = room.players.find((item) => item.name === name);
+        if (player?.disqualified) {
+          socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
+        }
+      }
     });
 
     socket.on("startExam", async ({ roomCode }) => {
@@ -204,6 +226,7 @@ export function registerLiveExamSocket(io) {
       room.players = room.players.map((player) => ({
         ...player,
         connected: player.connected ?? Boolean(player.socketId),
+        disqualified: false,
         score: 0,
         correctAnswers: 0,
         answeredQuestions: 0,
@@ -249,7 +272,10 @@ export function registerLiveExamSocket(io) {
       }
 
       const player = getPlayer(room, socket, name);
-      if (!player || player.answeredCurrent || player.completed) {
+      if (!player || player.answeredCurrent || player.completed || player.disqualified) {
+        if (player?.disqualified) {
+          socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
+        }
         return;
       }
 
@@ -313,7 +339,10 @@ export function registerLiveExamSocket(io) {
       }
 
       const player = getPlayer(room, socket, name);
-      if (!player || player.completed || player.answeredCurrent) {
+      if (!player || player.completed || player.answeredCurrent || player.disqualified) {
+        if (player?.disqualified) {
+          socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
+        }
         return;
       }
 
@@ -368,7 +397,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("antiCheatFlag", async ({ roomCode, name, count }) => {
+    socket.on("antiCheatFlag", async ({ roomCode, name, count, disqualified = false }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
@@ -376,7 +405,13 @@ export function registerLiveExamSocket(io) {
 
       const player = room.players.find((item) => item.name === name);
       if (player) {
-        player.violations = count;
+        const safeCount = Math.max(player.violations ?? 0, Number(count) || 0);
+        player.violations = safeCount;
+
+        if (disqualified || safeCount >= MAX_ANTI_CHEAT_VIOLATIONS) {
+          disqualifyPlayer(room, player, safeCount);
+          socket.emit("antiCheatLocked", { count: safeCount });
+        }
       }
       await persistAndBroadcast(io, room);
     });

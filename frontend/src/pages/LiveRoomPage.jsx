@@ -78,11 +78,17 @@ export default function LiveRoomPage() {
   const boardCountdownIntervalRef = useRef(null);
 
   const name = playerName || (role === "host" ? "Host" : "Student");
+  const antiCheatStorageKey =
+    role === "player" && roomCode && nameSubmitted && name
+      ? `umbrella-live-anti-cheat:${roomCode.toUpperCase()}:${name.trim().toLowerCase()}`
+      : null;
 
-  const { violations, warning, disqualified } = useAntiCheat({
+  const { violations, warning, disqualified, forceDisqualify } = useAntiCheat({
     enabled: role === "player",
+    storageKey: antiCheatStorageKey,
+    violationLimit: 2,
     onAutoSubmit: (reason, count) => {
-      socket.emit("antiCheatFlag", { roomCode, reason, count, name });
+      socket.emit("antiCheatFlag", { roomCode, reason, count, name, disqualified: true });
     }
   });
 
@@ -172,16 +178,23 @@ export default function LiveRoomPage() {
       setRoomError(message);
     });
 
+    socket.on("antiCheatLocked", ({ count }) => {
+      forceDisqualify("server anti-cheat lock", count ?? 2);
+    });
+
     return () => {
       socket.off("roomState");
       socket.off("answerFeedback");
       socket.off("roomError");
+      socket.off("antiCheatLocked");
     };
-  }, [hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
+  }, [forceDisqualify, hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
 
   const players = room?.players ?? [];
   const connectedPlayers = players.filter((player) => player.connected !== false);
   const selfPlayer = players.find((player) => player.socketId === socket.id) ?? players.find((player) => player.name === name);
+  const serverDisqualified = Boolean(selfPlayer?.disqualified);
+  const isLockedFromAntiCheat = disqualified || serverDisqualified;
   const totalQuestions = room?.questions?.length ?? 10;
   const studentCount = connectedPlayers.length;
   const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
@@ -224,6 +237,30 @@ export default function LiveRoomPage() {
   }, [questionKey]);
 
   useEffect(() => {
+    if (role !== "player" || !nameSubmitted || !roomVerified) {
+      return;
+    }
+
+    if (violations <= 0 && !disqualified) {
+      return;
+    }
+
+    socket.emit("antiCheatFlag", {
+      roomCode,
+      name,
+      count: violations,
+      reason: disqualified ? "restored anti-cheat lock" : "restored anti-cheat count",
+      disqualified
+    });
+  }, [disqualified, name, nameSubmitted, role, roomCode, roomVerified, socket, violations]);
+
+  useEffect(() => {
+    if (serverDisqualified) {
+      forceDisqualify("server anti-cheat lock", selfPlayer?.violations ?? 2);
+    }
+  }, [forceDisqualify, selfPlayer?.violations, serverDisqualified]);
+
+  useEffect(() => {
     if (boardRevealTimeoutRef.current) {
       window.clearTimeout(boardRevealTimeoutRef.current);
       boardRevealTimeoutRef.current = null;
@@ -259,7 +296,7 @@ export default function LiveRoomPage() {
   }, [currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
 
   useEffect(() => {
-    if (role !== "player" || !room?.started || !currentQuestion || !canAnswerNow || selectedOption || remainingSeconds > 0) {
+    if (role !== "player" || !room?.started || !currentQuestion || !canAnswerNow || selectedOption || remainingSeconds > 0 || isLockedFromAntiCheat) {
       return;
     }
 
@@ -269,9 +306,13 @@ export default function LiveRoomPage() {
 
     socket.emit("questionTimeout", { roomCode, name });
     setTimeoutKey(questionKey);
-  }, [canAnswerNow, currentQuestion, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
+  }, [canAnswerNow, currentQuestion, isLockedFromAntiCheat, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
 
   function submitAnswer(option) {
+    if (isLockedFromAntiCheat) {
+      return;
+    }
+
     setSelectedOption(option);
     socket.emit("submitAnswer", { roomCode, answer: option, name });
   }
@@ -296,7 +337,7 @@ export default function LiveRoomPage() {
 
   return (
     <ShellLayout>
-      {role === "player" && disqualified ? (
+      {role === "player" && isLockedFromAntiCheat ? (
         <CheatingDetectedOverlay
           title="Cheating detected"
           subtitle="This session was locked because anti-cheat detected repeated app or tab switching."
@@ -459,7 +500,7 @@ export default function LiveRoomPage() {
                       key={option}
                       label={option}
                       onClick={() => submitAnswer(option)}
-                      disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0}
+                      disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0 || isLockedFromAntiCheat}
                       state={state}
                     />
                   );

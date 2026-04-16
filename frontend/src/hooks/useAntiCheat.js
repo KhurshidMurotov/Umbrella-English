@@ -1,19 +1,100 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useAntiCheat({ enabled = true, onAutoSubmit } = {}) {
-  const [violations, setViolations] = useState(0);
-  const [warning, setWarning] = useState("");
-  const [disqualified, setDisqualified] = useState(false);
-  const lastViolationRef = useRef(0);
+const DEFAULT_VIOLATION_LIMIT = 2;
+const VIOLATION_BURST_WINDOW_MS = 900;
+
+function readStoredState(storageKey) {
+  if (!storageKey) {
+    return null;
+  }
+
+  try {
+    const raw = sessionStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredState(storageKey, state) {
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(state));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function buildWarning({ reason, count, violationLimit }) {
+  if (count >= violationLimit) {
+    return "Exam ended automatically because anti-cheat violations reached the limit.";
+  }
+
+  if (count === violationLimit - 1) {
+    return "Warning: one more tab, app switch or focus loss will lock the exam.";
+  }
+
+  return `Violation detected: ${reason}. Stay on this screen to continue.`;
+}
+
+export function useAntiCheat({
+  enabled = true,
+  onAutoSubmit,
+  storageKey,
+  violationLimit = DEFAULT_VIOLATION_LIMIT
+} = {}) {
+  const restoredState = readStoredState(storageKey);
+  const [violations, setViolations] = useState(restoredState?.violations ?? 0);
+  const [warning, setWarning] = useState(restoredState?.warning ?? "");
+  const [disqualified, setDisqualified] = useState(Boolean(restoredState?.disqualified));
+  const lastViolationRef = useRef(restoredState?.lastViolationAt ?? 0);
+  const autoSubmittedRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled) {
+    const storedState = readStoredState(storageKey);
+    setViolations(storedState?.violations ?? 0);
+    setWarning(storedState?.warning ?? "");
+    setDisqualified(Boolean(storedState?.disqualified));
+    lastViolationRef.current = storedState?.lastViolationAt ?? 0;
+    autoSubmittedRef.current = false;
+  }, [storageKey]);
+
+  useEffect(() => {
+    writeStoredState(storageKey, {
+      violations,
+      warning,
+      disqualified,
+      lastViolationAt: lastViolationRef.current
+    });
+  }, [disqualified, storageKey, violations, warning]);
+
+  const lockExam = useCallback((reason, count, shouldSubmit = false) => {
+    const normalizedCount = Math.max(count, violationLimit);
+    setViolations((current) => Math.max(current, normalizedCount));
+    setDisqualified(true);
+    setWarning(buildWarning({ reason, count: normalizedCount, violationLimit }));
+
+    if (shouldSubmit && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true;
+      onAutoSubmit?.(reason, normalizedCount);
+    }
+  }, [onAutoSubmit, violationLimit]);
+
+  const forceDisqualify = useCallback((reason = "anti-cheat limit reached", count = violationLimit) => {
+    lockExam(reason, count, false);
+  }, [lockExam, violationLimit]);
+
+  useEffect(() => {
+    if (!enabled || disqualified) {
       return undefined;
     }
 
     function registerViolation(reason) {
       const now = Date.now();
-      if (now - lastViolationRef.current < 1200) {
+      if (now - lastViolationRef.current < VIOLATION_BURST_WINDOW_MS) {
         return;
       }
 
@@ -21,14 +102,10 @@ export function useAntiCheat({ enabled = true, onAutoSubmit } = {}) {
 
       setViolations((current) => {
         const next = current + 1;
-        if (next > 3) {
-          setDisqualified(true);
-          setWarning("Exam ended automatically because anti-cheat violations exceeded the limit.");
-          onAutoSubmit?.(reason, next);
-        } else if (next > 2) {
-          setWarning("Warning: one more tab, app switch or focus loss will end the quiz.");
+        if (next >= violationLimit) {
+          lockExam(reason, next, true);
         } else {
-          setWarning(`Violation detected: ${reason}. Stay on this screen to continue.`);
+          setWarning(buildWarning({ reason, count: next, violationLimit }));
         }
         return next;
       });
@@ -63,7 +140,12 @@ export function useAntiCheat({ enabled = true, onAutoSubmit } = {}) {
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("freeze", handleFreeze);
     };
-  }, [enabled, onAutoSubmit]);
+  }, [disqualified, enabled, lockExam, violationLimit]);
 
-  return { violations, warning, disqualified };
+  return {
+    violations,
+    warning,
+    disqualified,
+    forceDisqualify
+  };
 }

@@ -148,6 +148,7 @@ export default function QuizPage() {
 
   const { violations, warning } = useAntiCheat({
     enabled: true,
+    violationLimit: 2,
     onAutoSubmit: () => finishQuiz("anti-cheat")
   });
 

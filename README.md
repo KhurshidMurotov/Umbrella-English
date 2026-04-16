@@ -82,7 +82,7 @@ The frontend automatically connects to the backend on the same IP using port `40
 
 - Solo quiz mode with shuffled questions and answers
 - Anti-cheat tracking for `visibilitychange` and `blur`
-- Warning after more than 2 violations and auto-finish after more than 3
+- Warning after the first violation and automatic lock on the second violation
 - Separate protected teacher area for hosting live exams
 - Teacher-selected timer per question
 - Speed-based scoring with a maximum of `100` points per question
