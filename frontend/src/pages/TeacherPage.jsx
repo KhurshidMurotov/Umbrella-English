@@ -156,7 +156,7 @@ export default function TeacherPage() {
 
   return (
     <ShellLayout showNav={false}>
-      <div className="glass-card rounded-[36px] p-8 mx-auto max-w-5xl">
+      <div className="glass-card rounded-[36px] p-8 mx-auto max-w-4xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Teacher panel</p>
@@ -176,20 +176,20 @@ export default function TeacherPage() {
             This area is hidden from the public site. Set the room pace, choose the timer and launch the host room.
           </p>
 
-          <div className="mt-8 grid gap-5">
-            <div>
-              <label className="text-sm font-bold text-neutral-950">Teacher name</label>
-              <input
-                value={hostName}
-                onChange={(event) => setHostName(event.target.value)}
-                className="mt-2 w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-neutral-950"
-              />
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_0.95fr]">
+            <div className="space-y-5">
               <div>
-                <label className="text-sm font-bold text-neutral-950">Test to host</label>
-                <div className="mt-2 grid gap-3">
+                <label className="text-sm font-bold text-neutral-950">Teacher name</label>
+                <input
+                  value={hostName}
+                  onChange={(event) => setHostName(event.target.value)}
+                  className="mt-2 w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 outline-none focus:border-neutral-950"
+                />
+              </div>
+
+              <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
+                <p className="text-sm font-bold text-neutral-950">Test to host</p>
+                <div className="mt-4 grid gap-3">
                   {quizCatalog.map((quiz) => (
                     <button
                       key={quiz.id}
@@ -217,10 +217,12 @@ export default function TeacherPage() {
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="text-sm font-bold text-neutral-950">Exam mode</label>
-                <div className="mt-2 flex flex-wrap gap-3">
+            <div className="space-y-5 flex flex-col items-center">
+              <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
+                <p className="text-sm font-bold text-neutral-950">Exam mode</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
                   {["instructor-paced", "student-paced"].map((item) => (
                     <button
                       key={item}
@@ -236,12 +238,9 @@ export default function TeacherPage() {
                 </div>
               </div>
 
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="flex items-center gap-2 text-sm font-bold text-neutral-950">
-                  <TimerReset size={16} />
-                  Time per question
-                </label>
-                <div className="mt-2 flex flex-wrap gap-3">
+              <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
+                <p className="text-sm font-bold text-neutral-950">Time per question</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
                   {TIMER_OPTIONS.map((value) => (
                     <button
                       key={value}
@@ -256,36 +255,38 @@ export default function TeacherPage() {
                   ))}
                 </div>
               </div>
+
+              <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
+                <p className="text-sm font-bold text-neutral-950">Scoring</p>
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  Correct answers earn up to 100 points. Faster answers score higher, wrong or late answers score 0.
+                </p>
+                <p className="mt-3 text-sm font-semibold text-neutral-900">
+                  Selected test: {selectedQuiz.title}
+                </p>
+              </div>
+
+              {error ? (
+                <ErrorAlert message={error} onDismiss={() => setError("")} />
+              ) : null}
+
+              <div className="w-full space-y-4">
+                <button
+                  type="button"
+                  onClick={createRoom}
+                  disabled={loading}
+                  className="w-full rounded-full bg-neutral-950 px-6 py-4 text-sm font-extrabold text-white"
+                >
+                  {loading ? "Creating room..." : "Create live room"}
+                </button>
+                <Link
+                  to="/teacher/stats"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-4 text-sm font-extrabold text-neutral-950"
+                >
+                  View students stats
+                </Link>
+              </div>
             </div>
-
-            <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
-              <p className="text-sm font-bold text-neutral-950">Scoring</p>
-              <p className="mt-2 text-sm leading-6 text-neutral-500">
-                Correct answers earn up to 100 points. Faster answers score higher, wrong or late answers score 0.
-              </p>
-              <p className="mt-3 text-sm font-semibold text-neutral-900">
-                Selected test: {selectedQuiz.title}
-              </p>
-            </div>
-
-            {error ? (
-              <ErrorAlert message={error} onDismiss={() => setError("")} />
-            ) : null}
-
-            <button
-              type="button"
-              onClick={createRoom}
-              disabled={loading}
-              className="rounded-full bg-neutral-950 px-6 py-4 text-sm font-extrabold text-white"
-            >
-              {loading ? "Creating room..." : "Create live room"}
-            </button>
-            <Link
-              to="/teacher/stats"
-              className="mt-4 inline-flex items-center justify-center rounded-full bg-amber-300 px-6 py-4 text-sm font-extrabold text-neutral-950"
-            >
-              View students stats
-            </Link>
           </div>
         </div>
     </ShellLayout>
