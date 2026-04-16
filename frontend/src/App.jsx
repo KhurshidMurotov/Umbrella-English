@@ -7,6 +7,7 @@ import LiveHubPage from "./pages/LiveHubPage";
 import LiveRoomPage from "./pages/LiveRoomPage";
 import TeacherPage from "./pages/TeacherPage";
 import TeacherStatsPage from "./pages/TeacherStatsPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/quiz/:quizId" element={<QuizPage />} />
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/live" element={<LiveHubPage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/teacher" element={<TeacherPage />} />
         <Route path="/teacher/stats" element={<TeacherStatsPage />} />
         <Route path="/live/:roomCode" element={<LiveRoomPage />} />

@@ -1,39 +1,10 @@
-import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import LiveLeaderboard from "../components/LiveLeaderboard";
 import QuizCard from "../components/QuizCard";
 import ShellLayout from "../components/ShellLayout";
-import { API_URL } from "../lib/api";
 import { quizCatalog } from "../lib/quizzes";
 
 export default function HomePage() {
-  const [leaderboard, setLeaderboard] = useState([]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function fetchLeaderboard() {
-      try {
-        const response = await fetch(`${API_URL}/api/live/leaderboard`);
-        if (!response.ok) {
-          return;
-        }
-
-        const data = await response.json();
-        if (active && Array.isArray(data.players) && data.players.length) {
-          setLeaderboard(data.players);
-        }
-      } catch {
-        // keep sample leaderboard on failure
-      }
-    }
-
-    fetchLeaderboard();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <ShellLayout>
@@ -75,13 +46,23 @@ export default function HomePage() {
             <div className="rounded-[14px] sm:rounded-[18px] bg-neutral-950 p-2 sm:p-3 text-white">
               <Trophy size={14} className="sm:w-[18px] sm:h-[18px]" />
             </div>
-            <h2 className="text-lg font-extrabold tracking-tight text-neutral-950 sm:text-3xl">
-              Leaderboard
-            </h2>
+            <div>
+              <h2 className="text-lg font-extrabold tracking-tight text-neutral-950 sm:text-3xl">
+                Leaderboard
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-500 sm:text-base">
+                Visit the full leaderboard page to see the top 10 live players with medals and scrolling.
+              </p>
+            </div>
           </div>
 
           <div className="mt-8">
-            <LiveLeaderboard players={leaderboard} showTitle={false} />
+            <Link
+              to="/leaderboard"
+              className="inline-flex items-center justify-center rounded-full bg-amber-300 px-4 py-3 text-sm font-bold text-neutral-950 transition hover:bg-amber-200"
+            >
+              View leaderboard
+            </Link>
           </div>
         </div>
       </section>
