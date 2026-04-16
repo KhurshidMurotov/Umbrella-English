@@ -11,13 +11,28 @@ export function shuffleArray(items) {
 }
 
 export function buildPlayableQuiz(quiz) {
+  const questionsSource = quiz.shuffleQuestions === false ? [...quiz.questions] : shuffleArray(quiz.questions);
+
   return {
     ...quiz,
-    questions: shuffleArray(quiz.questions).map((question) => ({
-      ...question,
-      options: shuffleArray(question.options)
-    }))
+    questions: questionsSource.map((question) => {
+      const options = Array.isArray(question.options) ? question.options : [];
+      const shouldShuffleOptions = (question.shuffleOptions ?? quiz.shuffleOptions) !== false;
+
+      return {
+        ...question,
+        options: shouldShuffleOptions ? shuffleArray(options) : [...options]
+      };
+    })
   };
+}
+
+export function isScoredQuestion(question) {
+  return Boolean(question) && question.graded !== false;
+}
+
+export function countScoredQuestions(quiz) {
+  return (quiz?.questions ?? []).filter(isScoredQuestion).length;
 }
 
 export function calculateQuestionScore(timeLeft, duration) {

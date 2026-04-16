@@ -20,6 +20,7 @@ async function createTables() {
       prompt TEXT NOT NULL,
       options_json JSONB NOT NULL,
       correct_answer TEXT NOT NULL,
+      metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       position INTEGER NOT NULL,
       UNIQUE (quiz_id, position)
     );
@@ -124,6 +125,7 @@ async function createTables() {
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS room_code TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_id TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_title TEXT;`);
+  await query(`ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb;`);
   await query(`ALTER TABLE live_rooms ADD COLUMN IF NOT EXISTS session_id TEXT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS connected BOOLEAN NOT NULL DEFAULT TRUE;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS disqualified BOOLEAN NOT NULL DEFAULT FALSE;`);
@@ -158,22 +160,26 @@ async function seedQuizzes() {
       await client.query("DELETE FROM quiz_questions WHERE quiz_id = $1", [quiz.id]);
 
       for (const [index, question] of quiz.questions.entries()) {
+        const { id, prompt, options = [], correctAnswer = "", ...metadata } = question;
+
         await client.query(
           `
-            INSERT INTO quiz_questions (id, quiz_id, prompt, options_json, correct_answer, position)
-            VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+            INSERT INTO quiz_questions (id, quiz_id, prompt, options_json, correct_answer, metadata_json, position)
+            VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb, $7)
             ON CONFLICT (id) DO UPDATE SET
               prompt = EXCLUDED.prompt,
               options_json = EXCLUDED.options_json,
               correct_answer = EXCLUDED.correct_answer,
+              metadata_json = EXCLUDED.metadata_json,
               position = EXCLUDED.position;
           `,
           [
-            question.id,
+            id,
             quiz.id,
-            question.prompt,
-            JSON.stringify(question.options),
-            question.correctAnswer,
+            prompt,
+            JSON.stringify(options),
+            correctAnswer,
+            JSON.stringify(metadata),
             index
           ]
         );

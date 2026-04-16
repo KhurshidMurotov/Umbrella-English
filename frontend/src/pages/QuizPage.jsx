@@ -9,7 +9,7 @@ import StatPill from "../components/StatPill";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { useQuizTimer } from "../hooks/useQuizTimer";
-import { buildPlayableQuiz, calculateQuestionScore, computeScore } from "../lib/quizEngine";
+import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, isScoredQuestion } from "../lib/quizEngine";
 import { quizCatalog } from "../lib/quizzes";
 import { saveResult } from "../lib/storage";
 
@@ -67,10 +67,13 @@ export default function QuizPage() {
   const [streakPeak, setStreakPeak] = useState(0);
   const [locked, setLocked] = useState(false);
   const [feedbackState, setFeedbackState] = useState(null);
+  const [writtenResponse, setWrittenResponse] = useState("");
   const { playCorrect, playWrong } = useFeedbackSounds();
   const transitionTimeoutRef = useRef(null);
 
   const currentQuestion = playableQuiz.questions[currentIndex];
+  const scoredQuestionCount = useMemo(() => countScoredQuestions(playableQuiz), [playableQuiz]);
+  const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const currentScore = computeScore(questionScores);
 
   useEffect(() => {
@@ -84,15 +87,16 @@ export default function QuizPage() {
   function finishQuiz(reason = "completed", summary = {}) {
     const finalCorrectAnswers = summary.correctAnswers ?? correctAnswers;
     const finalQuestionScores = summary.questionScores ?? questionScores;
+    const totalScoredQuestions = summary.totalScoredQuestions ?? scoredQuestionCount;
     const result = {
       id: `${Date.now()}`,
       title: playableQuiz.title,
       score: computeScore(finalQuestionScores),
-      accuracy: Math.round((finalCorrectAnswers / playableQuiz.questions.length) * 100),
+      accuracy: totalScoredQuestions > 0 ? Math.round((finalCorrectAnswers / totalScoredQuestions) * 100) : 0,
       correctAnswers: finalCorrectAnswers,
-      wrongAnswers: playableQuiz.questions.length - finalCorrectAnswers,
+      wrongAnswers: Math.max(0, totalScoredQuestions - finalCorrectAnswers),
       streak: streakPeak,
-      totalQuestions: playableQuiz.questions.length,
+      totalQuestions: totalScoredQuestions,
       violations,
       endedBy: reason
     };
@@ -103,6 +107,7 @@ export default function QuizPage() {
 
   function goNext() {
     setSelectedOption("");
+    setWrittenResponse("");
     setLocked(false);
     setFeedbackState(null);
     if (currentIndex === playableQuiz.questions.length - 1) {
@@ -115,7 +120,7 @@ export default function QuizPage() {
   const timeLeft = useQuizTimer({
     duration: QUESTION_TIME,
     questionKey: `${currentQuestion.id}-${currentIndex}`,
-    isActive: !locked,
+    isActive: !locked && !isWritingQuestion,
     onExpire: () => {
       if (locked) {
         return;
@@ -204,12 +209,35 @@ export default function QuizPage() {
     }, FEEDBACK_DELAY_MS);
   }
 
+  function handleWritingContinue() {
+    if (locked || !writtenResponse.trim()) {
+      return;
+    }
+
+    setLocked(true);
+    setFeedbackState({
+      type: "neutral",
+      text: "Part 4 is included in the book version and is not scored."
+    });
+
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      if (currentIndex === playableQuiz.questions.length - 1) {
+        finishQuiz("completed");
+        return;
+      }
+
+      goNext();
+    }, FEEDBACK_DELAY_MS);
+  }
+
   const feedbackToneClass =
     feedbackState?.type === "correct"
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : "bg-rose-50 text-rose-900";
+        : feedbackState?.type === "neutral"
+          ? "bg-amber-50 text-amber-950"
+          : "bg-rose-50 text-rose-900";
 
   return (
     <ShellLayout>
@@ -219,10 +247,12 @@ export default function QuizPage() {
             <p className="text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.28em] text-neutral-500">Solo quiz</p>
             <h1 className="text-xl sm:text-3xl font-extrabold mt-1 truncate">{playableQuiz.title}</h1>
           </div>
-          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-sm flex-shrink-0">
-            <Clock3 size={16} className="sm:w-[18px] sm:h-[18px]" />
-            <span className="font-bold text-sm sm:text-base">{timeLeft}s</span>
-          </div>
+          {!isWritingQuestion ? (
+            <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-sm flex-shrink-0">
+              <Clock3 size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <span className="font-bold text-sm sm:text-base">{timeLeft}s</span>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-2 grid-cols-2 sm:gap-4 sm:grid-cols-4">
@@ -249,28 +279,81 @@ export default function QuizPage() {
               <Shield size={18} />
               <span>Anti-cheat is active during the quiz.</span>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
-              <Sparkles size={16} />
-              60 base + speed bonus
-            </div>
+            {isScoredQuestion(currentQuestion) ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
+                <Sparkles size={16} />
+                60 base + speed bonus
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
+                <Sparkles size={16} />
+                Included, not scored
+              </div>
+            )}
           </div>
 
           <AnimatePresence mode="wait">
             <motion.div key={currentQuestion.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
-              {renderQuestionPrompt(currentQuestion.prompt)}
-              <p className="mt-3 text-sm text-neutral-500">Each correct answer gives 60 base points plus a speed bonus.</p>
-              <div className="mt-8 space-y-4">
-                {currentQuestion.options.map((option) => {
-                  let state = "default";
-                  if (locked && option === currentQuestion.correctAnswer) {
-                    state = "correct";
-                  } else if (locked && option === selectedOption && option !== currentQuestion.correctAnswer) {
-                    state = "wrong";
-                  }
-
-                  return <AnswerButton key={option} label={option} state={state} onClick={() => handleAnswer(option)} disabled={locked} />;
-                })}
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                {currentQuestion.part ? (
+                  <span className="rounded-full bg-amber-300 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-neutral-900">
+                    {currentQuestion.part}
+                  </span>
+                ) : null}
+                {currentQuestion.partTitle ? (
+                  <span className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
+                    {currentQuestion.partTitle}
+                  </span>
+                ) : null}
               </div>
+              {renderQuestionPrompt(currentQuestion.prompt)}
+              <p className="mt-3 text-sm text-neutral-500">
+                {isScoredQuestion(currentQuestion)
+                  ? "Each correct answer gives 60 base points plus a speed bonus."
+                  : "This final writing task is shown as in the book and does not change the score."}
+              </p>
+              {isWritingQuestion ? (
+                <div className="mt-8">
+                  <div className="rounded-[28px] border border-neutral-200 bg-white p-5">
+                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">What to include</p>
+                    <div className="mt-4 space-y-3">
+                      {(currentQuestion.instructions ?? []).map((instruction) => (
+                        <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                          {instruction}
+                        </div>
+                      ))}
+                    </div>
+                    <textarea
+                      value={writtenResponse}
+                      onChange={(event) => setWrittenResponse(event.target.value)}
+                      placeholder={currentQuestion.placeholder}
+                      disabled={locked}
+                      className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleWritingContinue}
+                      disabled={locked || !writtenResponse.trim()}
+                      className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-8 space-y-4">
+                  {currentQuestion.options.map((option) => {
+                    let state = "default";
+                    if (locked && option === currentQuestion.correctAnswer) {
+                      state = "correct";
+                    } else if (locked && option === selectedOption && option !== currentQuestion.correctAnswer) {
+                      state = "wrong";
+                    }
+
+                    return <AnswerButton key={option} label={option} state={state} onClick={() => handleAnswer(option)} disabled={locked} />;
+                  })}
+                </div>
+              )}
               {feedbackState ? (
                 <div className={`mt-5 rounded-[24px] px-4 py-3 text-sm font-semibold ${feedbackToneClass}`}>
                   {feedbackState.text}

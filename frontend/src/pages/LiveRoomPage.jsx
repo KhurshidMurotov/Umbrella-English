@@ -13,6 +13,10 @@ import { API_URL } from "../lib/api";
 
 const BOARD_REVEAL_DELAY_MS = 3000;
 
+function isScoredQuestion(question) {
+  return Boolean(question) && question.graded !== false;
+}
+
 function splitQuestionPrompt(prompt) {
   const separators = [":", "?", "!"];
   const matches = separators
@@ -73,6 +77,8 @@ export default function LiveRoomPage() {
   const [playerName, setPlayerName] = useState(initialName || "");
   const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
   const [boardCountdown, setBoardCountdown] = useState(BOARD_REVEAL_DELAY_MS / 1000);
+  const [textResponse, setTextResponse] = useState("");
+  const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
   const { playCorrect, playWrong } = useFeedbackSounds();
   const boardRevealTimeoutRef = useRef(null);
   const boardCountdownIntervalRef = useRef(null);
@@ -155,7 +161,15 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text }) => {
+      if (ungraded) {
+        setFeedbackState({
+          type: "neutral",
+          text: text ?? "This part is included but not scored."
+        });
+        return;
+      }
+
       if (correct) {
         setFeedbackState({
           type: "correct",
@@ -205,15 +219,18 @@ export default function LiveRoomPage() {
       : (room?.currentQuestionIndex ?? 0);
   const currentQuestion = room?.questions?.[questionIndex];
   const questionKey = `${roomCode}-${role}-${questionIndex}-${room?.started ? "started" : "waiting"}`;
+  const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
   const displayBoardCountdown = Math.max(1, Math.ceil(boardCountdown));
 
   const deadlineAt =
-    room?.mode === "student-paced" && role !== "host"
-      ? ((selfPlayer?.questionStartedAt ?? null) ? selfPlayer.questionStartedAt + room.questionTime * 1000 : null)
-      : (room?.questionDeadlineAt ?? null);
+    isScoredQuestion(currentQuestion)
+      ? room?.mode === "student-paced" && role !== "host"
+        ? ((selfPlayer?.questionStartedAt ?? null) ? selfPlayer.questionStartedAt + room.questionTime * 1000 : null)
+        : (room?.questionDeadlineAt ?? null)
+      : null;
 
   const remainingSeconds = deadlineAt ? Math.max(0, Math.ceil((deadlineAt - now) / 1000)) : room?.questionTime ?? 0;
 
@@ -232,6 +249,8 @@ export default function LiveRoomPage() {
 
   useEffect(() => {
     setSelectedOption("");
+    setTextResponse("");
+    setHasSubmittedResponse(false);
     setFeedbackState(null);
     setTimeoutKey("");
   }, [questionKey]);
@@ -296,7 +315,16 @@ export default function LiveRoomPage() {
   }, [currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
 
   useEffect(() => {
-    if (role !== "player" || !room?.started || !currentQuestion || !canAnswerNow || selectedOption || remainingSeconds > 0 || isLockedFromAntiCheat) {
+    if (
+      role !== "player" ||
+      !room?.started ||
+      !currentQuestion ||
+      !isScoredQuestion(currentQuestion) ||
+      !canAnswerNow ||
+      selectedOption ||
+      remainingSeconds > 0 ||
+      isLockedFromAntiCheat
+    ) {
       return;
     }
 
@@ -317,16 +345,28 @@ export default function LiveRoomPage() {
     socket.emit("submitAnswer", { roomCode, answer: option, name });
   }
 
+  function submitWritingResponse() {
+    if (isLockedFromAntiCheat || !textResponse.trim() || hasSubmittedResponse) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: textResponse.trim(), name });
+  }
+
   const playerFeedbackClass =
     feedbackState?.type === "correct"
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
+        : feedbackState?.type === "neutral"
+          ? "bg-amber-50 text-amber-950"
         : "bg-rose-50 text-rose-900";
 
   const showTimerBadge = Boolean(
     room?.started &&
       room?.questionPhase === "answers" &&
+      isScoredQuestion(currentQuestion) &&
       (currentQuestion || (role === "host" && room?.mode === "student-paced"))
   );
 
@@ -446,6 +486,18 @@ export default function LiveRoomPage() {
             </div>
           ) : role === "host" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] bg-neutral-950 p-8 text-white">
+              <div className="flex flex-wrap items-center gap-3">
+                {currentQuestion.part ? (
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-amber-300">
+                    {currentQuestion.part}
+                  </span>
+                ) : null}
+                {currentQuestion.partTitle ? (
+                  <span className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
+                    {currentQuestion.partTitle}
+                  </span>
+                ) : null}
+              </div>
               <div className="mt-6">
                 {renderQuestionPrompt(
                   currentQuestion.prompt,
@@ -456,7 +508,7 @@ export default function LiveRoomPage() {
               </div>
               <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                  Answers open in
+                  {isWritingQuestion ? "Response area opens in" : "Answers open in"}
                 </p>
                 <div className="flex items-end gap-4">
                   <div className="text-7xl font-extrabold leading-none text-white tabular-nums">
@@ -475,37 +527,90 @@ export default function LiveRoomPage() {
               </div>
               <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">Question on the board</h2>
               <p className="mt-3 text-sm leading-7 text-neutral-600">
-                Read the question on the host screen. Answer choices will appear here as soon as the host reveals them.
+                Read the question on the host screen. The response area will open here as soon as the board countdown finishes.
               </p>
             </div>
           ) : currentQuestion ? (
             <div className="mt-8">
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                {currentQuestion.part ? (
+                  <span className="rounded-full bg-amber-300 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-neutral-900">
+                    {currentQuestion.part}
+                  </span>
+                ) : null}
+                {currentQuestion.partTitle ? (
+                  <span className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
+                    {currentQuestion.partTitle}
+                  </span>
+                ) : null}
+                {!isScoredQuestion(currentQuestion) ? (
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-neutral-700">
+                    Not scored
+                  </span>
+                ) : null}
+              </div>
               {renderQuestionPrompt(
                 currentQuestion.prompt,
                 "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
                 "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
                 { showTitle: false }
               )}
-              <div className="mt-6 space-y-4">
-                {currentQuestion.options.map((option) => {
-                  let state = "default";
-                  if (selectedOption === option && feedbackState?.type === "correct") {
-                    state = "correct";
-                  } else if (selectedOption === option && feedbackState && feedbackState.type !== "correct") {
-                    state = "wrong";
-                  }
+              {isWritingQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <div className="space-y-3">
+                    {(currentQuestion.instructions ?? []).map((instruction) => (
+                      <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                        {instruction}
+                      </div>
+                    ))}
+                  </div>
 
-                  return (
-                    <AnswerButton
-                      key={option}
-                      label={option}
-                      onClick={() => submitAnswer(option)}
-                      disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0 || isLockedFromAntiCheat}
-                      state={state}
-                    />
-                  );
-                })}
-              </div>
+                  {role === "host" ? (
+                    <p className="mt-5 text-sm leading-7 text-neutral-600">
+                      Students write this final response on their own devices. This part is visible for the full book flow, but it does not affect the score.
+                    </p>
+                  ) : (
+                    <>
+                      <textarea
+                        value={textResponse}
+                        onChange={(event) => setTextResponse(event.target.value)}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                        placeholder={currentQuestion.placeholder}
+                        className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={submitWritingResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || !textResponse.trim() || isLockedFromAntiCheat}
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit response
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-6 space-y-4">
+                  {currentQuestion.options.map((option) => {
+                    let state = "default";
+                    if (selectedOption === option && feedbackState?.type === "correct") {
+                      state = "correct";
+                    } else if (selectedOption === option && feedbackState && feedbackState.type !== "correct") {
+                      state = "wrong";
+                    }
+
+                    return (
+                      <AnswerButton
+                        key={option}
+                        label={option}
+                        onClick={() => submitAnswer(option)}
+                        disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0 || isLockedFromAntiCheat}
+                        state={state}
+                      />
+                    );
+                  })}
+                </div>
+              )}
               {feedbackState ? (
                 <div className={`mt-5 flex items-center gap-3 rounded-[24px] px-4 py-3 text-sm ${playerFeedbackClass}`}>
                   <CheckCircle2 size={18} />

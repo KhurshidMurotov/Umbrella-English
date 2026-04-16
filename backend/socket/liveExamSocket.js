@@ -9,8 +9,18 @@ function sanitizeQuestions(questions) {
   return questions.map((question) => ({
     id: question.id,
     prompt: question.prompt,
-    options: question.options
+    options: question.options ?? [],
+    type: question.type ?? "choice",
+    graded: question.graded !== false,
+    part: question.part ?? "",
+    partTitle: question.partTitle ?? "",
+    instructions: question.instructions ?? [],
+    placeholder: question.placeholder ?? ""
   }));
+}
+
+function isScoredQuestion(question) {
+  return Boolean(question) && question.graded !== false;
 }
 
 function getAverageResponseTimeSeconds(player) {
@@ -287,6 +297,24 @@ export function registerLiveExamSocket(io) {
         return;
       }
 
+      if (!isScoredQuestion(currentQuestion)) {
+        player.answeredCurrent = true;
+
+        if (room.mode === "student-paced") {
+          advanceStudentPlayer(room, player);
+        }
+
+        socket.emit("answerFeedback", {
+          correct: false,
+          awardedScore: 0,
+          timedOut: false,
+          ungraded: true,
+          text: "Part 4 is included in the book version and is not scored."
+        });
+        await persistAndBroadcast(io, room);
+        return;
+      }
+
       const answeredAt = Date.now();
       const deadlineAt = getDeadlineAt(room, player);
       const responseTimeMs = getResponseTimeMs(room, player, answeredAt);
@@ -343,6 +371,12 @@ export function registerLiveExamSocket(io) {
         if (player?.disqualified) {
           socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
         }
+        return;
+      }
+
+      const questionIndex = room.mode === "student-paced" ? player.currentQuestionIndex : room.currentQuestionIndex;
+      const currentQuestion = room.questions[questionIndex];
+      if (!isScoredQuestion(currentQuestion)) {
         return;
       }
 

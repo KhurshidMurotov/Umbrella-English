@@ -18,42 +18,86 @@ export const defaultQuiz = {
   ]
 };
 
+function choiceQuestion(part, partTitle, id, prompt, options, correctAnswer) {
+  return {
+    id,
+    part,
+    partTitle,
+    type: "choice",
+    graded: true,
+    prompt,
+    options,
+    correctAnswer
+  };
+}
+
+function writingQuestion(part, partTitle, id, prompt, instructions, placeholder) {
+  return {
+    id,
+    part,
+    partTitle,
+    type: "writing",
+    graded: false,
+    prompt,
+    instructions,
+    placeholder,
+    options: [],
+    correctAnswer: ""
+  };
+}
+
 export const a1Unit4Quiz = {
   id: "a1-unit-4-busy-week",
   title: "A1 Unit 4 Test",
-  description: "Adapted from the PDF unit test with objective grammar, routine and transport tasks.",
+  description: "Book-style unit test with 4 parts, including the final writing section from the workbook.",
   difficulty: "A1",
-  estimatedTime: "10 min",
+  estimatedTime: "12 min",
+  shuffleQuestions: false,
+  shuffleOptions: false,
   questions: [
-    { id: "u4q1", prompt: "Part 1: Kenta is a very busy person. On ___, he gets up at 6:00 a.m.", options: ["Monday", "Friday", "Saturday", "Sunday"], correctAnswer: "Monday" },
-    { id: "u4q2", prompt: "Part 1: He ___ at 6:00 a.m.", options: ["gets up", "get up", "goes out", "watches"], correctAnswer: "gets up" },
-    { id: "u4q3", prompt: "Part 1: He goes to work by ___.", options: ["bus", "car", "train", "ferry"], correctAnswer: "bus" },
-    { id: "u4q4", prompt: "Part 1: In the evening, he ___ German at a language school.", options: ["studies", "study", "watches", "drives"], correctAnswer: "studies" },
-    { id: "u4q5", prompt: "Part 1: On ___ night, he likes to go out with his friends after work.", options: ["Friday", "Monday", "Saturday", "Tuesday"], correctAnswer: "Friday" },
-    { id: "u4q6", prompt: "Part 1: He likes to ___ with his friends after work.", options: ["go out", "watch", "study", "drive"], correctAnswer: "go out" },
-    { id: "u4q7", prompt: "Part 1: On ___, he stays home.", options: ["Saturday", "Monday", "Friday", "Wednesday"], correctAnswer: "Saturday" },
-    { id: "u4q8", prompt: "Part 1: He plays the ___.", options: ["guitar", "motorbike", "bus", "sport"], correctAnswer: "guitar" },
-    { id: "u4q9", prompt: "Part 1: He likes to ___ films on TV.", options: ["watch", "play", "drive", "cycle"], correctAnswer: "watch" },
-    { id: "u4q10", prompt: "Part 2: He ___ very early on Monday.", options: ["gets up", "get up", "doesn't get up", "getting up"], correctAnswer: "gets up" },
-    { id: "u4q11", prompt: "Part 2: He ___ to work because he doesn't have a car.", options: ["doesn't drive", "drives", "drive", "isn't drive"], correctAnswer: "doesn't drive" },
-    { id: "u4q12", prompt: "Part 2: He ___ German in the evenings.", options: ["studies", "study", "doesn't studies", "studying"], correctAnswer: "studies" },
-    { id: "u4q13", prompt: "Part 2: My grandmother ___ sports because she is eighty-four.", options: ["doesn't play", "don't play", "isn't play", "plays"], correctAnswer: "doesn't play" },
-    { id: "u4q14", prompt: "Part 2: She ___ the newspaper every day.", options: ["reads", "read", "doesn't read", "reading"], correctAnswer: "reads" },
-    { id: "u4q15", prompt: "Part 2: Choose the correct question form.", options: ["Does my grandfather watch TV?", "Do my grandfather watch TV?", "My grandfather watches TV?", "Is my grandfather watch TV?"], correctAnswer: "Does my grandfather watch TV?" },
-    { id: "u4q16", prompt: "Part 2: My grandmother ___ the old car.", options: ["doesn't drive", "drives", "don't drive", "isn't drive"], correctAnswer: "doesn't drive" },
-    { id: "u4q17", prompt: "Part 2: My grandfather ___ old cars, so he is the driver.", options: ["likes", "like", "doesn't like", "liking"], correctAnswer: "likes" },
-    { id: "u4q18", prompt: "Part 2: They ___ in a big house; they have a small house in Santiago.", options: ["don't live", "doesn't live", "aren't live", "live"], correctAnswer: "don't live" },
-    { id: "u4q19", prompt: "Part 3: Kenta ___ to the university because he hasn't got a car.", options: ["doesn't drive", "doesn't drives", "don't drives", "isn't drive"], correctAnswer: "doesn't drive" },
-    { id: "u4q20", prompt: "Part 3: ___ on his bicycle when it is sunny?", options: ["Does he cycle", "Does he cycles", "Do he cycle", "He does cycle"], correctAnswer: "Does he cycle" },
-    { id: "u4q21", prompt: "Part 3: His house is ___ the bus stop.", options: ["near", "far", "behind", "under"], correctAnswer: "near" },
-    { id: "u4q22", prompt: "Part 3: His house is near the bus stop, so he often takes the ___.", options: ["bus", "train", "ferry", "taxi"], correctAnswer: "bus" },
-    { id: "u4q23", prompt: "Part 3: When they travel to the island, they go by ___.", options: ["ferry", "motorbike", "bus", "bicycle"], correctAnswer: "ferry" },
-    { id: "u4q24", prompt: "Part 3: Choose the correct pair. ___ Lucia walk to work? Yes, she ___.", options: ["Does / does", "Do / do", "Does / do", "Do / does"], correctAnswer: "Does / does" },
-    { id: "u4q25", prompt: "Part 3: My grandparents ___ in a small house.", options: ["live", "lives", "living", "doesn't live"], correctAnswer: "live" },
-    { id: "u4q26", prompt: "Part 3: Diego ___ the guitar in his free time.", options: ["plays", "play", "doesn't play", "playing"], correctAnswer: "plays" },
-    { id: "u4q27", prompt: "Part 3: ___ they go out in their old car?", options: ["Do", "Does", "Is", "Are"], correctAnswer: "Do" },
-    { id: "u4q28", prompt: "Part 3: I haven't got a car, but I ___ a bike.", options: ["have got", "has got", "haven't got", "doesn't have got"], correctAnswer: "have got" },
-    { id: "u4q29", prompt: "Part 3: She ___ German on Sundays.", options: ["doesn't study", "isn't study", "don't study", "studies not"], correctAnswer: "doesn't study" }
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q1", "Kenta is a very busy person. On ___, he gets up at 6:00 a.m.", ["Monday", "Friday", "Saturday", "Sunday"], "Monday"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q2", "He ___ at 6:00 a.m.", ["gets up", "get up", "goes out", "watches"], "gets up"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q3", "He goes to work by ___.", ["bus", "car", "train", "ferry"], "bus"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q4", "In the evening, he ___ German at a language school.", ["studies", "study", "watches", "drives"], "studies"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q5", "On ___ night, he likes to go out with his friends after work.", ["Friday", "Monday", "Saturday", "Tuesday"], "Friday"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q6", "He likes to ___ with his friends after work.", ["go out", "watch", "study", "drive"], "go out"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q7", "On ___, he stays home.", ["Saturday", "Monday", "Friday", "Wednesday"], "Saturday"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q8", "He plays the ___.", ["guitar", "motorbike", "bus", "sport"], "guitar"),
+    choiceQuestion("Part 1", "Kenta's Busy Week", "u4q9", "He likes to ___ films on TV.", ["watch", "play", "drive", "cycle"], "watch"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q10", "He ___ very early on Monday.", ["gets up", "get up", "doesn't get up", "getting up"], "gets up"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q11", "He ___ to work because he doesn't have a car.", ["doesn't drive", "drives", "drive", "isn't drive"], "doesn't drive"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q12", "He ___ German in the evenings.", ["studies", "study", "doesn't studies", "studying"], "studies"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q13", "My grandmother ___ sports because she is eighty-four.", ["doesn't play", "don't play", "isn't play", "plays"], "doesn't play"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q14", "She ___ the newspaper every day.", ["reads", "read", "doesn't read", "reading"], "reads"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q15", "Choose the correct question form.", ["Does my grandfather watch TV?", "Do my grandfather watch TV?", "My grandfather watches TV?", "Is my grandfather watch TV?"], "Does my grandfather watch TV?"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q16", "My grandmother ___ the old car.", ["doesn't drive", "drives", "don't drive", "isn't drive"], "doesn't drive"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q17", "My grandfather ___ old cars, so he is the driver.", ["likes", "like", "doesn't like", "liking"], "likes"),
+    choiceQuestion("Part 2", "An Email from Lucia", "u4q18", "They ___ in a big house; they have a small house in Santiago.", ["don't live", "doesn't live", "aren't live", "live"], "don't live"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q19", "Kenta ___ to the university because he hasn't got a car.", ["doesn't drive", "doesn't drives", "don't drives", "isn't drive"], "doesn't drive"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q20", "___ on his bicycle when it is sunny?", ["Does he cycle", "Does he cycles", "Do he cycle", "He does cycle"], "Does he cycle"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q21", "His house is ___ the bus stop.", ["near", "far", "behind", "under"], "near"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q22", "His house is near the bus stop, so he often takes the ___.", ["bus", "train", "ferry", "taxi"], "bus"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q23", "When they travel to the island, they go by ___.", ["ferry", "motorbike", "bus", "bicycle"], "ferry"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q24", "Choose the correct pair. ___ Lucia walk to work? Yes, she ___.", ["Does / does", "Do / do", "Does / do", "Do / does"], "Does / does"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q25", "My grandparents ___ in a small house.", ["live", "lives", "living", "doesn't live"], "live"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q26", "Diego ___ the guitar in his free time.", ["plays", "play", "doesn't play", "playing"], "plays"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q27", "___ they go out in their old car?", ["Do", "Does", "Is", "Are"], "Do"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q28", "I haven't got a car, but I ___ a bike.", ["have got", "has got", "haven't got", "doesn't have got"], "have got"),
+    choiceQuestion("Part 3", "Transport and Routine", "u4q29", "She ___ German on Sundays.", ["doesn't study", "isn't study", "don't study", "studies not"], "doesn't study"),
+    writingQuestion(
+      "Part 4",
+      "Your Routine",
+      "u4q30",
+      "Write five sentences about your daily life.",
+      [
+        "Include two different days of the week.",
+        "Include one positive sentence about a hobby or study.",
+        "Include one negative sentence about transport.",
+        "Include one question for a friend about their routine.",
+        "Write five complete sentences in total."
+      ],
+      "On Monday I get up at 7:00. On Friday I study English. I do not go by bus. Do you walk to school? On Sunday I play the guitar."
+    )
   ]
 };
 

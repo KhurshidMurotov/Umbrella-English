@@ -14,8 +14,9 @@ function mapQuizRows(quizRows, questionRows) {
       .map((question) => ({
         id: question.id,
         prompt: question.prompt,
-        options: question.options_json,
-        correctAnswer: question.correct_answer
+        options: question.options_json ?? [],
+        correctAnswer: question.correct_answer ?? "",
+        ...(question.metadata_json ?? {})
       }))
   }));
 }

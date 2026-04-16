@@ -16,10 +16,17 @@ function shuffleArray(items) {
 }
 
 function buildQuestions(quiz) {
-  return shuffleArray(quiz.questions).map((question) => ({
-    ...question,
-    options: shuffleArray(question.options)
-  }));
+  const questionsSource = quiz.shuffleQuestions === false ? [...quiz.questions] : shuffleArray(quiz.questions);
+
+  return questionsSource.map((question) => {
+    const options = Array.isArray(question.options) ? question.options : [];
+    const shouldShuffleOptions = (question.shuffleOptions ?? quiz.shuffleOptions) !== false;
+
+    return {
+      ...question,
+      options: shouldShuffleOptions ? shuffleArray(options) : [...options]
+    };
+  });
 }
 
 function roomSummary(room) {

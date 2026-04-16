@@ -23,6 +23,10 @@ function calculateQuizAccuracy(player) {
   return Math.round((player.correctAnswers / player.answeredQuestions) * 100);
 }
 
+function countScoredQuestions(questions) {
+  return (questions ?? []).filter((question) => question?.graded !== false).length;
+}
+
 function mapRoomRow(roomRow, playerRows) {
   return {
     code: roomRow.code,
@@ -68,7 +72,7 @@ async function saveQuizResults(client, room) {
     return;
   }
 
-  const totalQuestions = room.questions.length;
+  const totalQuestions = countScoredQuestions(room.questions);
   for (const player of room.players) {
     const correctAnswers = player.correctAnswers ?? 0;
     const answeredQuestions = player.answeredQuestions ?? 0;
