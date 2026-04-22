@@ -218,7 +218,7 @@ async function saveSessionArchive(client, room) {
         player.violations ?? 0,
         player.currentQuestionIndex ?? 0,
         player.writingResponseText ?? "",
-        JSON.stringify(player.answerDetails ?? {}),
+        JSON.stringify(typeof player.answerDetails === 'object' && player.answerDetails !== null ? player.answerDetails : {}),
         player.completed ?? false
       ]
     );
