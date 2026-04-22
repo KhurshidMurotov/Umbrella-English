@@ -202,6 +202,18 @@ function normalizeAnswerText(value) {
     .trim();
 }
 
+function getFeedbackCorrectAnswer(question) {
+  if (!question) {
+    return "";
+  }
+
+  if (question.type === "part2-text-input") {
+    return question.correctAnswer ?? "";
+  }
+
+  return "";
+}
+
 function evaluateAnswer(question, answer) {
   const totalCount = getQuestionTotalUnits(question);
 
@@ -632,7 +644,8 @@ export function registerLiveExamSocket(io) {
         responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2)),
         correctCount: outcome.correctCount,
         totalCount: outcome.totalCount,
-        hint: !outcome.correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : ""
+        hint: !outcome.correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : "",
+        correctAnswer: !outcome.correct ? getFeedbackCorrectAnswer(currentQuestion) : ""
       });
 
       if (room.mode === "student-paced") {

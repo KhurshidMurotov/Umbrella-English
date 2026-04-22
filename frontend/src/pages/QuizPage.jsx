@@ -58,6 +58,20 @@ function renderQuestionPrompt(prompt) {
   );
 }
 
+function buildTextInputFeedback(question) {
+  const parts = [];
+
+  if (question?.correctAnswer) {
+    parts.push(`Correct answer: ${question.correctAnswer}.`);
+  }
+
+  if (question?.hint) {
+    parts.push(question.hint);
+  }
+
+  return parts.join(" ").trim() || "Incorrect answer.";
+}
+
 export default function QuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -254,11 +268,11 @@ export default function QuizPage() {
       const hasPartialScore = outcome.totalCount > 1 && outcome.correctCount > 0;
       const feedbackText = hasPartialScore
         ? `${outcome.correctCount} / ${outcome.totalCount} correct. +${awardedScore} points`
-        : isTextInputQuestion && currentQuestion.hint
-          ? `Hint: ${currentQuestion.hint}`
+        : isTextInputQuestion
+          ? buildTextInputFeedback(currentQuestion)
           : "Incorrect answer. +0 points";
       setFeedbackState({
-        type: hasPartialScore ? "partial" : isTextInputQuestion && currentQuestion.hint ? "hint" : "wrong",
+        type: hasPartialScore ? "partial" : isTextInputQuestion ? "hint" : "wrong",
         text: feedbackText
       });
       playWrong();

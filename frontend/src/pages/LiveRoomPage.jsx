@@ -84,6 +84,20 @@ function buildWritingSubmission(question, textResponse, writingResponses) {
   return textResponse.trim();
 }
 
+function buildTextInputFeedback(correctAnswer, hint) {
+  const parts = [];
+
+  if (correctAnswer) {
+    parts.push(`Correct answer: ${correctAnswer}.`);
+  }
+
+  if (hint) {
+    parts.push(hint);
+  }
+
+  return parts.join(" ").trim() || "Incorrect answer.";
+}
+
 export default function LiveRoomPage() {
   const { roomCode } = useParams();
   const { search } = useLocation();
@@ -196,7 +210,7 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint, correctCount, totalCount }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint, correctAnswer, correctCount, totalCount }) => {
       if (ungraded) {
         setFeedbackState({
           type: "neutral",
@@ -233,11 +247,11 @@ export default function LiveRoomPage() {
       }
 
       setFeedbackState({
-        type: timedOut ? "timeout" : hint ? "hint" : "wrong",
+        type: timedOut ? "timeout" : hint || correctAnswer ? "hint" : "wrong",
         text: timedOut
           ? `Time is over. ${responseTimeSeconds}s used. +0 points`
-          : hint
-            ? `Hint: ${hint}`
+          : hint || correctAnswer
+            ? buildTextInputFeedback(correctAnswer, hint)
             : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
       });
       playWrong();
@@ -268,6 +282,8 @@ export default function LiveRoomPage() {
   const isCefrQuiz = room?.quizId === "cefr-part-1-and-2";
   const roomQuiz = quizCatalog.find((quiz) => quiz.id === room?.quizId) ?? null;
   const disableAnswerTimer = roomQuiz?.disableAnswerTimer === true;
+  const showLiveRankingDuringTest = roomQuiz?.showLiveRankingDuringTest !== false;
+  const showAverageTimeInResults = roomQuiz?.showAverageTimeInResults !== false;
   const totalQuestions = room?.questions?.length ?? 10;
   const studentCount = connectedPlayers.length;
   const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
@@ -1103,23 +1119,25 @@ export default function LiveRoomPage() {
           ) : (
             <div className="mt-8 rounded-[28px] bg-amber-50 p-6">
               <h2 className="text-2xl font-extrabold text-neutral-950">
-                {role === "host" && isCefrQuiz ? "Final results" : "Exam complete"}
+                {role === "host" ? "Final results" : "Exam complete"}
               </h2>
               <p className="mt-3 text-sm text-neutral-600">
-                {role === "host" && isCefrQuiz
+                {role === "host"
                   ? "The test is finished. Student results are now shown on the board."
                   : "Check the leaderboard for the final ranking."}
               </p>
-              {role === "host" && isCefrQuiz ? (
+              {role === "host" ? (
                 <div className="mt-6">
-                  <LiveLeaderboard players={players} showAverageTime={false} />
+                  <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} />
                 </div>
               ) : null}
             </div>
           )}
         </div>
 
-        {role === "host" && room?.started && !isCefrQuiz ? <LiveLeaderboard players={players} /> : null}
+        {role === "host" && room?.started && currentQuestion && showLiveRankingDuringTest ? (
+          <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} />
+        ) : null}
       </div>
     </ShellLayout>
   );

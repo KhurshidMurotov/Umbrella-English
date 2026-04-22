@@ -18,7 +18,7 @@ function TeacherLogin({ onLogin }) {
     const session = loginTeacher({ username, password });
 
     if (!session) {
-      setError("Wrong credentials. Use admin / teacher.");
+      setError("Wrong credentials.");
       return;
     }
 
