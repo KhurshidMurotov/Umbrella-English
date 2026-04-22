@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentat
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
+import DragOrderQuestion from "../components/DragOrderQuestion";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ProgressBar from "../components/ProgressBar";
 import QRCodePanel from "../components/QRCodePanel";
@@ -80,6 +81,8 @@ export default function LiveRoomPage() {
   const [boardRevealDeadline, setBoardRevealDeadline] = useState(null);
   const [textResponse, setTextResponse] = useState("");
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
+  const [dragResponse, setDragResponse] = useState([]);
+  const [typedResponse, setTypedResponse] = useState("");
   const { playCorrect, playWrong } = useFeedbackSounds();
   const boardRevealTimeoutRef = useRef(null);
   const boardRevealKeyRef = useRef("");
@@ -164,7 +167,7 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint }) => {
       if (ungraded) {
         setFeedbackState({
           type: "neutral",
@@ -186,7 +189,7 @@ export default function LiveRoomPage() {
         type: timedOut ? "timeout" : "wrong",
         text: timedOut
           ? `Time is over. ${responseTimeSeconds}s used. +0 points`
-          : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
+          : `Incorrect answer in ${responseTimeSeconds}s. +0 points${hint ? ` Hint: ${hint}` : ""}`
       });
       playWrong();
     });
@@ -224,6 +227,8 @@ export default function LiveRoomPage() {
   const currentQuestion = room?.questions?.[questionIndex];
   const questionKey = `${roomCode}-${role}-${questionIndex}-${room?.started ? "started" : "waiting"}`;
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
+  const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
+  const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
@@ -257,6 +262,8 @@ export default function LiveRoomPage() {
   useEffect(() => {
     setSelectedOption("");
     setTextResponse("");
+    setDragResponse([]);
+    setTypedResponse("");
     setHasSubmittedResponse(false);
     setFeedbackState(null);
     setTimeoutKey("");
@@ -323,6 +330,7 @@ export default function LiveRoomPage() {
       !isScoredQuestion(currentQuestion) ||
       !canAnswerNow ||
       selectedOption ||
+      hasSubmittedResponse ||
       remainingSeconds > 0 ||
       isLockedFromAntiCheat
     ) {
@@ -335,7 +343,7 @@ export default function LiveRoomPage() {
 
     socket.emit("questionTimeout", { roomCode, name });
     setTimeoutKey(questionKey);
-  }, [canAnswerNow, currentQuestion, isLockedFromAntiCheat, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
+  }, [canAnswerNow, currentQuestion, hasSubmittedResponse, isLockedFromAntiCheat, name, questionKey, remainingSeconds, role, room?.started, roomCode, selectedOption, socket, timeoutKey]);
 
   function submitAnswer(option) {
     if (isLockedFromAntiCheat) {
@@ -353,6 +361,29 @@ export default function LiveRoomPage() {
 
     setHasSubmittedResponse(true);
     socket.emit("submitAnswer", { roomCode, answer: textResponse.trim(), name });
+  }
+
+  function submitDragOrderResponse() {
+    if (isLockedFromAntiCheat || hasSubmittedResponse) {
+      return;
+    }
+
+    const requiredSlots = currentQuestion?.correctSequence?.length ?? 0;
+    if (!requiredSlots || dragResponse.length < requiredSlots || dragResponse.some((item) => !item)) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: dragResponse, name });
+  }
+
+  function submitTypedResponse() {
+    if (isLockedFromAntiCheat || !typedResponse.trim() || hasSubmittedResponse) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: typedResponse.trim(), name });
   }
 
   const playerFeedbackClass =
@@ -521,11 +552,21 @@ export default function LiveRoomPage() {
                 ) : null}
               </div>
               <div className="mt-6">
-                {renderQuestionPrompt(
-                  currentQuestion.prompt,
-                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400",
-                  "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white",
-                  { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400" }
+                {currentQuestion.type === "part1-drag-order" ? (
+                  <DragOrderQuestion
+                    template={currentQuestion.textTemplate}
+                    wordBank={currentQuestion.wordBank}
+                    value={[]}
+                    disabled={true}
+                    showWordBank={false}
+                  />
+                ) : (
+                  renderQuestionPrompt(
+                    currentQuestion.prompt,
+                    "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400",
+                    "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-white",
+                    { showTitle: true, titleClassName: "max-w-4xl text-4xl font-extrabold leading-[1.12] tracking-[-0.02em] break-words text-amber-400" }
+                  )
                 )}
               </div>
               <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
@@ -607,6 +648,70 @@ export default function LiveRoomPage() {
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Submit response
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isDragOrderQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <DragOrderQuestion
+                      template={currentQuestion.textTemplate}
+                      wordBank={currentQuestion.wordBank}
+                      value={currentQuestion.correctSequence ?? []}
+                      disabled={true}
+                      showWordBank={false}
+                    />
+                  ) : (
+                    <>
+                      <DragOrderQuestion
+                        template={currentQuestion.textTemplate}
+                        wordBank={currentQuestion.wordBank}
+                        value={dragResponse}
+                        onChange={setDragResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                        showWordBank={true}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitDragOrderResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          dragResponse.length < (currentQuestion.correctSequence?.length ?? 0) ||
+                          dragResponse.some((item) => !item)
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isTextInputQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <p className="text-sm leading-7 text-neutral-600">
+                      Students type the answer. If incorrect, they will receive a short hint.
+                    </p>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value={typedResponse}
+                        onChange={(event) => setTypedResponse(event.target.value)}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                        placeholder="Type your answer"
+                        className="w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 text-base outline-none focus:border-neutral-950 disabled:bg-neutral-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={submitTypedResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || !typedResponse.trim() || isLockedFromAntiCheat}
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answer
                       </button>
                     </>
                   )}

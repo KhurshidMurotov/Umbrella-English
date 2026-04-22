@@ -13,10 +13,16 @@ function sanitizeQuestions(questions) {
     options: question.options ?? [],
     type: question.type ?? "choice",
     graded: question.graded !== false,
+    points: Number(question.points) || 0,
     part: question.part ?? "",
     partTitle: question.partTitle ?? "",
     instructions: question.instructions ?? [],
-    placeholder: question.placeholder ?? ""
+    placeholder: question.placeholder ?? "",
+    hint: question.hint ?? "",
+    textTemplate: question.textTemplate ?? "",
+    wordBank: question.wordBank ?? [],
+    acceptedAnswers: question.acceptedAnswers ?? [],
+    correctSequence: question.correctSequence ?? []
   }));
 }
 
@@ -118,6 +124,10 @@ function getResponseTimeMs(room, player, answeredAt) {
 }
 
 function calculateAwardedScore(room, responseTimeMs) {
+  if (room.quizId === "a1-unit-4-busy-week") {
+    return 0;
+  }
+
   const duration = room.questionTime * 1000;
   if (!duration) {
     return BASE_CORRECT_POINTS;
@@ -126,6 +136,54 @@ function calculateAwardedScore(room, responseTimeMs) {
   const safeResponseTime = clampResponseTimeMs(room, responseTimeMs);
   const speedRatio = Math.max(0, 1 - safeResponseTime / duration);
   return BASE_CORRECT_POINTS + Math.round(speedRatio * MAX_SPEED_BONUS);
+}
+
+function getAwardedScore(room, question, responseTimeMs, correct) {
+  if (!correct || !isScoredQuestion(question)) {
+    return 0;
+  }
+
+  if (room.quizId === "a1-unit-4-busy-week") {
+    return Number(question.points) || 2;
+  }
+
+  return calculateAwardedScore(room, responseTimeMs);
+}
+
+function normalizeAnswerText(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/\bdoes not\b/g, "doesnt")
+    .replace(/\bdo not\b/g, "dont")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isAnswerCorrect(question, answer) {
+  if (!question) {
+    return false;
+  }
+
+  if (question.type === "part1-drag-order") {
+    if (!Array.isArray(answer) || !Array.isArray(question.correctSequence)) {
+      return false;
+    }
+
+    if (answer.length !== question.correctSequence.length) {
+      return false;
+    }
+
+    return answer.every((item, index) => normalizeAnswerText(item) === normalizeAnswerText(question.correctSequence[index]));
+  }
+
+  if (question.type === "part2-text-input") {
+    const acceptedAnswers = question.acceptedAnswers?.length ? question.acceptedAnswers : [question.correctAnswer];
+    const normalizedInput = normalizeAnswerText(answer);
+    return acceptedAnswers.some((item) => normalizeAnswerText(item) === normalizedInput);
+  }
+
+  return String(answer ?? "") === String(question.correctAnswer ?? "");
 }
 
 function applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore }) {
@@ -413,15 +471,16 @@ export function registerLiveExamSocket(io) {
       }
 
       player.answeredCurrent = true;
-      const correct = currentQuestion.correctAnswer === answer;
-      const awardedScore = correct ? calculateAwardedScore(room, responseTimeMs) : 0;
+      const correct = isAnswerCorrect(currentQuestion, answer);
+      const awardedScore = getAwardedScore(room, currentQuestion, responseTimeMs, correct);
       applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore });
 
       socket.emit("answerFeedback", {
         correct,
         awardedScore,
         timedOut: false,
-        responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2))
+        responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2)),
+        hint: !correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : ""
       });
 
       if (room.mode === "student-paced") {

@@ -3,13 +3,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Clock3, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import DragOrderQuestion from "../components/DragOrderQuestion";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
 import StatPill from "../components/StatPill";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { useQuizTimer } from "../hooks/useQuizTimer";
-import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, isScoredQuestion } from "../lib/quizEngine";
+import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, isAnswerCorrect, isScoredQuestion } from "../lib/quizEngine";
 import { quizCatalog } from "../lib/quizzes";
 import { saveResult } from "../lib/storage";
 
@@ -68,12 +69,17 @@ export default function QuizPage() {
   const [locked, setLocked] = useState(false);
   const [feedbackState, setFeedbackState] = useState(null);
   const [writtenResponse, setWrittenResponse] = useState("");
+  const [typedResponse, setTypedResponse] = useState("");
+  const [dragResponse, setDragResponse] = useState([]);
   const { playCorrect, playWrong } = useFeedbackSounds();
   const transitionTimeoutRef = useRef(null);
 
   const currentQuestion = playableQuiz.questions[currentIndex];
   const scoredQuestionCount = useMemo(() => countScoredQuestions(playableQuiz), [playableQuiz]);
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
+  const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
+  const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const isBookScoringQuiz = playableQuiz.id === "a1-unit-4-busy-week";
   const currentScore = computeScore(questionScores);
 
   useEffect(() => {
@@ -108,6 +114,8 @@ export default function QuizPage() {
   function goNext() {
     setSelectedOption("");
     setWrittenResponse("");
+    setTypedResponse("");
+    setDragResponse([]);
     setLocked(false);
     setFeedbackState(null);
     if (currentIndex === playableQuiz.questions.length - 1) {
@@ -157,16 +165,30 @@ export default function QuizPage() {
     onAutoSubmit: () => finishQuiz("anti-cheat")
   });
 
-  function handleAnswer(option) {
+  function getAwardedScore(question, correct) {
+    if (!correct || !isScoredQuestion(question)) {
+      return 0;
+    }
+
+    if (isBookScoringQuiz) {
+      return Number(question.points) || 2;
+    }
+
+    return calculateQuestionScore(timeLeft, QUESTION_TIME);
+  }
+
+  function submitObjectiveAnswer(answer) {
     if (locked) {
       return;
     }
 
-    setSelectedOption(option);
+    if (typeof answer === "string") {
+      setSelectedOption(answer);
+    }
     setLocked(true);
 
-    const isCorrect = option === currentQuestion.correctAnswer;
-    const awardedScore = isCorrect ? calculateQuestionScore(timeLeft, QUESTION_TIME) : 0;
+    const isCorrect = isAnswerCorrect(currentQuestion, answer);
+    const awardedScore = getAwardedScore(currentQuestion, isCorrect);
     const nextCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
     const nextQuestionScores = [...questionScores, awardedScore];
 
@@ -188,7 +210,7 @@ export default function QuizPage() {
       setStreak(0);
       setFeedbackState({
         type: "wrong",
-        text: "Incorrect answer. +0 points"
+        text: `Incorrect answer. +0 points${isTextInputQuestion && currentQuestion.hint ? ` Hint: ${currentQuestion.hint}` : ""}`
       });
       playWrong();
     }
@@ -207,6 +229,25 @@ export default function QuizPage() {
     transitionTimeoutRef.current = window.setTimeout(() => {
       goNext();
     }, FEEDBACK_DELAY_MS);
+  }
+
+  function handleAnswer(option) {
+    submitObjectiveAnswer(option);
+  }
+
+  function handleTypedSubmit() {
+    if (locked || !typedResponse.trim()) {
+      return;
+    }
+    submitObjectiveAnswer(typedResponse.trim());
+  }
+
+  function handleDragSubmit() {
+    const requiredSlots = currentQuestion?.correctSequence?.length ?? 0;
+    if (locked || !requiredSlots || dragResponse.length < requiredSlots || dragResponse.some((item) => !item)) {
+      return;
+    }
+    submitObjectiveAnswer(dragResponse);
   }
 
   function handleWritingContinue() {
@@ -282,7 +323,7 @@ export default function QuizPage() {
             {isScoredQuestion(currentQuestion) ? (
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
                 <Sparkles size={16} />
-                60 base + speed bonus
+                {isBookScoringQuiz ? `${Number(currentQuestion.points) || 2} points for correct answer` : "60 base + speed bonus"}
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
@@ -309,7 +350,9 @@ export default function QuizPage() {
               {renderQuestionPrompt(currentQuestion.prompt)}
               <p className="mt-3 text-sm text-neutral-500">
                 {isScoredQuestion(currentQuestion)
-                  ? "Each correct answer gives 60 base points plus a speed bonus."
+                  ? isBookScoringQuiz
+                    ? `This question gives ${Number(currentQuestion.points) || 2} points when correct.`
+                    : "Each correct answer gives 60 base points plus a speed bonus."
                   : "This final writing task is shown as in the book and does not change the score."}
               </p>
               {isWritingQuestion ? (
@@ -339,6 +382,44 @@ export default function QuizPage() {
                       {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
                     </button>
                   </div>
+                </div>
+              ) : isDragOrderQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <DragOrderQuestion
+                    template={currentQuestion.textTemplate}
+                    wordBank={currentQuestion.wordBank}
+                    value={dragResponse}
+                    onChange={setDragResponse}
+                    disabled={locked}
+                    showWordBank={true}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDragSubmit}
+                    disabled={locked || dragResponse.length < (currentQuestion.correctSequence?.length ?? 0) || dragResponse.some((item) => !item)}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
+              ) : isTextInputQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <input
+                    type="text"
+                    value={typedResponse}
+                    onChange={(event) => setTypedResponse(event.target.value)}
+                    disabled={locked}
+                    placeholder="Type your answer"
+                    className="w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 text-base outline-none focus:border-neutral-950 disabled:bg-neutral-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTypedSubmit}
+                    disabled={locked || !typedResponse.trim()}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answer
+                  </button>
                 </div>
               ) : (
                 <div className="mt-8 space-y-4">
