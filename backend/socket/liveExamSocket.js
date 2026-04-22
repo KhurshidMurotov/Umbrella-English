@@ -4,6 +4,7 @@ import { roomStore } from "../models/roomStore.js";
 const BASE_CORRECT_POINTS = 60;
 const MAX_SPEED_BONUS = 40;
 const MAX_ANTI_CHEAT_VIOLATIONS = 2;
+const PROMPT_REVEAL_DELAY_MS = 3000;
 
 function sanitizeQuestions(questions) {
   return questions.map((question) => ({
@@ -156,7 +157,50 @@ async function persistAndBroadcast(io, room) {
   io.to(room.code).emit("roomState", roomPayload(room));
 }
 
+function createPromptTimerController() {
+  const timers = new Map();
+
+  function clear(roomCode) {
+    const code = String(roomCode ?? "").toUpperCase();
+    const timerId = timers.get(code);
+    if (timerId) {
+      clearTimeout(timerId);
+      timers.delete(code);
+    }
+  }
+
+  function schedule(io, roomCode) {
+    const code = String(roomCode ?? "").toUpperCase();
+    if (!code) {
+      return;
+    }
+
+    clear(code);
+    const timerId = setTimeout(async () => {
+      timers.delete(code);
+      const room = await getRoomByCode(code);
+      if (!room || room.mode !== "instructor-paced" || room.questionPhase !== "prompt") {
+        return;
+      }
+
+      room.questionPhase = "answers";
+      room.players = room.players.map((player) => ({
+        ...player,
+        answeredCurrent: false
+      }));
+      resetInstructorClock(room);
+      await persistAndBroadcast(io, room);
+    }, PROMPT_REVEAL_DELAY_MS);
+
+    timers.set(code, timerId);
+  }
+
+  return { clear, schedule };
+}
+
 export function registerLiveExamSocket(io) {
+  const promptTimers = createPromptTimerController();
+
   io.on("connection", (socket) => {
     socket.on("joinRoom", async ({ roomCode, name, role, hostToken }) => {
       const code = roomCode.toUpperCase();
@@ -208,6 +252,9 @@ export function registerLiveExamSocket(io) {
       }
 
       await persistAndBroadcast(io, room);
+      if (room.mode === "instructor-paced" && room.questionPhase === "prompt") {
+        promptTimers.schedule(io, room.code);
+      }
 
       if (role !== "host") {
         const player = room.players.find((item) => item.name === name);
@@ -248,6 +295,11 @@ export function registerLiveExamSocket(io) {
       }));
 
       await persistAndBroadcast(io, room);
+      if (room.mode === "instructor-paced") {
+        promptTimers.schedule(io, room.code);
+      } else {
+        promptTimers.clear(room.code);
+      }
     });
 
     socket.on("revealAnswers", async ({ roomCode }) => {
@@ -268,6 +320,7 @@ export function registerLiveExamSocket(io) {
         answeredCurrent: false
       }));
       resetInstructorClock(room);
+      promptTimers.clear(room.code);
       await persistAndBroadcast(io, room);
     });
 
@@ -423,9 +476,11 @@ export function registerLiveExamSocket(io) {
       if (room.currentQuestionIndex < room.questions.length) {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;
+        promptTimers.schedule(io, room.code);
       } else {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;
+        promptTimers.clear(room.code);
       }
 
       await persistAndBroadcast(io, room);
