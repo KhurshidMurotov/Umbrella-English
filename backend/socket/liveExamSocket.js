@@ -229,6 +229,37 @@ function evaluateAnswer(question, answer) {
   return { correct, correctCount: correct ? 1 : 0, totalCount };
 }
 
+function cloneAnswerPayload(answer) {
+  if (Array.isArray(answer)) {
+    return [...answer];
+  }
+
+  if (answer && typeof answer === "object") {
+    return { ...answer };
+  }
+
+  return answer ?? "";
+}
+
+function storeAnswerDetails(player, question, answer, outcome, extra = {}) {
+  if (!player || !question?.id) {
+    return;
+  }
+
+  player.answerDetails = {
+    ...(player.answerDetails ?? {}),
+    [question.id]: {
+      questionId: question.id,
+      questionType: question.type ?? "choice",
+      submittedAnswer: cloneAnswerPayload(answer),
+      correctCount: outcome?.correctCount ?? 0,
+      totalCount: outcome?.totalCount ?? getQuestionTotalUnits(question),
+      correct: outcome?.correct ?? false,
+      ...extra
+    }
+  };
+}
+
 function applyPlayerMetrics(player, { correctCount, totalCount, responseTimeMs, awardedScore }) {
   player.answeredQuestions = (player.answeredQuestions ?? 0) + totalCount;
   player.totalResponseTimeMs = (player.totalResponseTimeMs ?? 0) + responseTimeMs;
@@ -367,6 +398,7 @@ export function registerLiveExamSocket(io) {
             violations: 0,
             currentQuestionIndex: 0,
             writingResponseText: "",
+            answerDetails: {},
             questionStartedAt: room.started && room.mode === "student-paced" ? Date.now() : null,
             completed: false
           });
@@ -420,6 +452,7 @@ export function registerLiveExamSocket(io) {
         answeredCurrent: false,
         currentQuestionIndex: 0,
         writingResponseText: "",
+        answerDetails: {},
         questionStartedAt: Date.now(),
         completed: false
       }));
@@ -505,9 +538,18 @@ export function registerLiveExamSocket(io) {
       const deadlineAt = getDeadlineAt(room, player);
       const responseTimeMs = getResponseTimeMs(room, player, answeredAt);
       if (answeredAt > deadlineAt) {
+        const timeoutOutcome = {
+          correct: false,
+          correctCount: 0,
+          totalCount: getQuestionTotalUnits(currentQuestion)
+        };
+        storeAnswerDetails(player, currentQuestion, answer, timeoutOutcome, {
+          awardedScore: 0,
+          timedOut: true
+        });
         applyPlayerMetrics(player, {
           correctCount: 0,
-          totalCount: getQuestionTotalUnits(currentQuestion),
+          totalCount: timeoutOutcome.totalCount,
           responseTimeMs: room.questionTime * 1000,
           awardedScore: 0
         });
@@ -535,6 +577,10 @@ export function registerLiveExamSocket(io) {
         outcome.totalCount > 1
           ? Math.round((Number(currentQuestion.points) || baseAwardedScore) * (outcome.correctCount / outcome.totalCount))
           : baseAwardedScore;
+      storeAnswerDetails(player, currentQuestion, answer, outcome, {
+        awardedScore,
+        timedOut: false
+      });
       applyPlayerMetrics(player, {
         correctCount: outcome.correctCount,
         totalCount: outcome.totalCount,
@@ -579,9 +625,18 @@ export function registerLiveExamSocket(io) {
         return;
       }
 
+      const timeoutOutcome = {
+        correct: false,
+        correctCount: 0,
+        totalCount: getQuestionTotalUnits(currentQuestion)
+      };
+      storeAnswerDetails(player, currentQuestion, "", timeoutOutcome, {
+        awardedScore: 0,
+        timedOut: true
+      });
       applyPlayerMetrics(player, {
         correctCount: 0,
-        totalCount: getQuestionTotalUnits(currentQuestion),
+        totalCount: timeoutOutcome.totalCount,
         responseTimeMs: room.questionTime * 1000,
         awardedScore: 0
       });

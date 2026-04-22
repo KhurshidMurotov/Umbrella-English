@@ -65,6 +65,7 @@ async function createTables() {
       violations INTEGER NOT NULL DEFAULT 0,
       current_question_index INTEGER NOT NULL DEFAULT 0,
       writing_response_text TEXT NOT NULL DEFAULT '',
+      answer_details_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       question_started_at BIGINT,
       completed BOOLEAN NOT NULL DEFAULT FALSE,
       PRIMARY KEY (room_code, name)
@@ -102,6 +103,7 @@ async function createTables() {
       violations INTEGER NOT NULL DEFAULT 0,
       current_question_index INTEGER NOT NULL DEFAULT 0,
       writing_response_text TEXT NOT NULL DEFAULT '',
+      answer_details_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       completed BOOLEAN NOT NULL DEFAULT FALSE,
       PRIMARY KEY (session_id, name)
     );
@@ -136,8 +138,10 @@ async function createTables() {
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS joined_at BIGINT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS disconnected_at BIGINT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS writing_response_text TEXT NOT NULL DEFAULT '';`);
+  await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS answer_details_json JSONB NOT NULL DEFAULT '{}'::jsonb;`);
   await query(`ALTER TABLE game_session_players ADD COLUMN IF NOT EXISTS disqualified BOOLEAN NOT NULL DEFAULT FALSE;`);
   await query(`ALTER TABLE game_session_players ADD COLUMN IF NOT EXISTS writing_response_text TEXT NOT NULL DEFAULT '';`);
+  await query(`ALTER TABLE game_session_players ADD COLUMN IF NOT EXISTS answer_details_json JSONB NOT NULL DEFAULT '{}'::jsonb;`);
 }
 
 async function seedQuizzes() {

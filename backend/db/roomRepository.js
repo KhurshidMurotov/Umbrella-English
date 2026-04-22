@@ -76,6 +76,7 @@ function mapRoomRow(roomRow, playerRows) {
         violations: player.violations,
         currentQuestionIndex: player.current_question_index,
         writingResponseText: player.writing_response_text ?? "",
+        answerDetails: player.answer_details_json ?? {},
         questionStartedAt: player.question_started_at ? Number(player.question_started_at) : null,
         completed: player.completed
       }))
@@ -182,8 +183,8 @@ async function saveSessionArchive(client, room) {
         INSERT INTO game_session_players (
           session_id, name, connected, disqualified, joined_at, disconnected_at, score,
           correct_answers, answered_questions, total_response_time_ms,
-          violations, current_question_index, writing_response_text, completed
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          violations, current_question_index, writing_response_text, answer_details_json, completed
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15)
         ON CONFLICT (session_id, name) DO UPDATE SET
           connected = EXCLUDED.connected,
           disqualified = EXCLUDED.disqualified,
@@ -196,6 +197,7 @@ async function saveSessionArchive(client, room) {
           violations = EXCLUDED.violations,
           current_question_index = EXCLUDED.current_question_index,
           writing_response_text = EXCLUDED.writing_response_text,
+          answer_details_json = EXCLUDED.answer_details_json,
           completed = EXCLUDED.completed;
       `,
       [
@@ -212,6 +214,7 @@ async function saveSessionArchive(client, room) {
         player.violations ?? 0,
         player.currentQuestionIndex ?? 0,
         player.writingResponseText ?? "",
+        JSON.stringify(player.answerDetails ?? {}),
         player.completed ?? false
       ]
     );
@@ -281,9 +284,9 @@ export async function saveRoom(room) {
           INSERT INTO live_room_players (
             room_code, name, socket_id, connected, disqualified, joined_at, disconnected_at,
             score, correct_answers, answered_questions, total_response_time_ms,
-            answered_current, violations, current_question_index, writing_response_text, question_started_at, completed
+            answered_current, violations, current_question_index, writing_response_text, answer_details_json, question_started_at, completed
           ) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16, $17, $18);
         `,
         [
           room.code,
@@ -301,6 +304,7 @@ export async function saveRoom(room) {
           player.violations ?? 0,
           player.currentQuestionIndex ?? 0,
           player.writingResponseText ?? "",
+          JSON.stringify(player.answerDetails ?? {}),
           toNullableBigInt(player.questionStartedAt),
           player.completed ?? false
         ]
@@ -448,7 +452,7 @@ export async function getRoomSessionStats() {
     `SELECT gs.id AS session_id, gs.room_code, gs.quiz_id, gs.quiz_title, gs.mode, gs.created_at,
             gsp.name, gsp.score, gsp.correct_answers, gsp.answered_questions,
             gsp.total_response_time_ms, gsp.violations, gsp.current_question_index,
-            gsp.completed, gsp.connected, gsp.disqualified, gsp.writing_response_text
+            gsp.completed, gsp.connected, gsp.disqualified, gsp.writing_response_text, gsp.answer_details_json
      FROM game_sessions gs
      JOIN game_session_players gsp ON gsp.session_id = gs.id
      ORDER BY gs.created_at DESC, gsp.score DESC, gsp.name ASC`
@@ -492,6 +496,7 @@ export async function getRoomSessionStats() {
       disqualified: row.disqualified,
       currentQuestionIndex: row.current_question_index,
       writingResponseText: row.writing_response_text ?? "",
+      answerDetails: row.answer_details_json ?? {},
       completed: row.completed,
       connected: row.connected,
       passed

@@ -83,7 +83,7 @@ router.post("/create", async (request, response) => {
 
   const code = nanoid(6).toUpperCase();
   const hostToken = nanoid(24);
-  const safeQuestionTime = Math.min(60, Math.max(5, Number(questionTime) || 15));
+  const safeQuestionTime = Math.min(600, Math.max(5, Number(questionTime) || 15));
 
   const room = {
     code,

@@ -3,9 +3,11 @@ import { ArrowLeft, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
+import { quizCatalog } from "../lib/quizzes";
 import { getTeacherSession } from "../lib/teacherAuth";
 
 const STATS_POLL_INTERVAL_MS = 4000;
+const CEFR_QUIZ_ID = "cefr-part-1-and-2";
 
 function formatDate(timestamp) {
   return new Date(timestamp).toLocaleDateString(undefined, {
@@ -20,11 +22,69 @@ function formatAverageTime(value) {
   return `${seconds >= 10 ? seconds.toFixed(1) : seconds.toFixed(2)}s`;
 }
 
+function normalizeAnswer(value) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function findQuizById(quizId) {
+  return quizCatalog.find((quiz) => quiz.id === quizId) ?? null;
+}
+
+function buildCefrReviewSections(student, quiz) {
+  const listeningQuestion = quiz?.questions?.find((question) => question.type === "cefr-listening-group");
+  const readingQuestion = quiz?.questions?.find((question) => question.type === "cefr-reading-matching");
+  const listeningDetails = student?.answerDetails?.[listeningQuestion?.id] ?? null;
+  const readingDetails = student?.answerDetails?.[readingQuestion?.id] ?? null;
+  const readingChoices = new Map((readingQuestion?.choices ?? []).map((choice) => [choice.label, choice]));
+
+  return [
+    listeningQuestion
+      ? {
+          id: listeningQuestion.id,
+          title: "Part 1 Listening",
+          rows: (listeningQuestion.items ?? []).map((item, index) => {
+            const selectedLabel = listeningDetails?.submittedAnswer?.[item.number] ?? "";
+            const selectedOption = item.options.find((option) => option.label === selectedLabel);
+            const correctOption = item.options.find((option) => option.label === item.correctAnswer);
+
+            return {
+              key: `listening-${item.number}`,
+              number: index + 1,
+              isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(item.correctAnswer),
+              studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedOption?.text ?? ""}` : "No answer",
+              correctAnswer: `${item.correctAnswer}. ${correctOption?.text ?? ""}`
+            };
+          })
+        }
+      : null,
+    readingQuestion
+      ? {
+          id: readingQuestion.id,
+          title: "Part 2 Reading",
+          rows: (readingQuestion.people ?? []).map((person, index) => {
+            const selectedLabel = readingDetails?.submittedAnswer?.[person.number] ?? "";
+            const selectedChoice = readingChoices.get(selectedLabel);
+            const correctChoice = readingChoices.get(person.correctAnswer);
+
+            return {
+              key: `reading-${person.number}`,
+              number: index + 1,
+              isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(person.correctAnswer),
+              studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedChoice?.title ?? ""}` : "No answer",
+              correctAnswer: `${person.correctAnswer}. ${correctChoice?.title ?? ""}`
+            };
+          })
+        }
+      : null
+  ].filter(Boolean);
+}
+
 export default function TeacherStatsPage() {
   const [teacherSession, setTeacherSession] = useState(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [stats, setStats] = useState([]);
   const [expandedRoom, setExpandedRoom] = useState(null);
+  const [expandedStudentReview, setExpandedStudentReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -116,6 +176,10 @@ export default function TeacherStatsPage() {
     setExpandedRoom(expandedRoom === sessionId ? null : sessionId);
   }
 
+  function toggleStudentReview(studentId) {
+    setExpandedStudentReview((current) => (current === studentId ? null : studentId));
+  }
+
   return (
     <ShellLayout showNav={false}>
       <div className="mx-auto max-w-7xl space-y-6">
@@ -162,6 +226,7 @@ export default function TeacherStatsPage() {
               stats.map((session) => {
                 const passedStudents = Number(session.passedStudents ?? 0);
                 const totalStudents = Number(session.totalStudents ?? session.details?.length ?? 0);
+                const sessionQuiz = findQuizById(session.quizId);
 
                 return (
                   <div key={session.id} className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
@@ -197,7 +262,7 @@ export default function TeacherStatsPage() {
                                   <p className="truncate text-lg font-semibold text-neutral-950">{student.name}</p>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
                                   <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
                                     Score {student.score}
                                   </span>
@@ -210,8 +275,66 @@ export default function TeacherStatsPage() {
                                   <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
                                     Violations {student.violations ?? 0}
                                   </span>
+                                  {session.quizId === CEFR_QUIZ_ID ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleStudentReview(student.id)}
+                                      className="rounded-full bg-amber-300 px-4 py-2 font-bold text-neutral-950"
+                                    >
+                                      {expandedStudentReview === student.id ? "Hide review" : "Review answers"}
+                                    </button>
+                                  ) : null}
                                 </div>
                               </div>
+
+                              {session.quizId === CEFR_QUIZ_ID && expandedStudentReview === student.id ? (
+                                <div className="mt-4 space-y-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
+                                  {buildCefrReviewSections(student, sessionQuiz).length ? (
+                                    buildCefrReviewSections(student, sessionQuiz).map((section) => (
+                                      <div key={section.id} className="rounded-[18px] border border-neutral-200 bg-white p-4">
+                                        <p className="text-sm font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                          {section.title}
+                                        </p>
+                                        <div className="mt-4 grid gap-3">
+                                          {section.rows.map((row) => (
+                                            <div
+                                              key={row.key}
+                                              className={`rounded-[16px] border px-4 py-3 ${
+                                                row.isCorrect
+                                                  ? "border-emerald-200 bg-emerald-50"
+                                                  : "border-rose-200 bg-rose-50"
+                                              }`}
+                                            >
+                                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <p className="text-sm font-bold text-neutral-950">Item {row.number}</p>
+                                                <span
+                                                  className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${
+                                                    row.isCorrect
+                                                      ? "bg-emerald-100 text-emerald-900"
+                                                      : "bg-rose-100 text-rose-900"
+                                                  }`}
+                                                >
+                                                  {row.isCorrect ? "Correct" : "Wrong"}
+                                                </span>
+                                              </div>
+                                              <p className="mt-3 text-sm text-neutral-700">
+                                                <span className="font-bold text-neutral-950">Student:</span> {row.studentAnswer}
+                                              </p>
+                                              <p className="mt-2 text-sm text-neutral-700">
+                                                <span className="font-bold text-neutral-950">Correct:</span> {row.correctAnswer}
+                                              </p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="rounded-[16px] border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+                                      No saved answer details for this student yet.
+                                    </div>
+                                  )}
+                                </div>
+                              ) : null}
 
                               {session.quizId === "a1-unit-4-busy-week" ? (
                                 <div className="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
