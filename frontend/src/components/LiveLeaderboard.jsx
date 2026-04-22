@@ -114,7 +114,7 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
 
               {isCheater(player) ? (
                 <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-neutral-950/35">
-                  <span className="rounded-full border border-rose-200/80 bg-rose-500/90 px-4 py-2 text-sm font-extrabold uppercase tracking-[0.12em] text-white shadow-lg">
+                  <span className="rounded-full border border-red-200/90 bg-red-600 px-4 py-2 text-sm font-extrabold uppercase tracking-[0.12em] text-white shadow-lg">
                     Cheater detected!
                   </span>
                 </div>
