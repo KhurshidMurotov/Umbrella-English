@@ -93,7 +93,7 @@ export default function LiveRoomPage() {
       : null;
 
   const { violations, warning, disqualified, forceDisqualify } = useAntiCheat({
-    enabled: role === "player",
+    enabled: role === "player" && Boolean(room?.started),
     storageKey: antiCheatStorageKey,
     violationLimit: 2,
     onAutoSubmit: (reason, count) => {
@@ -462,14 +462,6 @@ export default function LiveRoomPage() {
               <p className="mt-3 text-sm text-neutral-300">
                 Players can join now with the room code or the room QR.
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[20px] bg-white/8 px-4 py-3 text-sm text-neutral-200">
-                  Students joined: <span className="font-bold text-white">{studentCount}</span>
-                </div>
-                <div className="rounded-[20px] bg-white/8 px-4 py-3 text-sm text-neutral-200">
-                  Total connected: <span className="font-bold text-white">{participantCount}</span>
-                </div>
-              </div>
               {role === "host" ? (
                 <>
                   <div className="mt-5 rounded-[24px] bg-white/10 px-4 py-4">
@@ -490,9 +482,13 @@ export default function LiveRoomPage() {
                   <div className="mt-5 rounded-[24px] bg-white/10 px-4 py-4">
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-300">Connected students</p>
                     {connectedStudentNames.length ? (
-                      <p className="mt-3 text-sm leading-7 text-neutral-100">
-                        {connectedStudentNames.join(", ")}
-                      </p>
+                      <ul className="mt-3 space-y-2">
+                        {connectedStudentNames.map((studentName) => (
+                          <li key={studentName} className="rounded-[14px] bg-white/10 px-3 py-2 text-sm text-neutral-100">
+                            {studentName}
+                          </li>
+                        ))}
+                      </ul>
                     ) : (
                       <p className="mt-3 text-sm text-neutral-400">No students connected yet.</p>
                     )}
