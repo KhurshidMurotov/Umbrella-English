@@ -80,6 +80,7 @@ export default function LiveRoomPage() {
   const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
   const [boardRevealDeadline, setBoardRevealDeadline] = useState(null);
   const [textResponse, setTextResponse] = useState("");
+  const [writingResponses, setWritingResponses] = useState([]);
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
   const [dragResponse, setDragResponse] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
@@ -186,10 +187,12 @@ export default function LiveRoomPage() {
       }
 
       setFeedbackState({
-        type: timedOut ? "timeout" : "wrong",
+        type: timedOut ? "timeout" : hint ? "hint" : "wrong",
         text: timedOut
           ? `Time is over. ${responseTimeSeconds}s used. +0 points`
-          : `Incorrect answer in ${responseTimeSeconds}s. +0 points${hint ? ` Hint: ${hint}` : ""}`
+          : hint
+            ? `Hint: ${hint}`
+            : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
       });
       playWrong();
     });
@@ -229,6 +232,8 @@ export default function LiveRoomPage() {
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const writingFields = currentQuestion?.responseFields ?? [];
+  const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
@@ -262,6 +267,7 @@ export default function LiveRoomPage() {
   useEffect(() => {
     setSelectedOption("");
     setTextResponse("");
+    setWritingResponses([]);
     setDragResponse([]);
     setTypedResponse("");
     setHasSubmittedResponse(false);
@@ -355,12 +361,16 @@ export default function LiveRoomPage() {
   }
 
   function submitWritingResponse() {
-    if (isLockedFromAntiCheat || !textResponse.trim() || hasSubmittedResponse) {
+    const combinedWritingResponse = hasStructuredWritingFields
+      ? writingResponses.map((value) => value?.trim() ?? "").filter(Boolean).join("\n")
+      : textResponse.trim();
+
+    if (isLockedFromAntiCheat || !combinedWritingResponse || hasSubmittedResponse) {
       return;
     }
 
     setHasSubmittedResponse(true);
-    socket.emit("submitAnswer", { roomCode, answer: textResponse.trim(), name });
+    socket.emit("submitAnswer", { roomCode, answer: combinedWritingResponse, name });
   }
 
   function submitDragOrderResponse() {
@@ -391,7 +401,7 @@ export default function LiveRoomPage() {
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "hint"
           ? "bg-amber-50 text-amber-950"
         : "bg-rose-50 text-rose-900";
 
@@ -620,13 +630,59 @@ export default function LiveRoomPage() {
               )}
               {isWritingQuestion ? (
                 <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
-                  <div className="space-y-3">
-                    {(currentQuestion.instructions ?? []).map((instruction) => (
-                      <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
-                        {instruction}
-                      </div>
-                    ))}
-                  </div>
+                  {hasStructuredWritingFields ? (
+                    <div className="space-y-4">
+                      {writingFields.map((field, index) => (
+                        <div key={field.id ?? field.prompt ?? index} className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+                          <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                            {field.prompt}
+                          </div>
+                          {role === "host" ? (
+                            <p className="mt-4 text-sm leading-7 text-neutral-600">
+                              Students answer this prompt in the field below on their own devices.
+                            </p>
+                          ) : field.multiline ? (
+                            <textarea
+                              value={writingResponses[index] ?? ""}
+                              onChange={(event) =>
+                                setWritingResponses((current) => {
+                                  const next = [...current];
+                                  next[index] = event.target.value;
+                                  return next;
+                                })
+                              }
+                              disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                              placeholder={field.placeholder ?? currentQuestion.placeholder}
+                              className="mt-4 min-h-[112px] w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={writingResponses[index] ?? ""}
+                              onChange={(event) =>
+                                setWritingResponses((current) => {
+                                  const next = [...current];
+                                  next[index] = event.target.value;
+                                  return next;
+                                })
+                              }
+                              disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                              placeholder={field.placeholder ?? currentQuestion.placeholder}
+                              className="mt-4 w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(currentQuestion.instructions ?? []).map((instruction) => (
+                        <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                          {instruction}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {role === "host" ? (
                     <p className="mt-5 text-sm leading-7 text-neutral-600">
@@ -634,17 +690,26 @@ export default function LiveRoomPage() {
                     </p>
                   ) : (
                     <>
-                      <textarea
-                        value={textResponse}
-                        onChange={(event) => setTextResponse(event.target.value)}
-                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
-                        placeholder={currentQuestion.placeholder}
-                        className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
-                      />
+                      {!hasStructuredWritingFields ? (
+                        <textarea
+                          value={textResponse}
+                          onChange={(event) => setTextResponse(event.target.value)}
+                          disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                          placeholder={currentQuestion.placeholder}
+                          className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                        />
+                      ) : null}
                       <button
                         type="button"
                         onClick={submitWritingResponse}
-                        disabled={!canAnswerNow || hasSubmittedResponse || !textResponse.trim() || isLockedFromAntiCheat}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          (hasStructuredWritingFields
+                            ? writingFields.some((_, index) => !(writingResponses[index] ?? "").trim())
+                            : !textResponse.trim())
+                        }
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Submit response

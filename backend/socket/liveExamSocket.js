@@ -17,6 +17,7 @@ function sanitizeQuestions(questions) {
     part: question.part ?? "",
     partTitle: question.partTitle ?? "",
     instructions: question.instructions ?? [],
+    responseFields: question.responseFields ?? [],
     placeholder: question.placeholder ?? "",
     hint: question.hint ?? "",
     textTemplate: question.textTemplate ?? "",

@@ -28,7 +28,7 @@ function choiceQuestion(part, partTitle, id, prompt, options, correctAnswer) {
   };
 }
 
-function writingQuestion(part, partTitle, id, prompt, instructions, placeholder) {
+function writingQuestion(part, partTitle, id, prompt, instructions, placeholder, responseFields = []) {
   return {
     id,
     part,
@@ -38,6 +38,7 @@ function writingQuestion(part, partTitle, id, prompt, instructions, placeholder)
     prompt,
     instructions,
     placeholder,
+    responseFields,
     options: [],
     correctAnswer: ""
   };
@@ -203,10 +204,32 @@ export const a1Unit4Quiz = {
         "Include two different days of the week.",
         "Include one positive sentence about a hobby or study.",
         "Include one negative sentence about transport.",
-        "Include one question for a friend about their routine.",
-        "Write five complete sentences in total."
+        "Include one question for a friend about their routine."
       ],
-      "On Monday I get up at 7:00. On Friday I study English. I do not go by bus. Do you walk to school? On Sunday I play the guitar."
+      "On Monday I get up at 7:00. On Friday I study English. I do not go by bus. Do you walk to school? On Sunday I play the guitar.",
+      [
+        {
+          id: "days-of-week",
+          prompt: "Include two different days of the week.",
+          placeholder: "On Monday I get up at 7:00. On Friday I study English.",
+          multiline: true
+        },
+        {
+          id: "positive-hobby",
+          prompt: "Include one positive sentence about a hobby or study.",
+          placeholder: "I like studying English."
+        },
+        {
+          id: "negative-transport",
+          prompt: "Include one negative sentence about transport.",
+          placeholder: "I don't go by bus."
+        },
+        {
+          id: "friend-question",
+          prompt: "Include one question for a friend about their routine.",
+          placeholder: "Do you walk to school?"
+        }
+      ]
     )
   ]
 };

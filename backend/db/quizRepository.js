@@ -8,6 +8,7 @@ function mapQuizRows(quizRows, questionRows) {
     description: quiz.description,
     difficulty: quiz.difficulty,
     estimatedTime: quiz.estimated_time,
+    ...(quiz.metadata_json ?? {}),
     questions: questionRows
       .filter((question) => question.quiz_id === quiz.id)
       .sort((first, second) => first.position - second.position)

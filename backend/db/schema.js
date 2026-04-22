@@ -9,6 +9,7 @@ async function createTables() {
       description TEXT,
       difficulty TEXT,
       estimated_time TEXT,
+      metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at BIGINT NOT NULL
     );
   `);
@@ -125,6 +126,7 @@ async function createTables() {
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS room_code TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_id TEXT;`);
   await query(`ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS quiz_title TEXT;`);
+  await query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb;`);
   await query(`ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb;`);
   await query(`ALTER TABLE live_rooms ADD COLUMN IF NOT EXISTS session_id TEXT;`);
   await query(`ALTER TABLE live_room_players ADD COLUMN IF NOT EXISTS connected BOOLEAN NOT NULL DEFAULT TRUE;`);
@@ -137,30 +139,34 @@ async function createTables() {
 async function seedQuizzes() {
   await withTransaction(async (client) => {
     for (const quiz of quizzes) {
+      const { id: quizId, title, description, difficulty, estimatedTime, questions, ...metadata } = quiz;
+
       await client.query(
         `
-          INSERT INTO quizzes (id, title, description, difficulty, estimated_time, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6)
+          INSERT INTO quizzes (id, title, description, difficulty, estimated_time, metadata_json, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
           ON CONFLICT (id) DO UPDATE SET
             title = EXCLUDED.title,
             description = EXCLUDED.description,
             difficulty = EXCLUDED.difficulty,
-            estimated_time = EXCLUDED.estimated_time;
+            estimated_time = EXCLUDED.estimated_time,
+            metadata_json = EXCLUDED.metadata_json;
         `,
         [
-          quiz.id,
-          quiz.title,
-          quiz.description ?? "",
-          quiz.difficulty ?? "",
-          quiz.estimatedTime ?? "",
+          quizId,
+          title,
+          description ?? "",
+          difficulty ?? "",
+          estimatedTime ?? "",
+          JSON.stringify(metadata),
           Date.now()
         ]
       );
 
-      await client.query("DELETE FROM quiz_questions WHERE quiz_id = $1", [quiz.id]);
+      await client.query("DELETE FROM quiz_questions WHERE quiz_id = $1", [quizId]);
 
-      for (const [index, question] of quiz.questions.entries()) {
-        const { id, prompt, options = [], correctAnswer = "", ...metadata } = question;
+      for (const [index, question] of questions.entries()) {
+        const { id: questionId, prompt, options = [], correctAnswer = "", ...metadata } = question;
 
         await client.query(
           `
@@ -174,8 +180,8 @@ async function seedQuizzes() {
               position = EXCLUDED.position;
           `,
           [
-            id,
-            quiz.id,
+            questionId,
+            quizId,
             prompt,
             JSON.stringify(options),
             correctAnswer,

@@ -69,6 +69,7 @@ export default function QuizPage() {
   const [locked, setLocked] = useState(false);
   const [feedbackState, setFeedbackState] = useState(null);
   const [writtenResponse, setWrittenResponse] = useState("");
+  const [writingResponses, setWritingResponses] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
   const [dragResponse, setDragResponse] = useState([]);
   const { playCorrect, playWrong } = useFeedbackSounds();
@@ -79,6 +80,8 @@ export default function QuizPage() {
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const writingFields = currentQuestion?.responseFields ?? [];
+  const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isBookScoringQuiz = playableQuiz.id === "a1-unit-4-busy-week";
   const currentScore = computeScore(questionScores);
 
@@ -114,6 +117,7 @@ export default function QuizPage() {
   function goNext() {
     setSelectedOption("");
     setWrittenResponse("");
+    setWritingResponses([]);
     setTypedResponse("");
     setDragResponse([]);
     setLocked(false);
@@ -208,9 +212,10 @@ export default function QuizPage() {
     } else {
       setQuestionScores(nextQuestionScores);
       setStreak(0);
+      const feedbackText = isTextInputQuestion && currentQuestion.hint ? `Hint: ${currentQuestion.hint}` : "Incorrect answer. +0 points";
       setFeedbackState({
-        type: "wrong",
-        text: `Incorrect answer. +0 points${isTextInputQuestion && currentQuestion.hint ? ` Hint: ${currentQuestion.hint}` : ""}`
+        type: isTextInputQuestion && currentQuestion.hint ? "hint" : "wrong",
+        text: feedbackText
       });
       playWrong();
     }
@@ -251,7 +256,11 @@ export default function QuizPage() {
   }
 
   function handleWritingContinue() {
-    if (locked || !writtenResponse.trim()) {
+    const combinedWritingResponse = hasStructuredWritingFields
+      ? writingResponses.map((value) => value?.trim() ?? "").filter(Boolean).join("\n")
+      : writtenResponse.trim();
+
+    if (locked || !combinedWritingResponse) {
       return;
     }
 
@@ -276,7 +285,7 @@ export default function QuizPage() {
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "hint"
           ? "bg-amber-50 text-amber-950"
           : "bg-rose-50 text-rose-900";
 
@@ -359,24 +368,73 @@ export default function QuizPage() {
                 <div className="mt-8">
                   <div className="rounded-[28px] border border-neutral-200 bg-white p-5">
                     <p className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">What to include</p>
-                    <div className="mt-4 space-y-3">
-                      {(currentQuestion.instructions ?? []).map((instruction) => (
-                        <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
-                          {instruction}
+                    {hasStructuredWritingFields ? (
+                      <div className="mt-4 space-y-4">
+                        {writingFields.map((field, index) => (
+                          <div key={field.id ?? field.prompt ?? index} className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+                            <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                              {field.prompt}
+                            </div>
+                            {field.multiline ? (
+                              <textarea
+                                value={writingResponses[index] ?? ""}
+                                onChange={(event) =>
+                                  setWritingResponses((current) => {
+                                    const next = [...current];
+                                    next[index] = event.target.value;
+                                    return next;
+                                  })
+                                }
+                                placeholder={field.placeholder ?? currentQuestion.placeholder}
+                                disabled={locked}
+                                className="mt-4 min-h-[112px] w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={writingResponses[index] ?? ""}
+                                onChange={(event) =>
+                                  setWritingResponses((current) => {
+                                    const next = [...current];
+                                    next[index] = event.target.value;
+                                    return next;
+                                  })
+                                }
+                                placeholder={field.placeholder ?? currentQuestion.placeholder}
+                                disabled={locked}
+                                className="mt-4 w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mt-4 space-y-3">
+                          {(currentQuestion.instructions ?? []).map((instruction) => (
+                            <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
+                              {instruction}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    <textarea
-                      value={writtenResponse}
-                      onChange={(event) => setWrittenResponse(event.target.value)}
-                      placeholder={currentQuestion.placeholder}
-                      disabled={locked}
-                      className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
-                    />
+                        <textarea
+                          value={writtenResponse}
+                          onChange={(event) => setWrittenResponse(event.target.value)}
+                          placeholder={currentQuestion.placeholder}
+                          disabled={locked}
+                          className="mt-5 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                        />
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={handleWritingContinue}
-                      disabled={locked || !writtenResponse.trim()}
+                      disabled={
+                        locked ||
+                        (hasStructuredWritingFields
+                          ? writingFields.some((_, index) => !(writingResponses[index] ?? "").trim())
+                          : !writtenResponse.trim())
+                      }
                       className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
