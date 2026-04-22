@@ -87,6 +87,11 @@ function resetInstructorClock(room) {
   room.questionDeadlineAt = room.questionStartedAt + room.questionTime * 1000;
 }
 
+function setPromptRevealClock(room) {
+  room.questionStartedAt = Date.now();
+  room.questionDeadlineAt = room.questionStartedAt + PROMPT_REVEAL_DELAY_MS;
+}
+
 function getPlayer(room, socket, name) {
   return room.players.find((item) => item.socketId === socket.id || item.name === name);
 }
@@ -176,21 +181,35 @@ function createPromptTimerController() {
     }
 
     clear(code);
+    const room = roomStore.get(code);
+    const deadlineAt = room?.questionDeadlineAt ?? (Date.now() + PROMPT_REVEAL_DELAY_MS);
+    const delayMs = Math.max(0, deadlineAt - Date.now());
+
     const timerId = setTimeout(async () => {
       timers.delete(code);
-      const room = await getRoomByCode(code);
-      if (!room || room.mode !== "instructor-paced" || room.questionPhase !== "prompt") {
+      const latestRoom = await getRoomByCode(code);
+      if (
+        !latestRoom ||
+        !latestRoom.started ||
+        latestRoom.mode !== "instructor-paced" ||
+        latestRoom.questionPhase !== "prompt"
+      ) {
         return;
       }
 
-      room.questionPhase = "answers";
-      room.players = room.players.map((player) => ({
+      if (latestRoom.questionDeadlineAt && Date.now() < latestRoom.questionDeadlineAt) {
+        schedule(io, code);
+        return;
+      }
+
+      latestRoom.questionPhase = "answers";
+      latestRoom.players = latestRoom.players.map((player) => ({
         ...player,
         answeredCurrent: false
       }));
-      resetInstructorClock(room);
-      await persistAndBroadcast(io, room);
-    }, PROMPT_REVEAL_DELAY_MS);
+      resetInstructorClock(latestRoom);
+      await persistAndBroadcast(io, latestRoom);
+    }, delayMs);
 
     timers.set(code, timerId);
   }
@@ -252,7 +271,7 @@ export function registerLiveExamSocket(io) {
       }
 
       await persistAndBroadcast(io, room);
-      if (room.mode === "instructor-paced" && room.questionPhase === "prompt") {
+      if (room.started && room.mode === "instructor-paced" && room.questionPhase === "prompt") {
         promptTimers.schedule(io, room.code);
       }
 
@@ -275,8 +294,7 @@ export function registerLiveExamSocket(io) {
       room.currentQuestionIndex = 0;
       room.questionPhase = room.mode === "instructor-paced" ? "prompt" : "answers";
       if (room.mode === "instructor-paced") {
-        room.questionStartedAt = null;
-        room.questionDeadlineAt = null;
+        setPromptRevealClock(room);
       } else {
         resetInstructorClock(room);
       }
@@ -474,8 +492,7 @@ export function registerLiveExamSocket(io) {
       }));
 
       if (room.currentQuestionIndex < room.questions.length) {
-        room.questionStartedAt = null;
-        room.questionDeadlineAt = null;
+        setPromptRevealClock(room);
         promptTimers.schedule(io, room.code);
       } else {
         room.questionStartedAt = null;
