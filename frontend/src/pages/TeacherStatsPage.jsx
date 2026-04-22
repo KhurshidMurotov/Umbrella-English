@@ -7,7 +7,6 @@ import { quizCatalog } from "../lib/quizzes";
 import { getTeacherSession } from "../lib/teacherAuth";
 
 const STATS_POLL_INTERVAL_MS = 4000;
-const CEFR_QUIZ_ID = "cefr-part-1-and-2";
 
 function formatDate(timestamp) {
   return new Date(timestamp).toLocaleDateString(undefined, {
@@ -30,53 +29,201 @@ function findQuizById(quizId) {
   return quizCatalog.find((quiz) => quiz.id === quizId) ?? null;
 }
 
-function buildCefrReviewSections(student, quiz) {
-  const listeningQuestion = quiz?.questions?.find((question) => question.type === "cefr-listening-group");
-  const readingQuestion = quiz?.questions?.find((question) => question.type === "cefr-reading-matching");
-  const listeningDetails = student?.answerDetails?.[listeningQuestion?.id] ?? null;
-  const readingDetails = student?.answerDetails?.[readingQuestion?.id] ?? null;
-  const readingChoices = new Map((readingQuestion?.choices ?? []).map((choice) => [choice.label, choice]));
+function buildQuestionLabel(question) {
+  if (question?.part && question?.partTitle) {
+    return `${question.part} - ${question.partTitle}`;
+  }
 
-  return [
-    listeningQuestion
-      ? {
-          id: listeningQuestion.id,
-          title: "Part 1 Listening",
-          rows: (listeningQuestion.items ?? []).map((item, index) => {
-            const selectedLabel = listeningDetails?.submittedAnswer?.[item.number] ?? "";
-            const selectedOption = item.options.find((option) => option.label === selectedLabel);
-            const correctOption = item.options.find((option) => option.label === item.correctAnswer);
+  return question?.part || question?.partTitle || "Question";
+}
 
-            return {
-              key: `listening-${item.number}`,
-              number: index + 1,
-              isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(item.correctAnswer),
-              studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedOption?.text ?? ""}` : "No answer",
-              correctAnswer: `${item.correctAnswer}. ${correctOption?.text ?? ""}`
-            };
-          })
+function formatSequence(value) {
+  if (!Array.isArray(value) || !value.length) {
+    return "No answer";
+  }
+
+  return value.join(" -> ");
+}
+
+function buildChoiceLabel(question, answer) {
+  if (!answer) {
+    return "No answer";
+  }
+
+  if (!Array.isArray(question?.options) || !question.options.length) {
+    return String(answer);
+  }
+
+  return String(answer);
+}
+
+function buildCefrListeningSection(question, details) {
+  return {
+    id: question.id,
+    title: buildQuestionLabel(question),
+    prompt: question.prompt,
+    rows: (question.items ?? []).map((item, index) => {
+      const selectedLabel = details?.submittedAnswer?.[item.number] ?? "";
+      const selectedOption = item.options.find((option) => option.label === selectedLabel);
+      const correctOption = item.options.find((option) => option.label === item.correctAnswer);
+
+      return {
+        key: `${question.id}-${item.number}`,
+        label: `Item ${index + 1}`,
+        isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(item.correctAnswer),
+        studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedOption?.text ?? ""}` : "No answer",
+        correctAnswer: `${item.correctAnswer}. ${correctOption?.text ?? ""}`
+      };
+    })
+  };
+}
+
+function buildCefrReadingSection(question, details) {
+  const choiceMap = new Map((question.choices ?? []).map((choice) => [choice.label, choice]));
+
+  return {
+    id: question.id,
+    title: buildQuestionLabel(question),
+    prompt: question.prompt,
+    rows: (question.people ?? []).map((person, index) => {
+      const selectedLabel = details?.submittedAnswer?.[person.number] ?? "";
+      const selectedChoice = choiceMap.get(selectedLabel);
+      const correctChoice = choiceMap.get(person.correctAnswer);
+
+      return {
+        key: `${question.id}-${person.number}`,
+        label: `Item ${index + 1}`,
+        isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(person.correctAnswer),
+        studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedChoice?.title ?? ""}` : "No answer",
+        correctAnswer: `${person.correctAnswer}. ${correctChoice?.title ?? ""}`
+      };
+    })
+  };
+}
+
+function buildStandardSection(question, details, student) {
+  if (question.type === "part1-drag-order") {
+    return {
+      id: question.id,
+      title: buildQuestionLabel(question),
+      prompt: question.prompt,
+      rows: [
+        {
+          key: `${question.id}-drag`,
+          label: "Answer",
+          isCorrect: Boolean(details?.correct),
+          studentAnswer: formatSequence(details?.submittedAnswer),
+          correctAnswer: formatSequence(question.correctSequence)
         }
-      : null,
-    readingQuestion
-      ? {
-          id: readingQuestion.id,
-          title: "Part 2 Reading",
-          rows: (readingQuestion.people ?? []).map((person, index) => {
-            const selectedLabel = readingDetails?.submittedAnswer?.[person.number] ?? "";
-            const selectedChoice = readingChoices.get(selectedLabel);
-            const correctChoice = readingChoices.get(person.correctAnswer);
+      ]
+    };
+  }
 
-            return {
-              key: `reading-${person.number}`,
-              number: index + 1,
-              isCorrect: normalizeAnswer(selectedLabel) === normalizeAnswer(person.correctAnswer),
-              studentAnswer: selectedLabel ? `${selectedLabel}. ${selectedChoice?.title ?? ""}` : "No answer",
-              correctAnswer: `${person.correctAnswer}. ${correctChoice?.title ?? ""}`
-            };
-          })
+  if (question.type === "part2-text-input") {
+    return {
+      id: question.id,
+      title: buildQuestionLabel(question),
+      prompt: question.prompt,
+      rows: [
+        {
+          key: `${question.id}-text`,
+          label: "Answer",
+          isCorrect: Boolean(details?.correct),
+          studentAnswer: details?.submittedAnswer ? String(details.submittedAnswer) : "No answer",
+          correctAnswer: question.correctAnswer || "-"
         }
-      : null
-  ].filter(Boolean);
+      ]
+    };
+  }
+
+  if (question.type === "writing" || question.graded === false) {
+    const submittedWriting = details?.submittedAnswer || student?.writingResponseText || "";
+
+    return {
+      id: question.id,
+      title: buildQuestionLabel(question),
+      prompt: question.prompt,
+      rows: [
+        {
+          key: `${question.id}-writing`,
+          label: "Student response",
+          isCorrect: null,
+          studentAnswer: submittedWriting || "No response",
+          correctAnswer: "Teacher review only",
+          ungraded: true
+        }
+      ]
+    };
+  }
+
+  return {
+    id: question.id,
+    title: buildQuestionLabel(question),
+    prompt: question.prompt,
+    rows: [
+      {
+        key: `${question.id}-choice`,
+        label: "Answer",
+        isCorrect: Boolean(details?.correct),
+        studentAnswer: buildChoiceLabel(question, details?.submittedAnswer),
+        correctAnswer: buildChoiceLabel(question, question.correctAnswer)
+      }
+    ]
+  };
+}
+
+function buildReviewSections(student, quiz) {
+  if (!quiz?.questions?.length) {
+    return [];
+  }
+
+  return quiz.questions.map((question) => {
+    const details = student?.answerDetails?.[question.id] ?? null;
+
+    if (question.type === "cefr-listening-group") {
+      return buildCefrListeningSection(question, details);
+    }
+
+    if (question.type === "cefr-reading-matching") {
+      return buildCefrReadingSection(question, details);
+    }
+
+    return buildStandardSection(question, details, student);
+  });
+}
+
+function reviewAvailable(student, quiz) {
+  if (!quiz) {
+    return false;
+  }
+
+  if (student?.writingResponseText) {
+    return true;
+  }
+
+  return Boolean(student?.answerDetails && Object.keys(student.answerDetails).length);
+}
+
+function StatusBadge({ row }) {
+  if (row.ungraded) {
+    return (
+      <span className="rounded-full bg-neutral-200 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">
+        Not scored
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${
+        row.isCorrect
+          ? "bg-emerald-100 text-emerald-900"
+          : "bg-rose-100 text-rose-900"
+      }`}
+    >
+      {row.isCorrect ? "Correct" : "Wrong"}
+    </span>
+  );
 }
 
 export default function TeacherStatsPage() {
@@ -255,108 +402,87 @@ export default function TeacherStatsPage() {
                     {expandedRoom === session.id ? (
                       <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-4">
                         <div className="grid gap-3">
-                          {session.details.map((student) => (
-                            <div key={student.id} className="rounded-[20px] border border-neutral-200 bg-white p-4">
-                              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                <div className="min-w-0">
-                                  <p className="truncate text-lg font-semibold text-neutral-950">{student.name}</p>
-                                </div>
+                          {session.details.map((student) => {
+                            const studentReviewSections = buildReviewSections(student, sessionQuiz);
+                            const canReviewAnswers = reviewAvailable(student, sessionQuiz);
 
-                                <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
-                                    Score {student.score}
-                                  </span>
-                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
-                                    Correct {student.correctAnswers}
-                                  </span>
-                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
-                                    Avg {formatAverageTime(student.averageResponseTimeSeconds)}
-                                  </span>
-                                  <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
-                                    Violations {student.violations ?? 0}
-                                  </span>
-                                  {session.quizId === CEFR_QUIZ_ID ? (
+                            return (
+                              <div key={student.id} className="rounded-[20px] border border-neutral-200 bg-white p-4">
+                                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-lg font-semibold text-neutral-950">{student.name}</p>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
+                                    <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                      Score {student.score}
+                                    </span>
+                                    <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                      Correct {student.correctAnswers}
+                                    </span>
+                                    <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                      Avg {formatAverageTime(student.averageResponseTimeSeconds)}
+                                    </span>
+                                    <span className="rounded-full bg-neutral-100 px-3 py-2 font-semibold text-neutral-700">
+                                      Violations {student.violations ?? 0}
+                                    </span>
                                     <button
                                       type="button"
                                       onClick={() => toggleStudentReview(student.id)}
-                                      className="rounded-full bg-amber-300 px-4 py-2 font-bold text-neutral-950"
+                                      disabled={!canReviewAnswers}
+                                      className="rounded-full bg-amber-300 px-4 py-2 font-bold text-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                       {expandedStudentReview === student.id ? "Hide review" : "Review answers"}
                                     </button>
-                                  ) : null}
+                                  </div>
                                 </div>
-                              </div>
 
-                              {session.quizId === CEFR_QUIZ_ID && expandedStudentReview === student.id ? (
-                                <div className="mt-4 space-y-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
-                                  {buildCefrReviewSections(student, sessionQuiz).length ? (
-                                    buildCefrReviewSections(student, sessionQuiz).map((section) => (
-                                      <div key={section.id} className="rounded-[18px] border border-neutral-200 bg-white p-4">
-                                        <p className="text-sm font-bold uppercase tracking-[0.16em] text-neutral-500">
-                                          {section.title}
-                                        </p>
-                                        <div className="mt-4 grid gap-3">
-                                          {section.rows.map((row) => (
-                                            <div
-                                              key={row.key}
-                                              className={`rounded-[16px] border px-4 py-3 ${
-                                                row.isCorrect
-                                                  ? "border-emerald-200 bg-emerald-50"
-                                                  : "border-rose-200 bg-rose-50"
-                                              }`}
-                                            >
-                                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <p className="text-sm font-bold text-neutral-950">Item {row.number}</p>
-                                                <span
-                                                  className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${
-                                                    row.isCorrect
-                                                      ? "bg-emerald-100 text-emerald-900"
-                                                      : "bg-rose-100 text-rose-900"
-                                                  }`}
-                                                >
-                                                  {row.isCorrect ? "Correct" : "Wrong"}
-                                                </span>
+                                {expandedStudentReview === student.id ? (
+                                  <div className="mt-4 space-y-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
+                                    {studentReviewSections.length ? (
+                                      studentReviewSections.map((section) => (
+                                        <div key={section.id} className="rounded-[18px] border border-neutral-200 bg-white p-4">
+                                          <p className="text-sm font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                            {section.title}
+                                          </p>
+                                          <p className="mt-2 text-base font-semibold text-neutral-950">{section.prompt}</p>
+                                          <div className="mt-4 grid gap-3">
+                                            {section.rows.map((row) => (
+                                              <div
+                                                key={row.key}
+                                                className={`rounded-[16px] border px-4 py-3 ${
+                                                  row.ungraded
+                                                    ? "border-neutral-200 bg-neutral-50"
+                                                    : row.isCorrect
+                                                      ? "border-emerald-200 bg-emerald-50"
+                                                      : "border-rose-200 bg-rose-50"
+                                                }`}
+                                              >
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                  <p className="text-sm font-bold text-neutral-950">{row.label}</p>
+                                                  <StatusBadge row={row} />
+                                                </div>
+                                                <p className="mt-3 text-sm text-neutral-700 whitespace-pre-wrap break-words">
+                                                  <span className="font-bold text-neutral-950">Student:</span> {row.studentAnswer}
+                                                </p>
+                                                <p className="mt-2 text-sm text-neutral-700 whitespace-pre-wrap break-words">
+                                                  <span className="font-bold text-neutral-950">Correct:</span> {row.correctAnswer}
+                                                </p>
                                               </div>
-                                              <p className="mt-3 text-sm text-neutral-700">
-                                                <span className="font-bold text-neutral-950">Student:</span> {row.studentAnswer}
-                                              </p>
-                                              <p className="mt-2 text-sm text-neutral-700">
-                                                <span className="font-bold text-neutral-950">Correct:</span> {row.correctAnswer}
-                                              </p>
-                                            </div>
-                                          ))}
+                                            ))}
+                                          </div>
                                         </div>
+                                      ))
+                                    ) : (
+                                      <div className="rounded-[16px] border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+                                        No saved answer details for this student yet.
                                       </div>
-                                    ))
-                                  ) : (
-                                    <div className="rounded-[16px] border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
-                                      No saved answer details for this student yet.
-                                    </div>
-                                  )}
-                                </div>
-                              ) : null}
-
-                              {session.quizId === "a1-unit-4-busy-week" ? (
-                                <div className="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
-                                  <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <p className="text-sm font-bold text-neutral-950">Part 4 writing</p>
-                                    <span
-                                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${
-                                        student.writingResponseText
-                                          ? "bg-emerald-100 text-emerald-900"
-                                          : "bg-neutral-200 text-neutral-700"
-                                      }`}
-                                    >
-                                      {student.writingResponseText ? "Submitted" : "No response"}
-                                    </span>
+                                    )}
                                   </div>
-                                  <div className="mt-3 rounded-[16px] bg-white px-4 py-3 text-sm leading-7 text-neutral-700 whitespace-pre-wrap break-words">
-                                    {student.writingResponseText || "No Part 4 response submitted."}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
+                                ) : null}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : null}

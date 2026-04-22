@@ -518,6 +518,13 @@ export function registerLiveExamSocket(io) {
         if (room.quizId === "a1-unit-4-busy-week" && currentQuestion.type === "writing") {
           player.writingResponseText = typeof answer === "string" ? answer.trim() : "";
         }
+        storeAnswerDetails(
+          player,
+          currentQuestion,
+          answer,
+          { correct: false, correctCount: 0, totalCount: 0 },
+          { awardedScore: 0, timedOut: false, ungraded: true }
+        );
 
         if (room.mode === "student-paced") {
           advanceStudentPlayer(room, player);
