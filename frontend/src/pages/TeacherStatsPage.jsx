@@ -212,6 +212,26 @@ export default function TeacherStatsPage() {
                                   </span>
                                 </div>
                               </div>
+
+                              {session.quizId === "a1-unit-4-busy-week" ? (
+                                <div className="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-4">
+                                  <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <p className="text-sm font-bold text-neutral-950">Part 4 writing</p>
+                                    <span
+                                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${
+                                        student.writingResponseText
+                                          ? "bg-emerald-100 text-emerald-900"
+                                          : "bg-neutral-200 text-neutral-700"
+                                      }`}
+                                    >
+                                      {student.writingResponseText ? "Submitted" : "No response"}
+                                    </span>
+                                  </div>
+                                  <div className="mt-3 rounded-[16px] bg-white px-4 py-3 text-sm leading-7 text-neutral-700 whitespace-pre-wrap break-words">
+                                    {student.writingResponseText || "No Part 4 response submitted."}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>

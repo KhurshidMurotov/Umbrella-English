@@ -10,7 +10,8 @@ export default function DragOrderQuestion({
   value = [],
   onChange,
   disabled = false,
-  showWordBank = true
+  showWordBank = true,
+  compactOnMobile = false
 }) {
   const segments = useMemo(() => parseTemplate(template), [template]);
   const slotCount = Math.max(0, segments.length - 1);
@@ -56,7 +57,44 @@ export default function DragOrderQuestion({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[20px] border border-neutral-200 bg-white p-4 leading-8 text-neutral-900">
+      {compactOnMobile ? (
+        <div className="rounded-[20px] border border-neutral-200 bg-white p-4 sm:hidden">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Slots</p>
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: slotCount }, (_, index) => (
+              <div
+                key={`compact-slot-${index}`}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const word = event.dataTransfer.getData("text/plain");
+                  if (word) {
+                    placeWord(index, word);
+                  }
+                }}
+                className={`flex items-center gap-3 rounded-[14px] border px-3 py-3 ${
+                  value[index] ? "border-amber-300 bg-amber-50 text-neutral-900" : "border-dashed border-neutral-300 bg-neutral-50 text-neutral-500"
+                }`}
+                title={disabled ? "" : "Drop a word here"}
+              >
+                <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-neutral-700">
+                  {index + 1}
+                </span>
+                <span className="min-w-0 flex-1 text-sm font-semibold">
+                  {value[index] || "Empty"}
+                </span>
+                {!disabled && value[index] ? (
+                  <button type="button" onClick={() => clearSlot(index)} className="text-xs font-bold text-neutral-500">
+                    x
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className={`rounded-[20px] border border-neutral-200 bg-white p-4 leading-8 text-neutral-900 ${compactOnMobile ? "hidden sm:block" : ""}`}>
         {segments.map((segment, index) => (
           <span key={`segment-${index}`}>
             {segment}

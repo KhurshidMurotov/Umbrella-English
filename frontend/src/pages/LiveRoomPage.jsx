@@ -60,6 +60,26 @@ function renderQuestionPrompt(prompt, className, detailClassName, options = {}) 
   );
 }
 
+function buildWritingSubmission(question, textResponse, writingResponses) {
+  const fields = question?.responseFields ?? [];
+
+  if (fields.length) {
+    return fields
+      .map((field, index) => {
+        const value = writingResponses[index]?.trim() ?? "";
+        if (!value) {
+          return "";
+        }
+
+        return `${index + 1}. ${field.prompt}\n${value}`;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  return textResponse.trim();
+}
+
 export default function LiveRoomPage() {
   const { roomCode } = useParams();
   const { search } = useLocation();
@@ -361,9 +381,7 @@ export default function LiveRoomPage() {
   }
 
   function submitWritingResponse() {
-    const combinedWritingResponse = hasStructuredWritingFields
-      ? writingResponses.map((value) => value?.trim() ?? "").filter(Boolean).join("\n")
-      : textResponse.trim();
+    const combinedWritingResponse = buildWritingSubmission(currentQuestion, textResponse, writingResponses);
 
     if (isLockedFromAntiCheat || !combinedWritingResponse || hasSubmittedResponse) {
       return;
@@ -723,7 +741,7 @@ export default function LiveRoomPage() {
                     <DragOrderQuestion
                       template={currentQuestion.textTemplate}
                       wordBank={currentQuestion.wordBank}
-                      value={currentQuestion.correctSequence ?? []}
+                      value={[]}
                       disabled={true}
                       showWordBank={false}
                     />
@@ -736,6 +754,7 @@ export default function LiveRoomPage() {
                         onChange={setDragResponse}
                         disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
                         showWordBank={true}
+                        compactOnMobile={true}
                       />
                       <button
                         type="button"

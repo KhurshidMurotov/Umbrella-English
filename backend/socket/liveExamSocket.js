@@ -323,6 +323,7 @@ export function registerLiveExamSocket(io) {
             answeredCurrent: false,
             violations: 0,
             currentQuestionIndex: 0,
+            writingResponseText: "",
             questionStartedAt: room.started && room.mode === "student-paced" ? Date.now() : null,
             completed: false
           });
@@ -367,6 +368,7 @@ export function registerLiveExamSocket(io) {
         totalResponseTimeMs: 0,
         answeredCurrent: false,
         currentQuestionIndex: 0,
+        writingResponseText: "",
         questionStartedAt: Date.now(),
         completed: false
       }));
@@ -429,6 +431,9 @@ export function registerLiveExamSocket(io) {
 
       if (!isScoredQuestion(currentQuestion)) {
         player.answeredCurrent = true;
+        if (room.quizId === "a1-unit-4-busy-week" && currentQuestion.type === "writing") {
+          player.writingResponseText = typeof answer === "string" ? answer.trim() : "";
+        }
 
         if (room.mode === "student-paced") {
           advanceStudentPlayer(room, player);

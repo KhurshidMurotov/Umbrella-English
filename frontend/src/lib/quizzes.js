@@ -177,12 +177,12 @@ export const a1Unit4Quiz = {
       acceptedAnswers: ["don't live", "do not live", "dont live"],
       hint: "Negative with they uses don't."
     },
-    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q11", "Kenta ___ to the university because he hasn't got a car.", ["doesn't drive", "doesn't drives"], "doesn't drive"),
-    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q12", "___ on his bicycle when it is sunny?", ["Does he cycle", "cycles"], "Does he cycle"),
+    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q11", "Kenta ___ to the university because he hasn't got a car.", ["doesn't drives", "doesn't drive"], "doesn't drive"),
+    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q12", "___ on his bicycle when it is sunny?", ["cycles", "Does he cycle"], "Does he cycle"),
     choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q13", "His house is ___ the bus stop, so he often takes the ___", ["near / bus", "far / train"], "near / bus"),
     choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q14", "When they travel to the island, they go by ___ because they are on water.", ["ferry", "motorbike"], "ferry"),
-    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q15", "___ Lucia walk to work? Yes, she ___.", ["Does / does", "Do / do"], "Does / does"),
-    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q16", "My grandparents ___ in a small house.", ["live", "lives"], "live"),
+    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q15", "___ Lucia walk to work? Yes, she ___.", ["Do / do", "Does / does"], "Does / does"),
+    choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q16", "My grandparents ___ in a small house.", ["lives", "live"], "live"),
     choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q17", "Diego ___ the guitar in his free time.", ["plays", "play"], "plays"),
     choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q18", "___ they go out in their old car?", ["Do", "Does"], "Do"),
     choiceQuestion("Part 3", "Transportation and Routine Logic", "u4q19", "I haven't got a car, but I ___ got.", ["have", "'ve"], "'ve"),
@@ -198,28 +198,24 @@ export const a1Unit4Quiz = {
         "Include one negative sentence about transport.",
         "Include one question for a friend about their routine."
       ],
-      "On Monday I get up at 7:00. On Friday I study English. I do not go by bus. Do you walk to school? On Sunday I play the guitar.",
+      "",
       [
         {
           id: "days-of-week",
           prompt: "Include two different days of the week.",
-          placeholder: "On Monday I get up at 7:00. On Friday I study English.",
           multiline: true
         },
         {
           id: "positive-hobby",
-          prompt: "Include one positive sentence about a hobby or study.",
-          placeholder: "I like studying English."
+          prompt: "Include one positive sentence about a hobby or study."
         },
         {
           id: "negative-transport",
-          prompt: "Include one negative sentence about transport.",
-          placeholder: "I don't go by bus."
+          prompt: "Include one negative sentence about transport."
         },
         {
           id: "friend-question",
-          prompt: "Include one question for a friend about their routine.",
-          placeholder: "Do you walk to school?"
+          prompt: "Include one question for a friend about their routine."
         }
       ]
     )
