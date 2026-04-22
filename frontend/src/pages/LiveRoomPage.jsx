@@ -209,6 +209,7 @@ export default function LiveRoomPage() {
 
   const players = room?.players ?? [];
   const connectedPlayers = players.filter((player) => player.connected !== false);
+  const connectedStudentNames = connectedPlayers.map((player) => player.name).filter(Boolean);
   const selfPlayer = players.find((player) => player.socketId === socket.id) ?? players.find((player) => player.name === name);
   const serverDisqualified = Boolean(selfPlayer?.disqualified);
   const isLockedFromAntiCheat = disqualified || serverDisqualified;
@@ -374,7 +375,9 @@ export default function LiveRoomPage() {
   );
 
   const layoutClass =
-    role === "host"
+    role === "host" && !room?.started
+      ? "mx-auto max-w-4xl"
+      : role === "host"
       ? "mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
       : "mx-auto max-w-4xl";
 
@@ -486,6 +489,16 @@ export default function LiveRoomPage() {
                       title="Student QR"
                       caption="Students can scan this QR or use the room code to join."
                     />
+                  </div>
+                  <div className="mt-5 rounded-[24px] bg-white/10 px-4 py-4">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-300">Connected students</p>
+                    {connectedStudentNames.length ? (
+                      <p className="mt-3 text-sm leading-7 text-neutral-100">
+                        {connectedStudentNames.join(", ")}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-sm text-neutral-400">No students connected yet.</p>
+                    )}
                   </div>
                 </>
               ) : null}

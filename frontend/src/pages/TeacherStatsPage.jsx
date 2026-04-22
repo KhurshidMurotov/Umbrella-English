@@ -5,6 +5,8 @@ import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
 import { getTeacherSession } from "../lib/teacherAuth";
 
+const STATS_POLL_INTERVAL_MS = 4000;
+
 function formatDate(timestamp) {
   return new Date(timestamp).toLocaleDateString(undefined, {
     year: "numeric",
@@ -39,9 +41,12 @@ export default function TeacherStatsPage() {
     }
 
     let active = true;
+    let intervalId;
 
-    async function fetchStats() {
-      setLoading(true);
+    async function fetchStats(showLoader = false) {
+      if (showLoader) {
+        setLoading(true);
+      }
       setError("");
 
       try {
@@ -60,15 +65,22 @@ export default function TeacherStatsPage() {
           setError(err.message || "Unable to load student statistics.");
         }
       } finally {
-        if (active) {
+        if (active && showLoader) {
           setLoading(false);
         }
       }
     }
 
-    fetchStats();
+    fetchStats(true);
+    intervalId = window.setInterval(() => {
+      fetchStats(false);
+    }, STATS_POLL_INTERVAL_MS);
+
     return () => {
       active = false;
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
     };
   }, [teacherSession]);
 
