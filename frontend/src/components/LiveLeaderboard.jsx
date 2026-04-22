@@ -28,6 +28,8 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
     return "border-neutral-200 bg-white";
   };
 
+  const isCheater = (player) => Boolean(player?.disqualified) || (player?.violations ?? 0) >= 2;
+
   return (
     <div className="glass-card rounded-[28px] p-4 sm:p-6">
       {showTitle ? <h3 className="text-base font-extrabold text-neutral-950 sm:text-lg">Live ranking</h3> : null}
@@ -45,7 +47,9 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
             <div
               key={player.id ?? `${player.name}-${index}`}
               role="listitem"
-              className={`rounded-[18px] border px-3 py-4 sm:px-4 sm:py-4 ${rowClasses(index)}`}
+              className={`relative overflow-hidden rounded-[18px] border px-3 py-4 sm:px-4 sm:py-4 ${rowClasses(index)} ${
+                isCheater(player) ? "opacity-75 saturate-0" : ""
+              }`}
             >
               <div className="grid gap-3 lg:grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr] lg:items-center">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -107,6 +111,14 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
                   <div className="mt-1 text-base font-bold text-neutral-950 sm:text-lg">{player.score ?? 0}</div>
                 </div>
               </div>
+
+              {isCheater(player) ? (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-neutral-950/35">
+                  <span className="rounded-full border border-rose-200/80 bg-rose-500/90 px-4 py-2 text-sm font-extrabold uppercase tracking-[0.12em] text-white shadow-lg">
+                    Cheater detected!
+                  </span>
+                </div>
+              ) : null}
             </div>
           ))
         ) : (
