@@ -238,10 +238,12 @@ export const cefrQuiz = {
   estimatedTime: "8 min",
   shuffleQuestions: false,
   shuffleOptions: false,
+  hideTimerControl: true,
+  showAverageTimeInResults: false,
   timerOptions: [90, 120, 180, 240],
   defaultQuestionTime: 120,
   timerLabel: "Time per part",
-  scoringDescription: "Listening opens only after the teacher presses Start audio. Reading uses extended part timing.",
+  scoringDescription: "Listening opens only after the teacher presses Start audio. No visible timer is shown during the CEFR live test.",
   questions: [
     {
       id: "cefrq1",

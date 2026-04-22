@@ -100,6 +100,7 @@ export default function TeacherPage() {
   const selectedQuiz = quizCatalog.find((quiz) => quiz.id === selectedQuizId) ?? quizCatalog[0];
   const timerOptions = selectedQuiz?.timerOptions ?? TIMER_OPTIONS;
   const timerLabel = selectedQuiz?.timerLabel ?? "Time per question";
+  const hideTimerControl = selectedQuiz?.hideTimerControl === true;
 
   useEffect(() => {
     setQuestionTime(selectedQuiz?.defaultQuestionTime ?? timerOptions[0] ?? TIMER_OPTIONS[0]);
@@ -247,23 +248,25 @@ export default function TeacherPage() {
                 </div>
               </div>
 
-              <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
-                <p className="text-sm font-bold text-neutral-950">{timerLabel}</p>
-                <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  {timerOptions.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setQuestionTime(value)}
-                      className={`rounded-full px-4 py-3 text-sm font-bold ${
-                        questionTime === value ? "bg-amber-300 text-neutral-950" : "bg-white text-neutral-700 ring-1 ring-neutral-200"
-                      }`}
-                    >
-                      {value}s
-                    </button>
-                  ))}
+              {!hideTimerControl ? (
+                <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
+                  <p className="text-sm font-bold text-neutral-950">{timerLabel}</p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-3">
+                    {timerOptions.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setQuestionTime(value)}
+                        className={`rounded-full px-4 py-3 text-sm font-bold ${
+                          questionTime === value ? "bg-amber-300 text-neutral-950" : "bg-white text-neutral-700 ring-1 ring-neutral-200"
+                        }`}
+                      >
+                        {value}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
                 <p className="text-sm font-bold text-neutral-950">Scoring</p>

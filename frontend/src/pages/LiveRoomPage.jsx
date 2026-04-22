@@ -1040,7 +1040,7 @@ export default function LiveRoomPage() {
               </p>
               {role === "host" && isCefrQuiz ? (
                 <div className="mt-6">
-                  <LiveLeaderboard players={players} />
+                  <LiveLeaderboard players={players} showAverageTime={false} />
                 </div>
               ) : null}
             </div>

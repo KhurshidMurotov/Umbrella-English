@@ -6,7 +6,7 @@ function formatAverageSeconds(value) {
   return `${value >= 10 ? value.toFixed(1) : value.toFixed(2)}s`;
 }
 
-export default function LiveLeaderboard({ players = [], showTitle = true }) {
+export default function LiveLeaderboard({ players = [], showTitle = true, showAverageTime = true }) {
   const sortedPlayers = [...players].sort(
     (first, second) =>
       (second.score ?? 0) - (first.score ?? 0) ||
@@ -33,9 +33,9 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
   return (
     <div className="glass-card rounded-[28px] p-4 sm:p-6">
       {showTitle ? <h3 className="text-base font-extrabold text-neutral-950 sm:text-lg">Live ranking</h3> : null}
-      <div className={`${showTitle ? "mt-4" : "mt-0"} hidden grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr] gap-3 px-4 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500 lg:grid xl:text-xs`}>
+      <div className={`${showTitle ? "mt-4" : "mt-0"} hidden ${showAverageTime ? "grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr]" : "grid-cols-[minmax(0,2.6fr)_0.9fr_1fr_0.8fr]"} gap-3 px-4 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500 lg:grid xl:text-xs`}>
         <div>Player</div>
-        <div>Avg time</div>
+        {showAverageTime ? <div>Avg time</div> : null}
         <div>Correct</div>
         <div>Violations</div>
         <div>Points</div>
@@ -51,7 +51,7 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
                 isCheater(player) ? "opacity-75 saturate-0" : ""
               }`}
             >
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr] lg:items-center">
+              <div className={`grid gap-3 ${showAverageTime ? "lg:grid-cols-[minmax(0,2.3fr)_0.8fr_0.7fr_0.95fr_0.75fr]" : "lg:grid-cols-[minmax(0,2.6fr)_0.9fr_1fr_0.8fr]"} lg:items-center`}>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-[0.8rem] font-extrabold text-neutral-950">
                     {index + 1}
@@ -68,12 +68,14 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
                   ) : null}
                 </div>
 
-                <div className="hidden lg:block lg:text-left">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Avg time</div>
-                  <div className="text-sm font-semibold text-neutral-900">
-                    {formatAverageSeconds(player.averageResponseTimeSeconds ?? 0)}
+                {showAverageTime ? (
+                  <div className="hidden lg:block lg:text-left">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Avg time</div>
+                    <div className="text-sm font-semibold text-neutral-900">
+                      {formatAverageSeconds(player.averageResponseTimeSeconds ?? 0)}
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="hidden lg:block lg:text-left">
                   <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Correct</div>
@@ -92,12 +94,14 @@ export default function LiveLeaderboard({ players = [], showTitle = true }) {
               </div>
 
               <div className="mt-4 flex gap-3 overflow-x-auto lg:hidden px-1 pb-1">
-                <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Avg time</div>
-                  <div className="mt-1 text-sm font-semibold text-neutral-900">
-                    {formatAverageSeconds(player.averageResponseTimeSeconds ?? 0)}
+                {showAverageTime ? (
+                  <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Avg time</div>
+                    <div className="mt-1 text-sm font-semibold text-neutral-900">
+                      {formatAverageSeconds(player.averageResponseTimeSeconds ?? 0)}
+                    </div>
                   </div>
-                </div>
+                ) : null}
                 <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Correct</div>
                   <div className="mt-1 text-sm font-semibold text-neutral-900">{player.correctAnswers ?? 0}</div>
