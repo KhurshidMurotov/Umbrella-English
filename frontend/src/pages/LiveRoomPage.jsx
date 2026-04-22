@@ -555,14 +555,15 @@ export default function LiveRoomPage() {
       isScoredQuestion(currentQuestion) &&
       (currentQuestion || (role === "host" && room?.mode === "student-paced"))
   );
+  const showSidebarLeaderboard = Boolean(role === "host" && room?.started && currentQuestion && showLiveRankingDuringTest);
 
   const layoutClass =
     role === "host" && !room?.started
       ? "mx-auto max-w-4xl"
-      : role === "host" && isCefrQuiz
-        ? "mx-auto w-full max-w-[1280px]"
-      : role === "host"
+      : role === "host" && showSidebarLeaderboard
         ? "mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
+      : role === "host"
+        ? "mx-auto w-full max-w-[1280px]"
       : "mx-auto max-w-4xl";
 
   return (
@@ -1135,7 +1136,7 @@ export default function LiveRoomPage() {
           )}
         </div>
 
-        {role === "host" && room?.started && currentQuestion && showLiveRankingDuringTest ? (
+        {showSidebarLeaderboard ? (
           <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} />
         ) : null}
       </div>
