@@ -14,15 +14,15 @@ export default function CefrReadingMatchingQuestion({
 
   if (boardMode) {
     return (
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="space-y-6">
         <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
           <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">People</p>
-          <div className="mt-4 space-y-4">
-            {people.map((person) => (
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            {people.map((person, index) => (
               <div key={person.number} className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-4 py-4">
                 <div className="flex items-start gap-3">
                   <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-sm font-black text-neutral-950">
-                    {person.number}
+                    {index + 1}
                   </span>
                   <p className="text-sm leading-7 text-neutral-800">{person.text}</p>
                 </div>
@@ -33,7 +33,7 @@ export default function CefrReadingMatchingQuestion({
 
         <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
           <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">Places</p>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
             {choices.map((choice) => (
               <div key={choice.label} className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-4 py-4">
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-neutral-950">
@@ -52,10 +52,10 @@ export default function CefrReadingMatchingQuestion({
     <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
       <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">Match Letters To Numbers</p>
       <div className="mt-4 space-y-3">
-        {people.map((person) => (
+        {people.map((person, index) => (
           <div key={person.number} className="flex items-center gap-3 rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-3">
             <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
-              {person.number}
+              {index + 1}
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">Choose A Letter</p>

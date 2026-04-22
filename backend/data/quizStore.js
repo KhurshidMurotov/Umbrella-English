@@ -335,7 +335,7 @@ export const cefrQuiz = {
       type: "cefr-reading-matching",
       graded: true,
       points: 16,
-      prompt: "Match people 7-14 with places A-J.",
+      prompt: "Match people 1-8 with places A-J.",
       people: [
         {
           number: 7,
