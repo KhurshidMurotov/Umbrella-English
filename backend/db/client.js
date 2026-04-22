@@ -23,11 +23,14 @@ export function getPool() {
     const connectionString = process.env.DATABASE_URL;
     pool = new Pool({
       connectionString,
-      ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false
+      ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000
     });
 
     pool.on("error", (error) => {
-      console.error("PostgreSQL pool error:", error.message);
+      console.error("PostgreSQL pool error:", error.message, error.stack);
     });
   }
 
