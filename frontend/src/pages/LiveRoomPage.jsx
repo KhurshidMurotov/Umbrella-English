@@ -1030,8 +1030,19 @@ export default function LiveRoomPage() {
             </div>
           ) : (
             <div className="mt-8 rounded-[28px] bg-amber-50 p-6">
-              <h2 className="text-2xl font-extrabold text-neutral-950">Exam complete</h2>
-              <p className="mt-3 text-sm text-neutral-600">Check the leaderboard for the final ranking.</p>
+              <h2 className="text-2xl font-extrabold text-neutral-950">
+                {role === "host" && isCefrQuiz ? "Final results" : "Exam complete"}
+              </h2>
+              <p className="mt-3 text-sm text-neutral-600">
+                {role === "host" && isCefrQuiz
+                  ? "The test is finished. Student results are now shown on the board."
+                  : "Check the leaderboard for the final ranking."}
+              </p>
+              {role === "host" && isCefrQuiz ? (
+                <div className="mt-6">
+                  <LiveLeaderboard players={players} />
+                </div>
+              ) : null}
             </div>
           )}
         </div>
