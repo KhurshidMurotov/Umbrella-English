@@ -3,6 +3,8 @@ import LiveLeaderboard from "../components/LiveLeaderboard";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
 
+const LEADERBOARD_POLL_INTERVAL_MS = 4000;
+
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
 
@@ -26,8 +28,10 @@ export default function LeaderboardPage() {
     }
 
     fetchLeaderboard();
+    const intervalId = window.setInterval(fetchLeaderboard, LEADERBOARD_POLL_INTERVAL_MS);
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 

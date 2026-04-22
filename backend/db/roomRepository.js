@@ -321,16 +321,43 @@ export async function getRoomByCode(code) {
 }
 
 export async function getTopLivePlayers(limit = null) {
+  const resolveLimit = Number(limit);
+  const safeLimit = Number.isFinite(resolveLimit) && resolveLimit > 0 ? Math.floor(resolveLimit) : null;
+
   if (!hasDatabase()) {
-    return [];
+    const activePlayers = Array.from(roomStore.values())
+      .flatMap((room) => room.players ?? [])
+      .filter((player) => (player.connected ?? Boolean(player.socketId)) && !player.disqualified)
+      .sort((first, second) =>
+        (second.score ?? 0) - (first.score ?? 0) ||
+        (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
+        (first.totalResponseTimeMs ?? 0) - (second.totalResponseTimeMs ?? 0)
+      );
+
+    const limitedPlayers = safeLimit ? activePlayers.slice(0, safeLimit) : activePlayers;
+    return limitedPlayers.map((player, index) => ({
+      id: `memory-${player.name}-${index}`,
+      name: player.name,
+      score: player.score ?? 0,
+      correctAnswers: player.correctAnswers ?? 0,
+      averageResponseTimeSeconds:
+        (player.answeredQuestions ?? 0) > 0
+          ? Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2))
+          : 0,
+      violations: player.violations ?? 0,
+      accuracy:
+        (player.answeredQuestions ?? 0) > 0
+          ? Math.round(((player.correctAnswers ?? 0) / player.answeredQuestions) * 100)
+          : 0
+    }));
   }
 
   const archiveQuery = `SELECT session_id, name, score, correct_answers, answered_questions,
             total_response_time_ms, violations
      FROM game_session_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
-     ${limit ? "LIMIT $1" : ""}`;
-  const archiveResult = await query(archiveQuery, limit ? [limit] : []);
+     ${safeLimit ? "LIMIT $1" : ""}`;
+  const archiveResult = await query(archiveQuery, safeLimit ? [safeLimit] : []);
 
   if (archiveResult.rows.length) {
     return archiveResult.rows.map((player) => ({
@@ -353,19 +380,43 @@ export async function getTopLivePlayers(limit = null) {
   const resultQuery = `SELECT player_name, score, correct_answers, total_questions, violations, created_at
      FROM quiz_results
      ORDER BY score DESC, correct_answers DESC, total_questions DESC
-     ${limit ? "LIMIT $1" : ""}`;
-  const result = await query(resultQuery, limit ? [limit] : []);
+     ${safeLimit ? "LIMIT $1" : ""}`;
+  const result = await query(resultQuery, safeLimit ? [safeLimit] : []);
 
-  return result.rows.map((player, index) => ({
-    id: `result-${player.player_name}-${player.created_at}-${index}`,
-    name: player.player_name,
-    score: player.score,
+  if (result.rows.length) {
+    return result.rows.map((player, index) => ({
+      id: `result-${player.player_name}-${player.created_at}-${index}`,
+      name: player.player_name,
+      score: player.score,
+      correctAnswers: player.correct_answers ?? 0,
+      averageResponseTimeSeconds: 0,
+      violations: player.violations ?? 0,
+      accuracy:
+        player.total_questions > 0
+          ? Math.round((player.correct_answers / player.total_questions) * 100)
+          : 0
+    }));
+  }
+
+  const livePlayersQuery = `SELECT room_code, name, score, correct_answers, answered_questions, total_response_time_ms, violations
+     FROM live_room_players
+     ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
+     ${safeLimit ? "LIMIT $1" : ""}`;
+  const livePlayersResult = await query(livePlayersQuery, safeLimit ? [safeLimit] : []);
+
+  return livePlayersResult.rows.map((player, index) => ({
+    id: `live-${player.room_code}-${player.name}-${index}`,
+    name: player.name,
+    score: player.score ?? 0,
     correctAnswers: player.correct_answers ?? 0,
-    averageResponseTimeSeconds: 0,
+    averageResponseTimeSeconds:
+      player.answered_questions > 0
+        ? Number((player.total_response_time_ms / player.answered_questions / 1000).toFixed(2))
+        : 0,
     violations: player.violations ?? 0,
     accuracy:
-      player.total_questions > 0
-        ? Math.round((player.correct_answers / player.total_questions) * 100)
+      player.answered_questions > 0
+        ? Math.round((player.correct_answers / player.answered_questions) * 100)
         : 0
   }));
 }

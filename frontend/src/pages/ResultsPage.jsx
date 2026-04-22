@@ -3,10 +3,12 @@ import { BarChart3, RotateCcw, Search } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import ShellLayout from "../components/ShellLayout";
 import StatPill from "../components/StatPill";
+import { getResults } from "../lib/storage";
 
 export default function ResultsPage() {
   const { state } = useLocation();
-  const result = state ?? {
+  const latestStoredResult = getResults()[0];
+  const result = state ?? latestStoredResult ?? {
     title: "Umbrella English Sprint",
     score: 760,
     accuracy: 80,
