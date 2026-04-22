@@ -7,6 +7,7 @@ import CefrListeningQuestion from "../components/CefrListeningQuestion";
 import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
 import DragOrderQuestion from "../components/DragOrderQuestion";
+import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ProgressBar from "../components/ProgressBar";
 import QRCodePanel from "../components/QRCodePanel";
@@ -14,6 +15,7 @@ import ShellLayout from "../components/ShellLayout";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
+import { quizCatalog } from "../lib/quizzes";
 
 const BOARD_REVEAL_DELAY_MS = 3000;
 
@@ -106,6 +108,7 @@ export default function LiveRoomPage() {
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
   const [dragResponse, setDragResponse] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
+  const [groupedChoiceResponse, setGroupedChoiceResponse] = useState({});
   const [cefrListeningResponse, setCefrListeningResponse] = useState({});
   const [cefrReadingResponse, setCefrReadingResponse] = useState({});
   const { playCorrect, playWrong } = useFeedbackSounds();
@@ -263,6 +266,8 @@ export default function LiveRoomPage() {
   const serverDisqualified = Boolean(selfPlayer?.disqualified);
   const isLockedFromAntiCheat = disqualified || serverDisqualified;
   const isCefrQuiz = room?.quizId === "cefr-part-1-and-2";
+  const roomQuiz = quizCatalog.find((quiz) => quiz.id === room?.quizId) ?? null;
+  const disableAnswerTimer = roomQuiz?.disableAnswerTimer === true;
   const totalQuestions = room?.questions?.length ?? 10;
   const studentCount = connectedPlayers.length;
   const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
@@ -276,6 +281,7 @@ export default function LiveRoomPage() {
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const isGroupedChoiceQuestion = currentQuestion?.type === "grouped-choice-list";
   const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
   const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
   const requiresManualReveal = currentQuestion?.revealMode === "manual-audio";
@@ -290,7 +296,7 @@ export default function LiveRoomPage() {
     : Math.ceil(BOARD_REVEAL_DELAY_MS / 1000);
 
   const deadlineAt =
-    isScoredQuestion(currentQuestion)
+    isScoredQuestion(currentQuestion) && !disableAnswerTimer
       ? room?.mode === "student-paced" && role !== "host"
         ? ((selfPlayer?.questionStartedAt ?? null) ? selfPlayer.questionStartedAt + room.questionTime * 1000 : null)
         : (room?.questionDeadlineAt ?? null)
@@ -317,6 +323,7 @@ export default function LiveRoomPage() {
     setWritingResponses([]);
     setDragResponse([]);
     setTypedResponse("");
+    setGroupedChoiceResponse({});
     setCefrListeningResponse({});
     setCefrReadingResponse({});
     setHasSubmittedResponse(false);
@@ -384,7 +391,7 @@ export default function LiveRoomPage() {
         boardRevealTimeoutRef.current = null;
       }
     };
-  }, [boardPhaseKey, currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
+  }, [boardPhaseKey, currentQuestion, isQuestionBoardPhase, requiresManualReveal, role, roomCode, socket]);
 
   useEffect(() => {
     if (
@@ -392,6 +399,7 @@ export default function LiveRoomPage() {
       !room?.started ||
       !currentQuestion ||
       !isScoredQuestion(currentQuestion) ||
+      disableAnswerTimer ||
       !canAnswerNow ||
       selectedOption ||
       hasSubmittedResponse ||
@@ -452,6 +460,21 @@ export default function LiveRoomPage() {
     socket.emit("submitAnswer", { roomCode, answer: typedResponse.trim(), name });
   }
 
+  function submitGroupedChoiceResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => groupedChoiceResponse[item.number]).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: groupedChoiceResponse, name });
+  }
+
   function submitCefrListeningResponse() {
     const requiredAnswers = currentQuestion?.items?.length ?? 0;
     if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
@@ -510,6 +533,7 @@ export default function LiveRoomPage() {
 
   const showTimerBadge = Boolean(
     !isCefrQuiz &&
+      !disableAnswerTimer &&
       room?.started &&
       room?.questionPhase === "answers" &&
       isScoredQuestion(currentQuestion) &&
@@ -670,7 +694,15 @@ export default function LiveRoomPage() {
                 ) : null}
               </div>
               <div className="mt-6">
-                {isCefrListeningQuestion ? (
+                {isGroupedChoiceQuestion ? (
+                  <GroupedChoiceQuestion
+                    items={currentQuestion.items}
+                    value={{}}
+                    disabled={true}
+                    boardMode={true}
+                    passage={currentQuestion.passage}
+                  />
+                ) : isCefrListeningQuestion ? (
                   <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
                 ) : isCefrReadingQuestion ? (
                   <CefrReadingMatchingQuestion people={currentQuestion.people} choices={currentQuestion.choices} value={{}} disabled={true} boardMode={true} />
@@ -767,6 +799,11 @@ export default function LiveRoomPage() {
               )}
               {isWritingQuestion ? (
                 <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {currentQuestion.passage ? (
+                    <div className="mb-5 rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
+                      {currentQuestion.passage}
+                    </div>
+                  ) : null}
                   {hasStructuredWritingFields ? (
                     <div className="space-y-4">
                       {writingFields.map((field, index) => (
@@ -850,6 +887,41 @@ export default function LiveRoomPage() {
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Submit response
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isGroupedChoiceQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <GroupedChoiceQuestion
+                      items={currentQuestion.items}
+                      value={{}}
+                      disabled={true}
+                      boardMode={true}
+                      passage={currentQuestion.passage}
+                    />
+                  ) : (
+                    <>
+                      <GroupedChoiceQuestion
+                        items={currentQuestion.items}
+                        value={groupedChoiceResponse}
+                        onChange={setGroupedChoiceResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                        passage={currentQuestion.passage}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitGroupedChoiceResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => !groupedChoiceResponse[item.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
                       </button>
                     </>
                   )}
@@ -1002,7 +1074,7 @@ export default function LiveRoomPage() {
                         key={option}
                         label={option}
                         onClick={() => submitAnswer(option)}
-                        disabled={role === "host" || !canAnswerNow || selectedOption !== "" || remainingSeconds <= 0 || isLockedFromAntiCheat}
+                        disabled={role === "host" || !canAnswerNow || selectedOption !== "" || (!disableAnswerTimer && remainingSeconds <= 0) || isLockedFromAntiCheat}
                         state={state}
                       />
                     );

@@ -32,6 +32,10 @@ export function isScoredQuestion(question) {
 }
 
 export function getQuestionTotalUnits(question) {
+  if (question?.type === "grouped-choice-list") {
+    return question.items?.length || 1;
+  }
+
   if (question?.type === "cefr-listening-group") {
     return question.items?.length || 1;
   }
@@ -99,6 +103,20 @@ export function evaluateAnswer(question, answer) {
     const acceptedAnswers = question.acceptedAnswers?.length ? question.acceptedAnswers : [question.correctAnswer];
     const correct = compareTextAnswer(answer, acceptedAnswers);
     return { correct, correctCount: correct ? 1 : 0, totalCount };
+  }
+
+  if (question.type === "grouped-choice-list") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
   }
 
   if (question.type === "cefr-listening-group") {

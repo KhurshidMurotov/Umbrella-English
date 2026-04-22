@@ -24,6 +24,10 @@ function calculateQuizAccuracy(player) {
 }
 
 function getQuestionTotalUnits(question) {
+  if (question?.type === "grouped-choice-list") {
+    return question.items?.length || 1;
+  }
+
   if (question?.type === "cefr-listening-group") {
     return question.items?.length || 1;
   }

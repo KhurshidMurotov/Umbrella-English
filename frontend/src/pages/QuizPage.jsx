@@ -6,6 +6,7 @@ import AnswerButton from "../components/AnswerButton";
 import CefrListeningQuestion from "../components/CefrListeningQuestion";
 import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import DragOrderQuestion from "../components/DragOrderQuestion";
+import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
 import StatPill from "../components/StatPill";
@@ -74,6 +75,7 @@ export default function QuizPage() {
   const [writingResponses, setWritingResponses] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
   const [dragResponse, setDragResponse] = useState([]);
+  const [groupedChoiceResponse, setGroupedChoiceResponse] = useState({});
   const [cefrListeningResponse, setCefrListeningResponse] = useState({});
   const [cefrReadingResponse, setCefrReadingResponse] = useState({});
   const [listeningReady, setListeningReady] = useState(false);
@@ -86,11 +88,13 @@ export default function QuizPage() {
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const isGroupedChoiceQuestion = currentQuestion?.type === "grouped-choice-list";
   const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
   const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
   const writingFields = currentQuestion?.responseFields ?? [];
   const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isBookScoringQuiz = playableQuiz.id === "a1-unit-4-busy-week";
+  const disableAnswerTimer = playableQuiz.disableAnswerTimer === true;
   const currentScore = computeScore(questionScores);
   const questionDuration = playableQuiz.defaultQuestionTime ?? QUESTION_TIME;
 
@@ -103,6 +107,7 @@ export default function QuizPage() {
   }, []);
 
   useEffect(() => {
+    setGroupedChoiceResponse({});
     setCefrListeningResponse({});
     setCefrReadingResponse({});
     setListeningReady(false);
@@ -140,6 +145,7 @@ export default function QuizPage() {
     setWritingResponses([]);
     setTypedResponse("");
     setDragResponse([]);
+    setGroupedChoiceResponse({});
     setCefrListeningResponse({});
     setCefrReadingResponse({});
     setListeningReady(false);
@@ -155,7 +161,7 @@ export default function QuizPage() {
   const timeLeft = useQuizTimer({
     duration: questionDuration,
     questionKey: `${currentQuestion.id}-${currentIndex}`,
-    isActive: !locked && !isWritingQuestion && (!isCefrListeningQuestion || listeningReady),
+    isActive: !disableAnswerTimer && !locked && !isWritingQuestion && (!isCefrListeningQuestion || listeningReady),
     onExpire: () => {
       if (locked) {
         return;
@@ -293,6 +299,14 @@ export default function QuizPage() {
     submitObjectiveAnswer(dragResponse);
   }
 
+  function handleGroupedChoiceSubmit() {
+    if (locked || currentQuestion.items.some((item) => !groupedChoiceResponse[item.number])) {
+      return;
+    }
+
+    submitObjectiveAnswer(groupedChoiceResponse);
+  }
+
   function handleCefrListeningSubmit() {
     if (locked || currentQuestion.items.some((item) => !cefrListeningResponse[item.number])) {
       return;
@@ -362,7 +376,7 @@ export default function QuizPage() {
             <p className="text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.28em] text-neutral-500">Solo quiz</p>
             <h1 className="text-xl sm:text-3xl font-extrabold mt-1 truncate">{playableQuiz.title}</h1>
           </div>
-          {!isWritingQuestion ? (
+          {!isWritingQuestion && !disableAnswerTimer ? (
             <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-sm flex-shrink-0">
               <Clock3 size={16} className="sm:w-[18px] sm:h-[18px]" />
               <span className="font-bold text-sm sm:text-base">{timeLeft}s</span>
@@ -440,6 +454,11 @@ export default function QuizPage() {
               {isWritingQuestion ? (
                 <div className="mt-8">
                   <div className="rounded-[28px] border border-neutral-200 bg-white p-5">
+                    {currentQuestion.passage ? (
+                      <div className="mb-5 rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
+                        {currentQuestion.passage}
+                      </div>
+                    ) : null}
                     <p className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">What to include</p>
                     {hasStructuredWritingFields ? (
                       <div className="mt-4 space-y-4">
@@ -513,6 +532,24 @@ export default function QuizPage() {
                       {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
                     </button>
                   </div>
+                </div>
+              ) : isGroupedChoiceQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <GroupedChoiceQuestion
+                    items={currentQuestion.items}
+                    value={groupedChoiceResponse}
+                    onChange={setGroupedChoiceResponse}
+                    disabled={locked}
+                    passage={currentQuestion.passage}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGroupedChoiceSubmit}
+                    disabled={locked || currentQuestion.items.some((item) => !groupedChoiceResponse[item.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
                 </div>
               ) : isCefrListeningQuestion ? (
                 <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">

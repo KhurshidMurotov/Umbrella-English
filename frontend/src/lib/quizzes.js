@@ -446,6 +446,109 @@ export const cefrQuiz = {
   ]
 };
 
+export const a2Unit7Quiz = {
+  id: "a2-unit-test-7",
+  title: "A2 Unit Test 7",
+  description: "6-part unit test with compact answer sheets, reading checks and an ungraded final text task.",
+  difficulty: "A2",
+  estimatedTime: "15 min",
+  shuffleQuestions: false,
+  shuffleOptions: false,
+  hideTimerControl: true,
+  disableAnswerTimer: true,
+  fixedUnitScoring: true,
+  defaultQuestionTime: 120,
+  scoringDescription: "No timer is used for this test. Each correct answer gives 1 point. Part 6 is included but not scored.",
+  questions: [
+    {
+      id: "a2u7q1",
+      part: "Part 1",
+      partTitle: "Activity Collocations",
+      type: "grouped-choice-list",
+      graded: true,
+      points: 10,
+      prompt: "Complete the sentences with do, go, or play in the correct form.",
+      items: [
+        { number: 1, prompt: "I usually go jogging, but if the weather is bad, I __________ yoga in my living room instead.", options: ["do", "go", "play"], correctAnswer: "do" },
+        { number: 2, prompt: "My brother __________ athletics at the stadium twice a week to prepare for the race.", options: ["does", "goes", "plays"], correctAnswer: "does" },
+        { number: 3, prompt: "We decided to __________ fishing on the river, but we forgot the equipment.", options: ["do", "go", "play"], correctAnswer: "go" },
+        { number: 4, prompt: "It’s too cold to __________ swimming in the sea, so let’s __________ basketball in the gym.", options: ["go / play", "do / play", "go / do"], correctAnswer: "go / play" },
+        { number: 5, prompt: "Most people in this town __________ skiing in the mountains during January.", options: ["do", "go", "play"], correctAnswer: "go" },
+        { number: 6, prompt: "I want to __________ some exercise, but I'm too tired to __________ cycling to work today.", options: ["do / go", "go / do", "play / go"], correctAnswer: "do / go" },
+        { number: 7, prompt: "Does your sister __________ judo at the sports center?", options: ["do", "go", "play"], correctAnswer: "do" },
+        { number: 8, prompt: "My doctor told me to __________ more physical jobs around the house to stay healthy.", options: ["do", "go", "play"], correctAnswer: "do" },
+        { number: 9, prompt: "I usually __________ the stairs instead of the lift to get some exercise.", options: ["take", "do", "go", "play"], correctAnswer: "take" },
+        { number: 10, prompt: "We __________ football for the university team every Tuesday evening.", options: ["do", "go", "play"], correctAnswer: "play" }
+      ]
+    },
+    { id: "a2u7q2", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "I didn't have enough money, so I had to ___ some from my brother.", options: ["borrow", "lend"], correctAnswer: "borrow" },
+    { id: "a2u7q3", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "She ___ me that she was tired after the long journey.", options: ["said", "told"], correctAnswer: "told" },
+    { id: "a2u7q4", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "Please ___ this umbrella with you when you leave; it’s raining.", options: ["bring", "take"], correctAnswer: "take" },
+    { id: "a2u7q5", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "I ___ the map for ten minutes, but I was still lost.", options: ["watched", "looked at"], correctAnswer: "looked at" },
+    { id: "a2u7q6", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "Do you want to ___ to my house for a coffee after the lesson?", options: ["come", "go"], correctAnswer: "come" },
+    { id: "a2u7q7", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "The coach ___ that the team played very well today.", options: ["said", "told"], correctAnswer: "said" },
+    { id: "a2u7q8", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "He ___ me his bicycle because my car was broken.", options: ["lent", "borrowed"], correctAnswer: "lent" },
+    { id: "a2u7q9", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "We ___ a very long film at the cinema last night.", options: ["looked at", "watched"], correctAnswer: "watched" },
+    { id: "a2u7q10", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "Can you ___ some snacks to the party on Friday?", options: ["take", "bring"], correctAnswer: "bring" },
+    { id: "a2u7q11", part: "Part 2", partTitle: "Word Choice", type: "choice", graded: true, points: 1, prompt: "Let’s ___ for a walk in the park to get some fresh air.", options: ["go", "come"], correctAnswer: "go" },
+    { id: "a2u7q12", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "My parents ____________ (not have) time to cook, so we didn't eat a healthy dinner.", correctAnswer: "didn't have", acceptedAnswers: ["didn't have", "didnt have", "did not have"], hint: "" },
+    { id: "a2u7q13", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "My parents didn't have time to cook, so we ____________ (not eat) a healthy dinner.", correctAnswer: "didn't eat", acceptedAnswers: ["didn't eat", "didnt eat", "did not eat"], hint: "" },
+    { id: "a2u7q14", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "My sister ____________ (not do) her homework because she didn't bring her books home.", correctAnswer: "didn't do", acceptedAnswers: ["didn't do", "didnt do", "did not do"], hint: "" },
+    { id: "a2u7q15", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "My sister didn't do her homework because she ____________ (not bring) her books home.", correctAnswer: "didn't bring", acceptedAnswers: ["didn't bring", "didnt bring", "did not bring"], hint: "" },
+    { id: "a2u7q16", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "Instead, we ____________ (make) a fire in the living room.", correctAnswer: "made", acceptedAnswers: ["made"], hint: "" },
+    { id: "a2u7q17", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "We ____________ (sit) on the sofa for hours.", correctAnswer: "sat", acceptedAnswers: ["sat"], hint: "" },
+    { id: "a2u7q18", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "It ____________ (be) very relaxing.", correctAnswer: "was", acceptedAnswers: ["was"], hint: "" },
+    { id: "a2u7q19", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "We ____________ (see) a documentary on TV.", correctAnswer: "saw", acceptedAnswers: ["saw"], hint: "" },
+    { id: "a2u7q20", part: "Part 3", partTitle: "Past Simple", type: "part2-text-input", graded: true, points: 1, prompt: "We saw a documentary on TV and ____________ (eat) a large salad for a late snack.", correctAnswer: "ate", acceptedAnswers: ["ate"], hint: "" },
+    { id: "a2u7q21", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "Recently, I started a new hobby. ___, I bought a new camera.", options: ["First", "Next"], correctAnswer: "First" },
+    { id: "a2u7q22", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "___, I went to the park to take photos.", options: ["Finally", "Then"], correctAnswer: "Then" },
+    { id: "a2u7q23", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "___, I showed the photos to my teacher.", options: ["Lastly", "After that"], correctAnswer: "After that" },
+    { id: "a2u7q24", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "___, she told me they were excellent.", options: ["Finally", "First"], correctAnswer: "Finally" },
+    { id: "a2u7q25", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "I woke up and lastly I went to bed.", options: ["Right", "Wrong"], correctAnswer: "Wrong" },
+    { id: "a2u7q26", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "Firstly, I cut the fruit, and then I added the yogurt.", options: ["Right", "Wrong"], correctAnswer: "Right" },
+    { id: "a2u7q27", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "We played tennis at 6:00 p.m. and then we went for dinner.", options: ["Right", "Wrong"], correctAnswer: "Right" },
+    { id: "a2u7q28", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "The journey was long, but we first arrived home.", options: ["Right", "Wrong"], correctAnswer: "Wrong" },
+    { id: "a2u7q29", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "I arrived at work late; after that, I checked my emails.", options: ["Right", "Wrong"], correctAnswer: "Right" },
+    { id: "a2u7q30", part: "Part 4", partTitle: "Sequencing & Logic", type: "choice", graded: true, points: 1, prompt: "I finished the test and first I started it.", options: ["Right", "Wrong"], correctAnswer: "Wrong" },
+    {
+      id: "a2u7q31",
+      part: "Part 5",
+      partTitle: "Reading Comprehension",
+      type: "grouped-choice-list",
+      graded: true,
+      points: 5,
+      prompt: "Read the text and answer the questions.",
+      passage:
+        "Many people eat dried fruit as a snack at work. However, half a cup of dried banana has as much energy as nine slices of bread. Cereal is also popular before going to the gym because the sugar gives you energy, but one cup can have over 20 grams of fat. Fruit yogurt is often full of sugar because the fruit is in a sweet sauce. Finally, nuts are good for you, but only eat a little because they have lots of fat.",
+      items: [
+        { number: 1, prompt: "Dried fruit is a healthy snack to eat in large amounts.", options: ["T", "F", "NG"], correctAnswer: "F" },
+        { number: 2, prompt: "Cereal has a lot of fat and sugar.", options: ["T", "F", "NG"], correctAnswer: "T" },
+        { number: 3, prompt: "Yogurt with fruit is better for you than plain yogurt.", options: ["T", "F", "NG"], correctAnswer: "NG" },
+        { number: 4, prompt: "You should eat yogurt before you exercise.", options: ["T", "F", "NG"], correctAnswer: "F" },
+        { number: 5, prompt: "Nuts are low in energy.", options: ["T", "F", "NG"], correctAnswer: "F" }
+      ]
+    },
+    writingQuestion(
+      "Part 6",
+      "Reading Follow-up",
+      "a2u7q32",
+      "Complete the sentences with one or two words from the text.",
+      [],
+      "",
+      [
+        { id: "a2u7p6-1", prompt: "6. People like to eat dried fruit while they are at __________." },
+        { id: "a2u7p6-2", prompt: "7. Half a cup of dried banana has the same energy as nine __________ of bread." },
+        { id: "a2u7p6-3", prompt: "8. Sugar in cereal provides __________ for exercise." },
+        { id: "a2u7p6-4", prompt: "9. Fruit yogurt is sugary because of the fruit __________." },
+        { id: "a2u7p6-5", prompt: "10. It is important not to eat nuts __________ the time." }
+      ]
+    )
+  ]
+};
+
+a2Unit7Quiz.questions[a2Unit7Quiz.questions.length - 1].passage =
+  "Many people eat dried fruit as a snack at work. However, half a cup of dried banana has as much energy as nine slices of bread. Cereal is also popular before going to the gym because the sugar gives you energy, but one cup can have over 20 grams of fat. Fruit yogurt is often full of sugar because the fruit is in a sweet sauce. Finally, nuts are good for you, but only eat a little because they have lots of fat.";
+
 export const quizCatalog = [
   defaultQuiz,
   {
@@ -457,5 +560,6 @@ export const quizCatalog = [
     questions: defaultQuiz.questions
   },
   a1Unit4Quiz,
-  cefrQuiz
+  cefrQuiz,
+  a2Unit7Quiz
 ];

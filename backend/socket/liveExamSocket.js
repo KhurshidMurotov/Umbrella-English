@@ -1,3 +1,4 @@
+import { quizzes } from "../data/quizStore.js";
 import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
 import { roomStore } from "../models/roomStore.js";
 
@@ -5,6 +6,7 @@ const BASE_CORRECT_POINTS = 60;
 const MAX_SPEED_BONUS = 40;
 const MAX_ANTI_CHEAT_VIOLATIONS = 2;
 const PROMPT_REVEAL_DELAY_MS = 3000;
+const quizConfigById = new Map(quizzes.map((quiz) => [quiz.id, quiz]));
 
 function sanitizeQuestions(questions) {
   return questions.map((question) => ({
@@ -25,6 +27,7 @@ function sanitizeQuestions(questions) {
     items: question.items ?? [],
     people: question.people ?? [],
     choices: question.choices ?? [],
+    passage: question.passage ?? "",
     audioSrc: question.audioSrc ?? "",
     revealMode: question.revealMode ?? "",
     acceptedAnswers: question.acceptedAnswers ?? [],
@@ -36,7 +39,20 @@ function isScoredQuestion(question) {
   return Boolean(question) && question.graded !== false;
 }
 
+function getQuizConfig(roomOrQuizId) {
+  const quizId = typeof roomOrQuizId === "string" ? roomOrQuizId : roomOrQuizId?.quizId;
+  return quizConfigById.get(quizId) ?? null;
+}
+
+function isAnswerTimerDisabled(room) {
+  return getQuizConfig(room)?.disableAnswerTimer === true;
+}
+
 function getQuestionTotalUnits(question) {
+  if (question?.type === "grouped-choice-list") {
+    return question.items?.length || 1;
+  }
+
   if (question?.type === "cefr-listening-group") {
     return question.items?.length || 1;
   }
@@ -125,6 +141,10 @@ function requiresManualReveal(question) {
 }
 
 function getDeadlineAt(room, player) {
+  if (isAnswerTimerDisabled(room)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
   if (room.mode === "student-paced") {
     const startedAt = player.questionStartedAt ?? Date.now();
     return startedAt + room.questionTime * 1000;
@@ -165,8 +185,8 @@ function getAwardedScore(room, question, responseTimeMs, correct) {
     return 0;
   }
 
-  if (room.quizId === "a1-unit-4-busy-week") {
-    return Number(question.points) || 2;
+  if (room.quizId === "a1-unit-4-busy-week" || getQuizConfig(room)?.fixedUnitScoring === true) {
+    return Number(question.points) || 1;
   }
 
   return calculateAwardedScore(room, responseTimeMs);
@@ -203,6 +223,16 @@ function evaluateAnswer(question, answer) {
     const normalizedInput = normalizeAnswerText(answer);
     const correct = acceptedAnswers.some((item) => normalizeAnswerText(item) === normalizedInput);
     return { correct, correctCount: correct ? 1 : 0, totalCount };
+  }
+
+  if (question.type === "grouped-choice-list") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return { correct: correctCount === totalCount, correctCount, totalCount };
   }
 
   if (question.type === "cefr-listening-group") {
@@ -629,6 +659,10 @@ export function registerLiveExamSocket(io) {
       const questionIndex = room.mode === "student-paced" ? player.currentQuestionIndex : room.currentQuestionIndex;
       const currentQuestion = room.questions[questionIndex];
       if (!isScoredQuestion(currentQuestion)) {
+        return;
+      }
+
+      if (isAnswerTimerDisabled(room)) {
         return;
       }
 

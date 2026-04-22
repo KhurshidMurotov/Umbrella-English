@@ -101,6 +101,21 @@ function buildCefrReadingSection(question, details) {
   };
 }
 
+function buildGroupedChoiceSection(question, details) {
+  return {
+    id: question.id,
+    title: buildQuestionLabel(question),
+    prompt: question.prompt,
+    rows: (question.items ?? []).map((item, index) => ({
+      key: `${question.id}-${item.number}`,
+      label: `Item ${item.displayNumber ?? index + 1}`,
+      isCorrect: normalizeAnswer(details?.submittedAnswer?.[item.number]) === normalizeAnswer(item.correctAnswer),
+      studentAnswer: details?.submittedAnswer?.[item.number] || "No answer",
+      correctAnswer: item.correctAnswer || "-"
+    }))
+  };
+}
+
 function buildStandardSection(question, details, student) {
   if (question.type === "part1-drag-order") {
     return {
@@ -186,6 +201,10 @@ function buildReviewSections(student, quiz) {
 
     if (question.type === "cefr-reading-matching") {
       return buildCefrReadingSection(question, details);
+    }
+
+    if (question.type === "grouped-choice-list") {
+      return buildGroupedChoiceSection(question, details);
     }
 
     return buildStandardSection(question, details, student);
