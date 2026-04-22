@@ -134,13 +134,8 @@ export default function TeacherPage() {
         return;
       }
 
-      navigate("/teacher/room", {
-        state: {
-          room: data.room,
-          hostToken: data.hostToken,
-          hostName
-        }
-      });
+      const hostUrl = `/live/${data.room.code}?role=host&name=${encodeURIComponent(hostName)}&hostToken=${encodeURIComponent(data.hostToken)}`;
+      navigate(hostUrl);
     } catch {
       setError("Server is unavailable. Start the backend and try again.");
     }

@@ -6,6 +6,7 @@ import AnswerButton from "../components/AnswerButton";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ProgressBar from "../components/ProgressBar";
+import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
@@ -84,6 +85,8 @@ export default function LiveRoomPage() {
   const boardCountdownIntervalRef = useRef(null);
 
   const name = playerName || (role === "host" ? "Host" : "Student");
+  const playerJoinUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/live/${roomCode}?role=player` : "";
   const antiCheatStorageKey =
     role === "player" && roomCode && nameSubmitted && name
       ? `umbrella-live-anti-cheat:${roomCode.toUpperCase()}:${name.trim().toLowerCase()}`
@@ -468,10 +471,23 @@ export default function LiveRoomPage() {
                 </div>
               </div>
               {role === "host" ? (
-                <button onClick={() => socket.emit("startExam", { roomCode })} className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 font-bold text-neutral-950">
-                  <PlayCircle size={18} />
-                  Start exam
-                </button>
+                <>
+                  <div className="mt-5 rounded-[24px] bg-white/10 px-4 py-4">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-300">Room code</p>
+                    <p className="mt-2 text-4xl font-extrabold tracking-[0.06em] text-white">{roomCode?.toUpperCase()}</p>
+                  </div>
+                  <button onClick={() => socket.emit("startExam", { roomCode })} className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 font-bold text-neutral-950">
+                    <PlayCircle size={18} />
+                    Start exam
+                  </button>
+                  <div className="mt-5 rounded-[24px] bg-white p-4">
+                    <QRCodePanel
+                      value={playerJoinUrl}
+                      title="Student QR"
+                      caption="Students can scan this QR or use the room code to join."
+                    />
+                  </div>
+                </>
               ) : null}
             </div>
           ) : role === "host" && room?.mode === "student-paced" ? (
@@ -638,7 +654,7 @@ export default function LiveRoomPage() {
           )}
         </div>
 
-        {role === "host" ? <LiveLeaderboard players={players} /> : null}
+        {role === "host" && room?.started ? <LiveLeaderboard players={players} /> : null}
       </div>
     </ShellLayout>
   );
