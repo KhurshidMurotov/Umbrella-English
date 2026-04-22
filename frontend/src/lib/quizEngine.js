@@ -31,8 +31,22 @@ export function isScoredQuestion(question) {
   return Boolean(question) && question.graded !== false;
 }
 
+export function getQuestionTotalUnits(question) {
+  if (question?.type === "cefr-listening-group") {
+    return question.items?.length || 1;
+  }
+
+  if (question?.type === "cefr-reading-matching") {
+    return question.people?.length || 1;
+  }
+
+  return 1;
+}
+
 export function countScoredQuestions(quiz) {
-  return (quiz?.questions ?? []).filter(isScoredQuestion).length;
+  return (quiz?.questions ?? [])
+    .filter(isScoredQuestion)
+    .reduce((total, question) => total + getQuestionTotalUnits(question), 0);
 }
 
 export function calculateQuestionScore(timeLeft, duration) {
@@ -65,27 +79,60 @@ function compareTextAnswer(answer, acceptedAnswers = []) {
   return acceptedAnswers.some((item) => normalizeAnswerText(item) === normalizedInput);
 }
 
-export function isAnswerCorrect(question, answer) {
+export function evaluateAnswer(question, answer) {
+  const totalCount = getQuestionTotalUnits(question);
+
   if (!question) {
-    return false;
+    return { correct: false, correctCount: 0, totalCount };
   }
 
   if (question.type === "part1-drag-order") {
-    if (!Array.isArray(answer) || !Array.isArray(question.correctSequence)) {
-      return false;
+    if (!Array.isArray(answer) || !Array.isArray(question.correctSequence) || answer.length !== question.correctSequence.length) {
+      return { correct: false, correctCount: 0, totalCount };
     }
 
-    if (answer.length !== question.correctSequence.length) {
-      return false;
-    }
-
-    return answer.every((item, index) => normalizeAnswerText(item) === normalizeAnswerText(question.correctSequence[index]));
+    const correct = answer.every((item, index) => normalizeAnswerText(item) === normalizeAnswerText(question.correctSequence[index]));
+    return { correct, correctCount: correct ? 1 : 0, totalCount };
   }
 
   if (question.type === "part2-text-input") {
     const acceptedAnswers = question.acceptedAnswers?.length ? question.acceptedAnswers : [question.correctAnswer];
-    return compareTextAnswer(answer, acceptedAnswers);
+    const correct = compareTextAnswer(answer, acceptedAnswers);
+    return { correct, correctCount: correct ? 1 : 0, totalCount };
   }
 
-  return String(answer ?? "") === String(question.correctAnswer ?? "");
+  if (question.type === "cefr-listening-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
+  if (question.type === "cefr-reading-matching") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.people ?? []).reduce(
+      (total, person) => total + (normalizeAnswerText(selectedAnswers[person.number]) === normalizeAnswerText(person.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
+  const correct = String(answer ?? "") === String(question.correctAnswer ?? "");
+  return { correct, correctCount: correct ? 1 : 0, totalCount };
+}
+
+export function isAnswerCorrect(question, answer) {
+  return evaluateAnswer(question, answer).correct;
 }

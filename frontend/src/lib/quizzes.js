@@ -222,6 +222,228 @@ export const a1Unit4Quiz = {
   ]
 };
 
+export const cefrQuiz = {
+  id: "cefr-part-1-and-2",
+  title: "CEFR Test",
+  description: "Teacher-led listening with manual audio start plus compact reading matching.",
+  difficulty: "CEFR",
+  estimatedTime: "8 min",
+  shuffleQuestions: false,
+  shuffleOptions: false,
+  timerOptions: [90, 120, 180, 240],
+  defaultQuestionTime: 120,
+  timerLabel: "Time per part",
+  scoringDescription: "Listening opens only after the teacher presses Start audio. Reading uses extended part timing.",
+  questions: [
+    {
+      id: "cefrq1",
+      part: "Part 1",
+      partTitle: "Listening",
+      type: "cefr-listening-group",
+      graded: true,
+      points: 16,
+      prompt: "Listen and choose the best answer for questions 1-8.",
+      audioSrc: "/cefr-part1-listening.mp3",
+      revealMode: "manual-audio",
+      items: [
+        {
+          number: 1,
+          correctAnswer: "A",
+          options: [
+            { label: "A", text: "No, go ahead." },
+            { label: "B", text: "No, it's not." },
+            { label: "C", text: "They're nice clothes." }
+          ]
+        },
+        {
+          number: 2,
+          correctAnswer: "B",
+          options: [
+            { label: "A", text: "No, she isn't." },
+            { label: "B", text: "I think she's upstairs." },
+            { label: "C", text: "It's worn out." }
+          ]
+        },
+        {
+          number: 3,
+          correctAnswer: "A",
+          options: [
+            { label: "A", text: "Yes, that's fine." },
+            { label: "B", text: "Yes, it's true." },
+            { label: "C", text: "I'll take some." }
+          ]
+        },
+        {
+          number: 4,
+          correctAnswer: "C",
+          options: [
+            { label: "A", text: "Formal dress only." },
+            { label: "B", text: "It's expensive." },
+            { label: "C", text: "Angie checked for me." }
+          ]
+        },
+        {
+          number: 5,
+          correctAnswer: "B",
+          options: [
+            { label: "A", text: "Yes, I'll be brief." },
+            { label: "B", text: "No, mine is in the office." },
+            { label: "C", text: "Just in case." }
+          ]
+        },
+        {
+          number: 6,
+          correctAnswer: "C",
+          options: [
+            { label: "A", text: "He said to meet him there." },
+            { label: "B", text: "I haven't seen our waiter." },
+            { label: "C", text: "Yes, I'm going to weigh it." }
+          ]
+        },
+        {
+          number: 7,
+          correctAnswer: "C",
+          options: [
+            { label: "A", text: "Yes, it is." },
+            { label: "B", text: "No, he doesn't mind." },
+            { label: "C", text: "I'd like to speak to the manager." }
+          ]
+        },
+        {
+          number: 8,
+          correctAnswer: "A",
+          options: [
+            { label: "A", text: "No, I'm going to go after work." },
+            { label: "B", text: "I enjoyed the banquet." },
+            { label: "C", text: "No, she didn't." }
+          ]
+        }
+      ]
+    },
+    {
+      id: "cefrq2",
+      part: "Part 2",
+      partTitle: "Reading",
+      type: "cefr-reading-matching",
+      graded: true,
+      points: 16,
+      prompt: "Match people 7-14 with places A-J.",
+      people: [
+        {
+          number: 7,
+          correctAnswer: "C",
+          text:
+            "David enjoys walking but he has injured his knee and cannot climb up hills. He would like to spend a couple of hours on a quiet walk with well-marked paths."
+        },
+        {
+          number: 8,
+          correctAnswer: "E",
+          text:
+            "Luigi likes to get as much exercise as possible and particularly likes climbing steep hills to get a good view. He wants to do a walk that is difficult and offers a range of scenery."
+        },
+        {
+          number: 9,
+          correctAnswer: "D",
+          text:
+            "Yannis has two sons of 8 and 10. He would like to take them to see some animals in the countryside. He wants to be able to buy some refreshments."
+        },
+        {
+          number: 10,
+          correctAnswer: "H",
+          text:
+            "Amada has had an operation and needs plenty of fresh air to help her recover. She wants to find a short, quiet walk with a beautiful place to visit on the route."
+        },
+        {
+          number: 11,
+          correctAnswer: "B",
+          text:
+            "Claudia's grandparents are staying with her. They are very fit and enjoy walking. They would like to visit some of the local villages and need a clearly-marked route so they don't lose their way."
+        },
+        {
+          number: 12,
+          correctAnswer: "G",
+          text:
+            "Mike, Kathy and their three children don't have much money, but they want a special day out this Saturday. They must be back home by 9 p.m."
+        },
+        {
+          number: 13,
+          correctAnswer: "J",
+          text:
+            "Kirsten is a Dutch student who is studying in Scotland. She doesn't drive, but wants a day trip to see some beautiful scenery and spend a little time by the sea."
+        },
+        {
+          number: 14,
+          correctAnswer: "A",
+          text:
+            "Clare and Robert want to enjoy some good food, but would also like to give their two young children a day to remember. They don't mind if they spend a lot of money."
+        }
+      ],
+      choices: [
+        {
+          label: "A",
+          title: "MARIE LIFE, FRANCE",
+          text:
+            "The chance to experience the oceans of the world. Children will love the observatory, with water all around them and enormous fish swimming above their heads. Afterwards you eat at a world-famous local restaurant before boarding the ferry at 9 p.m. Not cheap, but a great day out."
+        },
+        {
+          label: "B",
+          title: "SEA PATH",
+          text:
+            "This walk starts at the village of Nye Flats and the excellent signposts lead you through local streets, fields and pretty neighbouring villages. Although it will take you half a day, there are no hills at all. You can breathe the sea air and enjoy watching traditional life in busy villages."
+        },
+        {
+          label: "C",
+          title: "CUTTERS WAY",
+          text:
+            "This walk can take anything from 30 minutes to two hours. It's not a good walk for hill-lovers as the ground is completely flat, but it has good signposts and simple facilities for the hungry or thirsty walker. A few places or things to see would improve this walk, which can be a little dull."
+        },
+        {
+          label: "D",
+          title: "PADDOCK WAY",
+          text:
+            "This is really a short track across a working farm. There are plenty of chickens and sheep to see, and the farmer has turned some of the old buildings into a cafe where visitors can eat and drink. Not much for those who like peace and quiet, but good fun."
+        },
+        {
+          label: "E",
+          title: "HURDLES",
+          text:
+            "This is a route for the experienced walker. It crosses two rivers and includes hills of up to 500 metres, from which you can see the sea. There are several rocky paths that are unsuitable for children or older people and there are no shops, so take plenty of water."
+        },
+        {
+          label: "F",
+          title: "NEVERLAND",
+          text:
+            "This is a walk to take if you have a whole day to spare and want to escape from other people. It follows a narrow track which is clearly marked and has different routes for different types of walker. There are hills to climb but views are limited because of thick forest."
+        },
+        {
+          label: "G",
+          title: "FRENCH HYPERMARKET DAY TRIP",
+          text:
+            "Whether you want to buy or just look, you'll love this tour. The enormous Darney shopping centre is a shopper's dream. You will find a great number of local goods on sale, and clothes and kitchen goods are excellent value. Free children's entertainment all day. Leaves 10:00, back at 19:00."
+        },
+        {
+          label: "H",
+          title: "GOLD-DIGGERS END",
+          text:
+            "You won't find any gold on this peaceful walk, but you will find plenty of other things to see including a lovely garden which is open to the public. It's a half-hour walk on a good path with very few hills, and the old house at the end of the walk has been turned into a tea room."
+        },
+        {
+          label: "I",
+          title: "A TASTE OF THE GOOD LIFE IN FRANCE",
+          text:
+            "After a relaxing voyage, you visit a beautiful area which is famous for its good things to eat. There you can enjoy some sightseeing and choose from a number of wonderful restaurants. Sail back on the night crossing. Sorry, adults only."
+        },
+        {
+          label: "J",
+          title: "SEA AND MOUNTAINS IN NORTHERN IRELAND",
+          text:
+            "Explore the Northern Ireland countryside, including the amazing Mountains of Mourne and the small seaside holiday town of Newcastle. The ferry leaves the port in Scotland at 7:30 and arrives back at 22:20. Transport in Northern Ireland is by air-conditioned coach."
+        }
+      ]
+    }
+  ]
+};
+
 export const quizCatalog = [
   defaultQuiz,
   {
@@ -232,5 +454,6 @@ export const quizCatalog = [
     estimatedTime: "4 min",
     questions: defaultQuiz.questions
   },
-  a1Unit4Quiz
+  a1Unit4Quiz,
+  cefrQuiz
 ];

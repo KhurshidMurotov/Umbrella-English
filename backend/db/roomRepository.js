@@ -23,8 +23,22 @@ function calculateQuizAccuracy(player) {
   return Math.round((player.correctAnswers / player.answeredQuestions) * 100);
 }
 
+function getQuestionTotalUnits(question) {
+  if (question?.type === "cefr-listening-group") {
+    return question.items?.length || 1;
+  }
+
+  if (question?.type === "cefr-reading-matching") {
+    return question.people?.length || 1;
+  }
+
+  return 1;
+}
+
 function countScoredQuestions(questions) {
-  return (questions ?? []).filter((question) => question?.graded !== false).length;
+  return (questions ?? [])
+    .filter((question) => question?.graded !== false)
+    .reduce((total, question) => total + getQuestionTotalUnits(question), 0);
 }
 
 function mapRoomRow(roomRow, playerRows) {
@@ -154,7 +168,7 @@ async function saveSessionArchive(client, room) {
       room.quizTitle,
       room.mode,
       room.questionTime,
-      room.questions.length,
+      countScoredQuestions(room.questions),
       room.started,
       completed,
       room.createdAt,

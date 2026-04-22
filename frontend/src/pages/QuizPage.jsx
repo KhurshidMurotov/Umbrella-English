@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Clock3, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import CefrListeningQuestion from "../components/CefrListeningQuestion";
+import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import DragOrderQuestion from "../components/DragOrderQuestion";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
@@ -10,7 +12,7 @@ import StatPill from "../components/StatPill";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { useQuizTimer } from "../hooks/useQuizTimer";
-import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, isAnswerCorrect, isScoredQuestion } from "../lib/quizEngine";
+import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, evaluateAnswer, isScoredQuestion } from "../lib/quizEngine";
 import { quizCatalog } from "../lib/quizzes";
 import { saveResult } from "../lib/storage";
 
@@ -72,18 +74,25 @@ export default function QuizPage() {
   const [writingResponses, setWritingResponses] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
   const [dragResponse, setDragResponse] = useState([]);
+  const [cefrListeningResponse, setCefrListeningResponse] = useState({});
+  const [cefrReadingResponse, setCefrReadingResponse] = useState({});
+  const [listeningReady, setListeningReady] = useState(false);
   const { playCorrect, playWrong } = useFeedbackSounds();
   const transitionTimeoutRef = useRef(null);
+  const audioRef = useRef(null);
 
   const currentQuestion = playableQuiz.questions[currentIndex];
   const scoredQuestionCount = useMemo(() => countScoredQuestions(playableQuiz), [playableQuiz]);
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
+  const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
   const writingFields = currentQuestion?.responseFields ?? [];
   const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isBookScoringQuiz = playableQuiz.id === "a1-unit-4-busy-week";
   const currentScore = computeScore(questionScores);
+  const questionDuration = playableQuiz.defaultQuestionTime ?? QUESTION_TIME;
 
   useEffect(() => {
     return () => {
@@ -92,6 +101,17 @@ export default function QuizPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    setCefrListeningResponse({});
+    setCefrReadingResponse({});
+    setListeningReady(false);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [currentQuestion?.id]);
 
   function finishQuiz(reason = "completed", summary = {}) {
     const finalCorrectAnswers = summary.correctAnswers ?? correctAnswers;
@@ -120,6 +140,9 @@ export default function QuizPage() {
     setWritingResponses([]);
     setTypedResponse("");
     setDragResponse([]);
+    setCefrListeningResponse({});
+    setCefrReadingResponse({});
+    setListeningReady(false);
     setLocked(false);
     setFeedbackState(null);
     if (currentIndex === playableQuiz.questions.length - 1) {
@@ -130,9 +153,9 @@ export default function QuizPage() {
   }
 
   const timeLeft = useQuizTimer({
-    duration: QUESTION_TIME,
+    duration: questionDuration,
     questionKey: `${currentQuestion.id}-${currentIndex}`,
-    isActive: !locked && !isWritingQuestion,
+    isActive: !locked && !isWritingQuestion && (!isCefrListeningQuestion || listeningReady),
     onExpire: () => {
       if (locked) {
         return;
@@ -169,16 +192,22 @@ export default function QuizPage() {
     onAutoSubmit: () => finishQuiz("anti-cheat")
   });
 
-  function getAwardedScore(question, correct) {
-    if (!correct || !isScoredQuestion(question)) {
+  function getAwardedScore(question, outcome) {
+    if (!outcome.correctCount || !isScoredQuestion(question)) {
       return 0;
     }
 
     if (isBookScoringQuiz) {
-      return Number(question.points) || 2;
+      const basePoints = Number(question.points) || 2;
+      return outcome.totalCount > 1
+        ? Math.round(basePoints * (outcome.correctCount / outcome.totalCount))
+        : basePoints;
     }
 
-    return calculateQuestionScore(timeLeft, QUESTION_TIME);
+    const baseScore = Number(question.points) || calculateQuestionScore(timeLeft, questionDuration);
+    return outcome.totalCount > 1
+      ? Math.round(baseScore * (outcome.correctCount / outcome.totalCount))
+      : baseScore;
   }
 
   function submitObjectiveAnswer(answer) {
@@ -191,12 +220,12 @@ export default function QuizPage() {
     }
     setLocked(true);
 
-    const isCorrect = isAnswerCorrect(currentQuestion, answer);
-    const awardedScore = getAwardedScore(currentQuestion, isCorrect);
-    const nextCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
+    const outcome = evaluateAnswer(currentQuestion, answer);
+    const awardedScore = getAwardedScore(currentQuestion, outcome);
+    const nextCorrectAnswers = correctAnswers + outcome.correctCount;
     const nextQuestionScores = [...questionScores, awardedScore];
 
-    if (isCorrect) {
+    if (outcome.correct) {
       setCorrectAnswers(nextCorrectAnswers);
       setQuestionScores(nextQuestionScores);
       setStreak((current) => {
@@ -206,15 +235,24 @@ export default function QuizPage() {
       });
       setFeedbackState({
         type: "correct",
-        text: `Correct answer. +${awardedScore} points`
+        text:
+          outcome.totalCount > 1
+            ? `${outcome.correctCount} / ${outcome.totalCount} correct. +${awardedScore} points`
+            : `Correct answer. +${awardedScore} points`
       });
       playCorrect();
     } else {
+      setCorrectAnswers(nextCorrectAnswers);
       setQuestionScores(nextQuestionScores);
       setStreak(0);
-      const feedbackText = isTextInputQuestion && currentQuestion.hint ? `Hint: ${currentQuestion.hint}` : "Incorrect answer. +0 points";
+      const hasPartialScore = outcome.totalCount > 1 && outcome.correctCount > 0;
+      const feedbackText = hasPartialScore
+        ? `${outcome.correctCount} / ${outcome.totalCount} correct. +${awardedScore} points`
+        : isTextInputQuestion && currentQuestion.hint
+          ? `Hint: ${currentQuestion.hint}`
+          : "Incorrect answer. +0 points";
       setFeedbackState({
-        type: isTextInputQuestion && currentQuestion.hint ? "hint" : "wrong",
+        type: hasPartialScore ? "partial" : isTextInputQuestion && currentQuestion.hint ? "hint" : "wrong",
         text: feedbackText
       });
       playWrong();
@@ -255,6 +293,33 @@ export default function QuizPage() {
     submitObjectiveAnswer(dragResponse);
   }
 
+  function handleCefrListeningSubmit() {
+    if (locked || currentQuestion.items.some((item) => !cefrListeningResponse[item.number])) {
+      return;
+    }
+
+    submitObjectiveAnswer(cefrListeningResponse);
+  }
+
+  function handleCefrReadingSubmit() {
+    if (locked || currentQuestion.people.some((person) => !cefrReadingResponse[person.number])) {
+      return;
+    }
+
+    submitObjectiveAnswer(cefrReadingResponse);
+  }
+
+  function handleListeningStart() {
+    setListeningReady(true);
+
+    if (!audioRef.current) {
+      return;
+    }
+
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {});
+  }
+
   function handleWritingContinue() {
     const combinedWritingResponse = hasStructuredWritingFields
       ? writingResponses.map((value) => value?.trim() ?? "").filter(Boolean).join("\n")
@@ -285,9 +350,9 @@ export default function QuizPage() {
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral" || feedbackState?.type === "hint"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "hint" || feedbackState?.type === "partial"
           ? "bg-amber-50 text-amber-950"
-          : "bg-rose-50 text-rose-900";
+        : "bg-rose-50 text-rose-900";
 
   return (
     <ShellLayout>
@@ -324,6 +389,8 @@ export default function QuizPage() {
         ) : null}
 
         <div className="mt-5 sm:mt-6 glass-card rounded-[28px] sm:rounded-[36px] p-4 sm:p-6 lg:p-8">
+          {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
+
           <div className="mb-4 sm:mb-5 flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 text-sm text-neutral-500">
               <Shield size={18} />
@@ -332,7 +399,11 @@ export default function QuizPage() {
             {isScoredQuestion(currentQuestion) ? (
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
                 <Sparkles size={16} />
-                {isBookScoringQuiz ? `${Number(currentQuestion.points) || 2} points for correct answer` : "60 base + speed bonus"}
+                {isBookScoringQuiz
+                  ? `${Number(currentQuestion.points) || 2} points for correct answer`
+                  : currentQuestion.points
+                    ? `Up to ${currentQuestion.points} points`
+                    : "60 base + speed bonus"}
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
@@ -361,7 +432,9 @@ export default function QuizPage() {
                 {isScoredQuestion(currentQuestion)
                   ? isBookScoringQuiz
                     ? `This question gives ${Number(currentQuestion.points) || 2} points when correct.`
-                    : "Each correct answer gives 60 base points plus a speed bonus."
+                    : currentQuestion.points
+                      ? `This part gives up to ${currentQuestion.points} points.`
+                      : "Each correct answer gives 60 base points plus a speed bonus."
                   : "This final writing task is shown as in the book and does not change the score."}
               </p>
               {isWritingQuestion ? (
@@ -440,6 +513,54 @@ export default function QuizPage() {
                       {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
                     </button>
                   </div>
+                </div>
+              ) : isCefrListeningQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <div className="rounded-[22px] bg-amber-50 px-4 py-4 text-sm leading-7 text-neutral-800">
+                    Audio does not start automatically. Press the button below to begin this listening part.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleListeningStart}
+                    disabled={locked}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {listeningReady ? "Play audio again" : "Start audio"}
+                  </button>
+                  <div className="mt-5">
+                    <CefrListeningQuestion
+                      items={currentQuestion.items}
+                      value={cefrListeningResponse}
+                      onChange={setCefrListeningResponse}
+                      disabled={locked || !listeningReady}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCefrListeningSubmit}
+                    disabled={locked || !listeningReady || currentQuestion.items.some((item) => !cefrListeningResponse[item.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
+              ) : isCefrReadingQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <CefrReadingMatchingQuestion
+                    people={currentQuestion.people}
+                    choices={currentQuestion.choices}
+                    value={cefrReadingResponse}
+                    onChange={setCefrReadingResponse}
+                    disabled={locked}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCefrReadingSubmit}
+                    disabled={locked || currentQuestion.people.some((person) => !cefrReadingResponse[person.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
                 </div>
               ) : isDragOrderQuestion ? (
                 <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">

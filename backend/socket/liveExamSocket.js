@@ -22,6 +22,11 @@ function sanitizeQuestions(questions) {
     hint: question.hint ?? "",
     textTemplate: question.textTemplate ?? "",
     wordBank: question.wordBank ?? [],
+    items: question.items ?? [],
+    people: question.people ?? [],
+    choices: question.choices ?? [],
+    audioSrc: question.audioSrc ?? "",
+    revealMode: question.revealMode ?? "",
     acceptedAnswers: question.acceptedAnswers ?? [],
     correctSequence: question.correctSequence ?? []
   }));
@@ -29,6 +34,18 @@ function sanitizeQuestions(questions) {
 
 function isScoredQuestion(question) {
   return Boolean(question) && question.graded !== false;
+}
+
+function getQuestionTotalUnits(question) {
+  if (question?.type === "cefr-listening-group") {
+    return question.items?.length || 1;
+  }
+
+  if (question?.type === "cefr-reading-matching") {
+    return question.people?.length || 1;
+  }
+
+  return 1;
 }
 
 function getAverageResponseTimeSeconds(player) {
@@ -103,6 +120,10 @@ function getPlayer(room, socket, name) {
   return room.players.find((item) => item.socketId === socket.id || item.name === name);
 }
 
+function requiresManualReveal(question) {
+  return question?.revealMode === "manual-audio";
+}
+
 function getDeadlineAt(room, player) {
   if (room.mode === "student-paced") {
     const startedAt = player.questionStartedAt ?? Date.now();
@@ -161,40 +182,58 @@ function normalizeAnswerText(value) {
     .trim();
 }
 
-function isAnswerCorrect(question, answer) {
+function evaluateAnswer(question, answer) {
+  const totalCount = getQuestionTotalUnits(question);
+
   if (!question) {
-    return false;
+    return { correct: false, correctCount: 0, totalCount };
   }
 
   if (question.type === "part1-drag-order") {
-    if (!Array.isArray(answer) || !Array.isArray(question.correctSequence)) {
-      return false;
+    if (!Array.isArray(answer) || !Array.isArray(question.correctSequence) || answer.length !== question.correctSequence.length) {
+      return { correct: false, correctCount: 0, totalCount };
     }
 
-    if (answer.length !== question.correctSequence.length) {
-      return false;
-    }
-
-    return answer.every((item, index) => normalizeAnswerText(item) === normalizeAnswerText(question.correctSequence[index]));
+    const correct = answer.every((item, index) => normalizeAnswerText(item) === normalizeAnswerText(question.correctSequence[index]));
+    return { correct, correctCount: correct ? 1 : 0, totalCount };
   }
 
   if (question.type === "part2-text-input") {
     const acceptedAnswers = question.acceptedAnswers?.length ? question.acceptedAnswers : [question.correctAnswer];
     const normalizedInput = normalizeAnswerText(answer);
-    return acceptedAnswers.some((item) => normalizeAnswerText(item) === normalizedInput);
+    const correct = acceptedAnswers.some((item) => normalizeAnswerText(item) === normalizedInput);
+    return { correct, correctCount: correct ? 1 : 0, totalCount };
   }
 
-  return String(answer ?? "") === String(question.correctAnswer ?? "");
+  if (question.type === "cefr-listening-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return { correct: correctCount === totalCount, correctCount, totalCount };
+  }
+
+  if (question.type === "cefr-reading-matching") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.people ?? []).reduce(
+      (total, person) => total + (normalizeAnswerText(selectedAnswers[person.number]) === normalizeAnswerText(person.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return { correct: correctCount === totalCount, correctCount, totalCount };
+  }
+
+  const correct = String(answer ?? "") === String(question.correctAnswer ?? "");
+  return { correct, correctCount: correct ? 1 : 0, totalCount };
 }
 
-function applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore }) {
-  player.answeredQuestions = (player.answeredQuestions ?? 0) + 1;
+function applyPlayerMetrics(player, { correctCount, totalCount, responseTimeMs, awardedScore }) {
+  player.answeredQuestions = (player.answeredQuestions ?? 0) + totalCount;
   player.totalResponseTimeMs = (player.totalResponseTimeMs ?? 0) + responseTimeMs;
   player.score += awardedScore;
-
-  if (correct) {
-    player.correctAnswers = (player.correctAnswers ?? 0) + 1;
-  }
+  player.correctAnswers = (player.correctAnswers ?? 0) + correctCount;
 }
 
 function advanceStudentPlayer(room, player) {
@@ -253,6 +292,10 @@ function createPromptTimerController() {
         latestRoom.mode !== "instructor-paced" ||
         latestRoom.questionPhase !== "prompt"
       ) {
+        return;
+      }
+
+      if (requiresManualReveal(latestRoom.questions?.[latestRoom.currentQuestionIndex])) {
         return;
       }
 
@@ -331,7 +374,12 @@ export function registerLiveExamSocket(io) {
       }
 
       await persistAndBroadcast(io, room);
-      if (room.started && room.mode === "instructor-paced" && room.questionPhase === "prompt") {
+      if (
+        room.started &&
+        room.mode === "instructor-paced" &&
+        room.questionPhase === "prompt" &&
+        !requiresManualReveal(room.questions?.[room.currentQuestionIndex])
+      ) {
         promptTimers.schedule(io, room.code);
       }
 
@@ -353,10 +401,13 @@ export function registerLiveExamSocket(io) {
       room.started = true;
       room.currentQuestionIndex = 0;
       room.questionPhase = room.mode === "instructor-paced" ? "prompt" : "answers";
-      if (room.mode === "instructor-paced") {
+      if (room.mode === "instructor-paced" && !requiresManualReveal(room.questions?.[0])) {
         setPromptRevealClock(room);
-      } else {
+      } else if (room.mode === "student-paced") {
         resetInstructorClock(room);
+      } else {
+        room.questionStartedAt = null;
+        room.questionDeadlineAt = null;
       }
       room.players = room.players.map((player) => ({
         ...player,
@@ -374,7 +425,7 @@ export function registerLiveExamSocket(io) {
       }));
 
       await persistAndBroadcast(io, room);
-      if (room.mode === "instructor-paced") {
+      if (room.mode === "instructor-paced" && !requiresManualReveal(room.questions?.[0])) {
         promptTimers.schedule(io, room.code);
       } else {
         promptTimers.clear(room.code);
@@ -455,7 +506,8 @@ export function registerLiveExamSocket(io) {
       const responseTimeMs = getResponseTimeMs(room, player, answeredAt);
       if (answeredAt > deadlineAt) {
         applyPlayerMetrics(player, {
-          correct: false,
+          correctCount: 0,
+          totalCount: getQuestionTotalUnits(currentQuestion),
           responseTimeMs: room.questionTime * 1000,
           awardedScore: 0
         });
@@ -477,16 +529,27 @@ export function registerLiveExamSocket(io) {
       }
 
       player.answeredCurrent = true;
-      const correct = isAnswerCorrect(currentQuestion, answer);
-      const awardedScore = getAwardedScore(room, currentQuestion, responseTimeMs, correct);
-      applyPlayerMetrics(player, { correct, responseTimeMs, awardedScore });
+      const outcome = evaluateAnswer(currentQuestion, answer);
+      const baseAwardedScore = getAwardedScore(room, currentQuestion, responseTimeMs, outcome.correct);
+      const awardedScore =
+        outcome.totalCount > 1
+          ? Math.round((Number(currentQuestion.points) || baseAwardedScore) * (outcome.correctCount / outcome.totalCount))
+          : baseAwardedScore;
+      applyPlayerMetrics(player, {
+        correctCount: outcome.correctCount,
+        totalCount: outcome.totalCount,
+        responseTimeMs,
+        awardedScore
+      });
 
       socket.emit("answerFeedback", {
-        correct,
+        correct: outcome.correct,
         awardedScore,
         timedOut: false,
         responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2)),
-        hint: !correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : ""
+        correctCount: outcome.correctCount,
+        totalCount: outcome.totalCount,
+        hint: !outcome.correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : ""
       });
 
       if (room.mode === "student-paced") {
@@ -517,7 +580,8 @@ export function registerLiveExamSocket(io) {
       }
 
       applyPlayerMetrics(player, {
-        correct: false,
+        correctCount: 0,
+        totalCount: getQuestionTotalUnits(currentQuestion),
         responseTimeMs: room.questionTime * 1000,
         awardedScore: 0
       });
@@ -557,8 +621,14 @@ export function registerLiveExamSocket(io) {
       }));
 
       if (room.currentQuestionIndex < room.questions.length) {
-        setPromptRevealClock(room);
-        promptTimers.schedule(io, room.code);
+        if (requiresManualReveal(room.questions?.[room.currentQuestionIndex])) {
+          room.questionStartedAt = null;
+          room.questionDeadlineAt = null;
+          promptTimers.clear(room.code);
+        } else {
+          setPromptRevealClock(room);
+          promptTimers.schedule(io, room.code);
+        }
       } else {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;

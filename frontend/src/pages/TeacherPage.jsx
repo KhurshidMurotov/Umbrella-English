@@ -98,6 +98,12 @@ export default function TeacherPage() {
   const navigate = useNavigate();
 
   const selectedQuiz = quizCatalog.find((quiz) => quiz.id === selectedQuizId) ?? quizCatalog[0];
+  const timerOptions = selectedQuiz?.timerOptions ?? TIMER_OPTIONS;
+  const timerLabel = selectedQuiz?.timerLabel ?? "Time per question";
+
+  useEffect(() => {
+    setQuestionTime(selectedQuiz?.defaultQuestionTime ?? timerOptions[0] ?? TIMER_OPTIONS[0]);
+  }, [selectedQuizId]);
 
   useEffect(() => {
     const session = getTeacherSession();
@@ -242,9 +248,9 @@ export default function TeacherPage() {
               </div>
 
               <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
-                <p className="text-sm font-bold text-neutral-950">Time per question</p>
+                <p className="text-sm font-bold text-neutral-950">{timerLabel}</p>
                 <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  {TIMER_OPTIONS.map((value) => (
+                  {timerOptions.map((value) => (
                     <button
                       key={value}
                       type="button"
@@ -262,7 +268,7 @@ export default function TeacherPage() {
               <div className="w-full rounded-[24px] border border-neutral-200 bg-white p-5">
                 <p className="text-sm font-bold text-neutral-950">Scoring</p>
                 <p className="mt-2 text-sm leading-6 text-neutral-500">
-                  Correct answers earn up to 100 points. Faster answers score higher, wrong or late answers score 0.
+                  {selectedQuiz?.scoringDescription ?? "Correct answers earn up to 100 points. Faster answers score higher, wrong or late answers score 0."}
                 </p>
                 <p className="mt-3 text-sm font-semibold text-neutral-900">
                   Selected test: {selectedQuiz.title}

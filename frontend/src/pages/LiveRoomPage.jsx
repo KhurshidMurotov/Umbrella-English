@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import CefrListeningQuestion from "../components/CefrListeningQuestion";
+import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
 import DragOrderQuestion from "../components/DragOrderQuestion";
 import LiveLeaderboard from "../components/LiveLeaderboard";
@@ -104,9 +106,12 @@ export default function LiveRoomPage() {
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
   const [dragResponse, setDragResponse] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
+  const [cefrListeningResponse, setCefrListeningResponse] = useState({});
+  const [cefrReadingResponse, setCefrReadingResponse] = useState({});
   const { playCorrect, playWrong } = useFeedbackSounds();
   const boardRevealTimeoutRef = useRef(null);
   const boardRevealKeyRef = useRef("");
+  const audioRef = useRef(null);
 
   const name = playerName || (role === "host" ? "Host" : "Student");
   const playerJoinUrl =
@@ -188,12 +193,30 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint, correctCount, totalCount }) => {
       if (ungraded) {
         setFeedbackState({
           type: "neutral",
           text: text ?? "This part is included but not scored."
         });
+        return;
+      }
+
+      if ((totalCount ?? 1) > 1) {
+        const safeCorrectCount = Number(correctCount) || 0;
+        const safeTotalCount = Number(totalCount) || 1;
+        const feedbackType = correct ? "correct" : safeCorrectCount > 0 ? "partial" : "wrong";
+
+        setFeedbackState({
+          type: feedbackType,
+          text: `${safeCorrectCount} / ${safeTotalCount} correct in ${responseTimeSeconds}s. +${awardedScore} points`
+        });
+
+        if (correct) {
+          playCorrect();
+        } else {
+          playWrong();
+        }
         return;
       }
 
@@ -252,6 +275,9 @@ export default function LiveRoomPage() {
   const isWritingQuestion = currentQuestion?.type === "writing" || !isScoredQuestion(currentQuestion);
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
+  const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
+  const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
+  const requiresManualReveal = currentQuestion?.revealMode === "manual-audio";
   const writingFields = currentQuestion?.responseFields ?? [];
   const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isInstructorPaced = room?.mode === "instructor-paced";
@@ -290,9 +316,20 @@ export default function LiveRoomPage() {
     setWritingResponses([]);
     setDragResponse([]);
     setTypedResponse("");
+    setCefrListeningResponse({});
+    setCefrReadingResponse({});
     setHasSubmittedResponse(false);
     setFeedbackState(null);
     setTimeoutKey("");
+  }, [questionKey]);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      return;
+    }
+
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
   }, [questionKey]);
 
   useEffect(() => {
@@ -325,7 +362,7 @@ export default function LiveRoomPage() {
       boardRevealTimeoutRef.current = null;
     }
 
-    if (role !== "host" || !isQuestionBoardPhase || !currentQuestion) {
+    if (role !== "host" || !isQuestionBoardPhase || !currentQuestion || requiresManualReveal) {
       boardRevealKeyRef.current = "";
       setBoardRevealDeadline(null);
       return undefined;
@@ -414,12 +451,59 @@ export default function LiveRoomPage() {
     socket.emit("submitAnswer", { roomCode, answer: typedResponse.trim(), name });
   }
 
+  function submitCefrListeningResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => cefrListeningResponse[item.number]).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: cefrListeningResponse, name });
+  }
+
+  function submitCefrReadingResponse() {
+    const requiredAnswers = currentQuestion?.people?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.people.filter((person) => cefrReadingResponse[person.number]).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: cefrReadingResponse, name });
+  }
+
+  function handleTeacherStartAudio() {
+    if (!audioRef.current) {
+      socket.emit("revealAnswers", { roomCode });
+      return;
+    }
+
+    audioRef.current.currentTime = 0;
+    const playPromise = audioRef.current.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        setRoomError("Audio could not start automatically. Press Start audio again.");
+      });
+    }
+
+    socket.emit("revealAnswers", { roomCode });
+  }
+
   const playerFeedbackClass =
     feedbackState?.type === "correct"
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral" || feedbackState?.type === "hint"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "hint" || feedbackState?.type === "partial"
           ? "bg-amber-50 text-amber-950"
         : "bg-rose-50 text-rose-900";
 
@@ -481,6 +565,8 @@ export default function LiveRoomPage() {
 
       <div className={layoutClass}>
         <div className="glass-card rounded-[40px] p-8">
+          {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
+
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold">{room?.quizTitle ?? "Loading room..."}</h1>
@@ -580,7 +666,11 @@ export default function LiveRoomPage() {
                 ) : null}
               </div>
               <div className="mt-6">
-                {currentQuestion.type === "part1-drag-order" ? (
+                {isCefrListeningQuestion ? (
+                  <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                ) : isCefrReadingQuestion ? (
+                  <CefrReadingMatchingQuestion people={currentQuestion.people} choices={currentQuestion.choices} value={{}} disabled={true} boardMode={true} />
+                ) : currentQuestion.type === "part1-drag-order" ? (
                   <DragOrderQuestion
                     template={currentQuestion.textTemplate}
                     wordBank={currentQuestion.wordBank}
@@ -597,28 +687,53 @@ export default function LiveRoomPage() {
                   )
                 )}
               </div>
-              <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                  {isWritingQuestion ? "Response area opens in" : "Answers open in"}
-                </p>
-                <div className="flex items-end gap-4">
-                  <div className="text-7xl font-extrabold leading-none text-white tabular-nums">
-                    {displayBoardCountdown}
+              {requiresManualReveal ? (
+                <div className="mt-8 flex flex-wrap items-center gap-4 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
+                  <div className="min-w-[260px] flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
+                      Teacher control
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-neutral-300">
+                      Students will not see answer options until you start the audio from this board.
+                    </p>
                   </div>
-                  <p className="pb-2 text-base font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                    seconds
-                  </p>
+                  <button
+                    type="button"
+                    onClick={handleTeacherStartAudio}
+                    className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 font-bold text-neutral-950"
+                  >
+                    <PlayCircle size={18} />
+                    Start audio
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
+                    {isWritingQuestion ? "Response area opens in" : "Answers open in"}
+                  </p>
+                  <div className="flex items-end gap-4">
+                    <div className="text-7xl font-extrabold leading-none text-white tabular-nums">
+                      {displayBoardCountdown}
+                    </div>
+                    <p className="pb-2 text-base font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      seconds
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] border border-neutral-200 bg-white p-8 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-neutral-950">
                 <Presentation size={24} />
               </div>
-              <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">Question on the board</h2>
+              <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">
+                {requiresManualReveal ? "Waiting for audio" : "Question on the board"}
+              </h2>
               <p className="mt-3 text-sm leading-7 text-neutral-600">
-                Read the question on the host screen. The response area will open here as soon as the board countdown finishes.
+                {requiresManualReveal
+                  ? "The teacher will start the listening audio from the board. Your answer area will open here immediately after that."
+                  : "Read the question on the host screen. The response area will open here as soon as the board countdown finishes."}
               </p>
             </div>
           ) : currentQuestion ? (
@@ -731,6 +846,74 @@ export default function LiveRoomPage() {
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Submit response
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isCefrListeningQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <>
+                      <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                      <p className="mt-5 text-sm leading-7 text-neutral-600">
+                        The listening audio plays from the teacher board. Students answer all 8 items on their own devices after you press Start audio.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <CefrListeningQuestion
+                        items={currentQuestion.items}
+                        value={cefrListeningResponse}
+                        onChange={setCefrListeningResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitCefrListeningResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => !cefrListeningResponse[item.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isCefrReadingQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <CefrReadingMatchingQuestion
+                      people={currentQuestion.people}
+                      choices={currentQuestion.choices}
+                      value={{}}
+                      disabled={true}
+                      boardMode={true}
+                    />
+                  ) : (
+                    <>
+                      <CefrReadingMatchingQuestion
+                        people={currentQuestion.people}
+                        choices={currentQuestion.choices}
+                        value={cefrReadingResponse}
+                        onChange={setCefrReadingResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitCefrReadingResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.people.some((person) => !cefrReadingResponse[person.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
                       </button>
                     </>
                   )}
