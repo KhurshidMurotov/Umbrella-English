@@ -77,12 +77,12 @@ export default function LiveRoomPage() {
   const [roomVerified, setRoomVerified] = useState(role === "host");
   const [playerName, setPlayerName] = useState(initialName || "");
   const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
-  const [boardCountdown, setBoardCountdown] = useState(BOARD_REVEAL_DELAY_MS / 1000);
+  const [boardRevealDeadline, setBoardRevealDeadline] = useState(null);
   const [textResponse, setTextResponse] = useState("");
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
   const { playCorrect, playWrong } = useFeedbackSounds();
   const boardRevealTimeoutRef = useRef(null);
-  const boardCountdownIntervalRef = useRef(null);
+  const boardRevealKeyRef = useRef("");
 
   const name = playerName || (role === "host" ? "Host" : "Student");
   const playerJoinUrl =
@@ -227,7 +227,10 @@ export default function LiveRoomPage() {
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
-  const displayBoardCountdown = Math.max(1, Math.ceil(boardCountdown));
+  const boardPhaseKey = `${roomCode}-${questionIndex}-${room?.questionPhase ?? "unknown"}`;
+  const displayBoardCountdown = boardRevealDeadline
+    ? Math.max(1, Math.ceil((boardRevealDeadline - now) / 1000))
+    : Math.ceil(BOARD_REVEAL_DELAY_MS / 1000);
 
   const deadlineAt =
     isScoredQuestion(currentQuestion)
@@ -288,19 +291,17 @@ export default function LiveRoomPage() {
       window.clearTimeout(boardRevealTimeoutRef.current);
       boardRevealTimeoutRef.current = null;
     }
-    if (boardCountdownIntervalRef.current) {
-      window.clearInterval(boardCountdownIntervalRef.current);
-      boardCountdownIntervalRef.current = null;
-    }
 
     if (role !== "host" || !isQuestionBoardPhase || !currentQuestion) {
+      boardRevealKeyRef.current = "";
+      setBoardRevealDeadline(null);
       return undefined;
     }
 
-    setBoardCountdown(BOARD_REVEAL_DELAY_MS / 1000);
-    boardCountdownIntervalRef.current = window.setInterval(() => {
-      setBoardCountdown((seconds) => Math.max(0, seconds - 1));
-    }, 1000);
+    if (boardRevealKeyRef.current !== boardPhaseKey) {
+      boardRevealKeyRef.current = boardPhaseKey;
+      setBoardRevealDeadline(Date.now() + BOARD_REVEAL_DELAY_MS);
+    }
 
     boardRevealTimeoutRef.current = window.setTimeout(() => {
       socket.emit("revealAnswers", { roomCode });
@@ -311,12 +312,8 @@ export default function LiveRoomPage() {
         window.clearTimeout(boardRevealTimeoutRef.current);
         boardRevealTimeoutRef.current = null;
       }
-      if (boardCountdownIntervalRef.current) {
-        window.clearInterval(boardCountdownIntervalRef.current);
-        boardCountdownIntervalRef.current = null;
-      }
     };
-  }, [currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
+  }, [boardPhaseKey, currentQuestion, isQuestionBoardPhase, role, roomCode, socket]);
 
   useEffect(() => {
     if (
