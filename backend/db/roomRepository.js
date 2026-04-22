@@ -290,7 +290,7 @@ export async function saveRoom(room) {
             score, correct_answers, answered_questions, total_response_time_ms,
             answered_current, violations, current_question_index, writing_response_text, answer_details_json, question_started_at, completed
           ) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16, $17, $18);
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17, $18);
         `,
         [
           room.code,
