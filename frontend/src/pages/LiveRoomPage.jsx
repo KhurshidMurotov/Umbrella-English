@@ -262,6 +262,7 @@ export default function LiveRoomPage() {
   const selfPlayer = players.find((player) => player.socketId === socket.id) ?? players.find((player) => player.name === name);
   const serverDisqualified = Boolean(selfPlayer?.disqualified);
   const isLockedFromAntiCheat = disqualified || serverDisqualified;
+  const isCefrQuiz = room?.quizId === "cefr-part-1-and-2";
   const totalQuestions = room?.questions?.length ?? 10;
   const studentCount = connectedPlayers.length;
   const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
@@ -508,7 +509,8 @@ export default function LiveRoomPage() {
         : "bg-rose-50 text-rose-900";
 
   const showTimerBadge = Boolean(
-    room?.started &&
+    !isCefrQuiz &&
+      room?.started &&
       room?.questionPhase === "answers" &&
       isScoredQuestion(currentQuestion) &&
       (currentQuestion || (role === "host" && room?.mode === "student-paced"))
@@ -517,8 +519,10 @@ export default function LiveRoomPage() {
   const layoutClass =
     role === "host" && !room?.started
       ? "mx-auto max-w-4xl"
+      : role === "host" && isCefrQuiz
+        ? "mx-auto w-full max-w-[1280px]"
       : role === "host"
-      ? "mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
+        ? "mx-auto grid max-w-6xl gap-6 md:grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
       : "mx-auto max-w-4xl";
 
   return (
@@ -1032,7 +1036,7 @@ export default function LiveRoomPage() {
           )}
         </div>
 
-        {role === "host" && room?.started ? <LiveLeaderboard players={players} /> : null}
+        {role === "host" && room?.started && !isCefrQuiz ? <LiveLeaderboard players={players} /> : null}
       </div>
     </ShellLayout>
   );
