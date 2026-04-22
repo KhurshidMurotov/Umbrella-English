@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, LogOut, TimerReset, UserRound } from "lucide-react";
+import { LockKeyhole, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import ErrorAlert from "../components/ErrorAlert";
 import ShellLayout from "../components/ShellLayout";
@@ -162,14 +162,22 @@ export default function TeacherPage() {
               <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Teacher panel</p>
               <h1 className="mt-2 text-4xl font-extrabold text-neutral-950">Create and control live exams.</h1>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-neutral-700"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/teacher/stats"
+                className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 text-sm font-extrabold text-neutral-950"
+              >
+                View students stats
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-neutral-700"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
           </div>
 
           <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">
@@ -279,12 +287,6 @@ export default function TeacherPage() {
                 >
                   {loading ? "Creating room..." : "Create live room"}
                 </button>
-                <Link
-                  to="/teacher/stats"
-                  className="inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-4 text-sm font-extrabold text-neutral-950"
-                >
-                  View students stats
-                </Link>
               </div>
             </div>
           </div>
