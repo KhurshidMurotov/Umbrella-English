@@ -334,6 +334,7 @@ export default function LiveRoomPage() {
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
   const boardPhaseKey = `${roomCode}-${questionIndex}-${room?.questionPhase ?? "unknown"}`;
+  const studentVisiblePassage = currentQuestion?.hidePassageForStudents ? "" : currentQuestion?.passage;
   const displayBoardCountdown = boardRevealDeadline
     ? Math.max(1, Math.ceil((boardRevealDeadline - now) / 1000))
     : Math.ceil(BOARD_REVEAL_DELAY_MS / 1000);
@@ -1038,7 +1039,7 @@ export default function LiveRoomPage() {
                         value={groupedChoiceResponse}
                         onChange={setGroupedChoiceResponse}
                         disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
-                        passage={currentQuestion.passage}
+                        passage={studentVisiblePassage}
                       />
                       <button
                         type="button"

@@ -718,6 +718,7 @@ export const a1Unit5AQuiz = {
       graded: true,
       points: 5,
       prompt: "Read the text and decide if the sentences are true or false.",
+      hidePassageForStudents: true,
       passage:
         "A Day in the Life of Marco Rossi\nMarco Rossi is a famous fashion photographer. He lives in a modern apartment in Milan, but he travels a lot for his work. Today, he is in Tokyo because he loves Harajuku fashion.\n\n\"I love this city because the clothes are very unusual and colourful,\" Marco says. \"Young people here wear strange hats and bright yellow T-shirts. My job is exciting, but it is also difficult.\"\n\nMarco usually wakes up at 6:00 a.m. He always has a big breakfast because he works all day. He never wears a suit or a tie to work; he wears blue jeans and a grey jacket.",
       items: [

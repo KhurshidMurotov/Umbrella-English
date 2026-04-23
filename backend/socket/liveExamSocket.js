@@ -28,6 +28,7 @@ function sanitizeQuestions(questions) {
     people: question.people ?? [],
     choices: question.choices ?? [],
     passage: question.passage ?? "",
+    hidePassageForStudents: question.hidePassageForStudents === true,
     audioSrc: question.audioSrc ?? "",
     revealMode: question.revealMode ?? "",
     acceptedAnswers: question.acceptedAnswers ?? [],
