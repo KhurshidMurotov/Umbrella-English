@@ -1,5 +1,5 @@
 import { roomStore } from "../models/roomStore.js";
-import { hasDatabase, query, withTransaction } from "./client.js";
+import { hasDatabase, isDatabaseConnectionError, query, withTransaction } from "./client.js";
 
 const PASS_THRESHOLD = 6;
 
@@ -43,6 +43,10 @@ function countScoredQuestions(questions) {
   return (questions ?? [])
     .filter((question) => question?.graded !== false)
     .reduce((total, question) => total + getQuestionTotalUnits(question), 0);
+}
+
+function logDatabaseFallback(context, error) {
+  console.warn(`[db-fallback] ${context}: ${error.message}`);
 }
 
 function mapRoomRow(roomRow, playerRows) {
@@ -235,89 +239,98 @@ export async function saveRoom(room) {
     return;
   }
 
-  await withTransaction(async (client) => {
-    await client.query(
-      `
-        INSERT INTO live_rooms (
-          code, session_id, host_name, host_token, host_socket_id, mode, quiz_id, quiz_title,
-          question_time, questions_json, current_question_index, question_phase,
-          question_started_at, question_deadline_at, started, created_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16)
-        ON CONFLICT (code) DO UPDATE SET
-          session_id = EXCLUDED.session_id,
-          host_name = EXCLUDED.host_name,
-          host_token = EXCLUDED.host_token,
-          host_socket_id = EXCLUDED.host_socket_id,
-          mode = EXCLUDED.mode,
-          quiz_id = EXCLUDED.quiz_id,
-          quiz_title = EXCLUDED.quiz_title,
-          question_time = EXCLUDED.question_time,
-          questions_json = EXCLUDED.questions_json,
-          current_question_index = EXCLUDED.current_question_index,
-          question_phase = EXCLUDED.question_phase,
-          question_started_at = EXCLUDED.question_started_at,
-          question_deadline_at = EXCLUDED.question_deadline_at,
-          started = EXCLUDED.started;
-      `,
-      [
-        room.code,
-        room.sessionId,
-        room.hostName,
-        room.hostToken,
-        room.hostSocketId,
-        room.mode,
-        room.quizId,
-        room.quizTitle,
-        room.questionTime,
-        JSON.stringify(room.questions),
-        room.currentQuestionIndex,
-        room.questionPhase,
-        toNullableBigInt(room.questionStartedAt),
-        toNullableBigInt(room.questionDeadlineAt),
-        room.started,
-        room.createdAt
-      ]
-    );
-
-    await client.query("DELETE FROM live_room_players WHERE room_code = $1", [room.code]);
-
-    for (const player of room.players) {
+  try {
+    await withTransaction(async (client) => {
       await client.query(
         `
-          INSERT INTO live_room_players (
-            room_code, name, socket_id, connected, disqualified, joined_at, disconnected_at,
-            score, correct_answers, answered_questions, total_response_time_ms,
-            answered_current, violations, current_question_index, writing_response_text, answer_details_json, question_started_at, completed
-          ) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17, $18);
+          INSERT INTO live_rooms (
+            code, session_id, host_name, host_token, host_socket_id, mode, quiz_id, quiz_title,
+            question_time, questions_json, current_question_index, question_phase,
+            question_started_at, question_deadline_at, started, created_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16)
+          ON CONFLICT (code) DO UPDATE SET
+            session_id = EXCLUDED.session_id,
+            host_name = EXCLUDED.host_name,
+            host_token = EXCLUDED.host_token,
+            host_socket_id = EXCLUDED.host_socket_id,
+            mode = EXCLUDED.mode,
+            quiz_id = EXCLUDED.quiz_id,
+            quiz_title = EXCLUDED.quiz_title,
+            question_time = EXCLUDED.question_time,
+            questions_json = EXCLUDED.questions_json,
+            current_question_index = EXCLUDED.current_question_index,
+            question_phase = EXCLUDED.question_phase,
+            question_started_at = EXCLUDED.question_started_at,
+            question_deadline_at = EXCLUDED.question_deadline_at,
+            started = EXCLUDED.started;
         `,
         [
           room.code,
-          player.name,
-          player.socketId,
-          player.connected ?? Boolean(player.socketId),
-          player.disqualified ?? false,
-          toNullableBigInt(player.joinedAt ?? room.createdAt),
-          toNullableBigInt(player.disconnectedAt),
-          player.score ?? 0,
-          player.correctAnswers ?? 0,
-          player.answeredQuestions ?? 0,
-          player.totalResponseTimeMs ?? 0,
-          player.answeredCurrent ?? false,
-          player.violations ?? 0,
-          player.currentQuestionIndex ?? 0,
-          player.writingResponseText ?? "",
-          JSON.stringify(typeof player.answerDetails === 'object' && player.answerDetails !== null ? player.answerDetails : {}),
-          toNullableBigInt(player.questionStartedAt),
-          player.completed ?? false
+          room.sessionId,
+          room.hostName,
+          room.hostToken,
+          room.hostSocketId,
+          room.mode,
+          room.quizId,
+          room.quizTitle,
+          room.questionTime,
+          JSON.stringify(room.questions),
+          room.currentQuestionIndex,
+          room.questionPhase,
+          toNullableBigInt(room.questionStartedAt),
+          toNullableBigInt(room.questionDeadlineAt),
+          room.started,
+          room.createdAt
         ]
       );
+
+      await client.query("DELETE FROM live_room_players WHERE room_code = $1", [room.code]);
+
+      for (const player of room.players) {
+        await client.query(
+          `
+            INSERT INTO live_room_players (
+              room_code, name, socket_id, connected, disqualified, joined_at, disconnected_at,
+              score, correct_answers, answered_questions, total_response_time_ms,
+              answered_current, violations, current_question_index, writing_response_text, answer_details_json, question_started_at, completed
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17, $18);
+          `,
+          [
+            room.code,
+            player.name,
+            player.socketId,
+            player.connected ?? Boolean(player.socketId),
+            player.disqualified ?? false,
+            toNullableBigInt(player.joinedAt ?? room.createdAt),
+            toNullableBigInt(player.disconnectedAt),
+            player.score ?? 0,
+            player.correctAnswers ?? 0,
+            player.answeredQuestions ?? 0,
+            player.totalResponseTimeMs ?? 0,
+            player.answeredCurrent ?? false,
+            player.violations ?? 0,
+            player.currentQuestionIndex ?? 0,
+            player.writingResponseText ?? "",
+            JSON.stringify(typeof player.answerDetails === "object" && player.answerDetails !== null ? player.answerDetails : {}),
+            toNullableBigInt(player.questionStartedAt),
+            player.completed ?? false
+          ]
+        );
+      }
+
+      await saveSessionArchive(client, room);
+      await saveQuizResults(client, room);
+    });
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      logDatabaseFallback(`saveRoom(${room.code})`, error);
+      return;
     }
 
-    await saveSessionArchive(client, room);
-    await saveQuizResults(client, room);
-  });
+    throw error;
+  }
 }
 
 export async function getRoomByCode(code) {
@@ -335,15 +348,24 @@ export async function getRoomByCode(code) {
     return null;
   }
 
-  const roomResult = await query("SELECT * FROM live_rooms WHERE code = $1", [normalizedCode]);
-  if (!roomResult.rows.length) {
-    return null;
-  }
+  try {
+    const roomResult = await query("SELECT * FROM live_rooms WHERE code = $1", [normalizedCode]);
+    if (!roomResult.rows.length) {
+      return null;
+    }
 
-  const playerResult = await query("SELECT * FROM live_room_players WHERE room_code = $1", [normalizedCode]);
-  const room = mapRoomRow(roomResult.rows[0], playerResult.rows);
-  roomStore.set(normalizedCode, room);
-  return room;
+    const playerResult = await query("SELECT * FROM live_room_players WHERE room_code = $1", [normalizedCode]);
+    const room = mapRoomRow(roomResult.rows[0], playerResult.rows);
+    roomStore.set(normalizedCode, room);
+    return room;
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      logDatabaseFallback(`getRoomByCode(${normalizedCode})`, error);
+      return roomStore.get(normalizedCode) ?? null;
+    }
+
+    throw error;
+  }
 }
 
 export async function getTopLivePlayers(limit = null) {
@@ -383,7 +405,40 @@ export async function getTopLivePlayers(limit = null) {
      FROM game_session_players
      ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
      ${safeLimit ? "LIMIT $1" : ""}`;
-  const archiveResult = await query(archiveQuery, safeLimit ? [safeLimit] : []);
+  let archiveResult;
+  try {
+    archiveResult = await query(archiveQuery, safeLimit ? [safeLimit] : []);
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      logDatabaseFallback("getTopLivePlayers(archive)", error);
+      return Array.from(roomStore.values())
+        .flatMap((room) => room.players ?? [])
+        .filter((player) => (player.connected ?? Boolean(player.socketId)) && !player.disqualified)
+        .sort((first, second) =>
+          (second.score ?? 0) - (first.score ?? 0) ||
+          (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
+          (first.totalResponseTimeMs ?? 0) - (second.totalResponseTimeMs ?? 0)
+        )
+        .slice(0, safeLimit ?? Number.MAX_SAFE_INTEGER)
+        .map((player, index) => ({
+          id: `memory-${player.name}-${index}`,
+          name: player.name,
+          score: player.score ?? 0,
+          correctAnswers: player.correctAnswers ?? 0,
+          averageResponseTimeSeconds:
+            (player.answeredQuestions ?? 0) > 0
+              ? Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2))
+              : 0,
+          violations: player.violations ?? 0,
+          accuracy:
+            (player.answeredQuestions ?? 0) > 0
+              ? Math.round(((player.correctAnswers ?? 0) / player.answeredQuestions) * 100)
+              : 0
+        }));
+    }
+
+    throw error;
+  }
 
   if (archiveResult.rows.length) {
     return archiveResult.rows.map((player) => ({
@@ -452,15 +507,25 @@ export async function getRoomSessionStats() {
     return [];
   }
 
-  const sessionResult = await query(
-    `SELECT gs.id AS session_id, gs.room_code, gs.quiz_id, gs.quiz_title, gs.mode, gs.created_at,
-            gsp.name, gsp.score, gsp.correct_answers, gsp.answered_questions,
-            gsp.total_response_time_ms, gsp.violations, gsp.current_question_index,
-            gsp.completed, gsp.connected, gsp.disqualified, gsp.writing_response_text, gsp.answer_details_json
-     FROM game_sessions gs
-     JOIN game_session_players gsp ON gsp.session_id = gs.id
-     ORDER BY gs.created_at DESC, gsp.score DESC, gsp.name ASC`
-  );
+  let sessionResult;
+  try {
+    sessionResult = await query(
+      `SELECT gs.id AS session_id, gs.room_code, gs.quiz_id, gs.quiz_title, gs.mode, gs.created_at,
+              gsp.name, gsp.score, gsp.correct_answers, gsp.answered_questions,
+              gsp.total_response_time_ms, gsp.violations, gsp.current_question_index,
+              gsp.completed, gsp.connected, gsp.disqualified, gsp.writing_response_text, gsp.answer_details_json
+       FROM game_sessions gs
+       JOIN game_session_players gsp ON gsp.session_id = gs.id
+       ORDER BY gs.created_at DESC, gsp.score DESC, gsp.name ASC`
+    );
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      logDatabaseFallback("getRoomSessionStats", error);
+      return [];
+    }
+
+    throw error;
+  }
 
   const sessions = new Map();
 
@@ -518,5 +583,14 @@ export async function removeRoom(code) {
     return;
   }
 
-  await query("DELETE FROM live_rooms WHERE code = $1", [normalizedCode]);
+  try {
+    await query("DELETE FROM live_rooms WHERE code = $1", [normalizedCode]);
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      logDatabaseFallback(`removeRoom(${normalizedCode})`, error);
+      return;
+    }
+
+    throw error;
+  }
 }

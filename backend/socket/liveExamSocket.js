@@ -464,7 +464,18 @@ export function registerLiveExamSocket(io) {
   const promptTimers = createPromptTimerController();
 
   io.on("connection", (socket) => {
-    socket.on("joinRoom", async ({ roomCode, name, role, hostToken }) => {
+    function handleAsyncSocketEvent(eventName, handler) {
+      socket.on(eventName, (...args) => {
+        Promise.resolve(handler(...args)).catch((error) => {
+          console.error(`[socket:${eventName}]`, error);
+          socket.emit("roomError", {
+            message: "Temporary server error. Please try again."
+          });
+        });
+      });
+    }
+
+    handleAsyncSocketEvent("joinRoom", async ({ roomCode, name, role, hostToken }) => {
       const code = roomCode.toUpperCase();
       const room = await getRoomByCode(code);
       if (!room) {
@@ -533,7 +544,7 @@ export function registerLiveExamSocket(io) {
       }
     });
 
-    socket.on("startExam", async ({ roomCode }) => {
+    handleAsyncSocketEvent("startExam", async ({ roomCode }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can start this exam." });
@@ -575,7 +586,7 @@ export function registerLiveExamSocket(io) {
       }
     });
 
-    socket.on("revealAnswers", async ({ roomCode }) => {
+    handleAsyncSocketEvent("revealAnswers", async ({ roomCode }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can reveal answers." });
@@ -597,7 +608,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("submitAnswer", async ({ roomCode, answer, name }) => {
+    handleAsyncSocketEvent("submitAnswer", async ({ roomCode, answer, name }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
@@ -723,7 +734,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("questionTimeout", async ({ roomCode, name }) => {
+    handleAsyncSocketEvent("questionTimeout", async ({ roomCode, name }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
@@ -778,7 +789,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("nextQuestion", async ({ roomCode }) => {
+    handleAsyncSocketEvent("nextQuestion", async ({ roomCode }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room || !isAuthorizedHost(room, socket)) {
         socket.emit("roomError", { message: "Only the teacher can move to the next question." });
@@ -815,7 +826,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("antiCheatFlag", async ({ roomCode, name, count, disqualified = false }) => {
+    handleAsyncSocketEvent("antiCheatFlag", async ({ roomCode, name, count, disqualified = false }) => {
       const room = await getRoomByCode(roomCode.toUpperCase());
       if (!room) {
         return;
@@ -834,7 +845,7 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    socket.on("disconnect", async () => {
+    handleAsyncSocketEvent("disconnect", async () => {
       for (const room of roomStore.values()) {
         let changed = false;
 

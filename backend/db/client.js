@@ -2,6 +2,21 @@ import { Pool } from "pg";
 
 let pool;
 
+export function isDatabaseConnectionError(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  const code = String(error?.code ?? "").toUpperCase();
+
+  return (
+    message.includes("timeout exceeded when trying to connect") ||
+    message.includes("connection terminated unexpectedly") ||
+    message.includes("connection refused") ||
+    message.includes("connect etimedout") ||
+    message.includes("connect econnrefused") ||
+    message.includes("getaddrinfo enotfound") ||
+    ["ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "57P01"].includes(code)
+  );
+}
+
 function shouldUseSsl(connectionString) {
   if (process.env.PGSSLMODE === "disable" || process.env.DATABASE_SSL === "false") {
     return false;
