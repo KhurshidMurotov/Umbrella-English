@@ -618,14 +618,14 @@ export const a1Unit5AQuiz = {
         "but it is very old"
       ],
       textTemplate:
-        "I love that house (2) ___.\nThese shoes are beautiful (3) ___.\nMy brother often wears casual clothes (4) ___.\nWe live in a modern flat (5) ___.",
+        "I love that house ___.\nThese shoes are beautiful ___.\nMy brother often wears casual clothes ___.\nWe live in a modern flat ___.",
       options: [],
       correctAnswer: "",
       items: [
-        { number: 2, displayNumber: 2, correctAnswer: "because it has a beautiful garden" },
-        { number: 3, displayNumber: 3, correctAnswer: "but they are very expensive" },
-        { number: 4, displayNumber: 4, correctAnswer: "because he doesn't like suits" },
-        { number: 5, displayNumber: 5, correctAnswer: "but it is very old" }
+        { number: 1, displayNumber: 1, correctAnswer: "because it has a beautiful garden" },
+        { number: 2, displayNumber: 2, correctAnswer: "but they are very expensive" },
+        { number: 3, displayNumber: 3, correctAnswer: "because he doesn't like suits" },
+        { number: 4, displayNumber: 4, correctAnswer: "but it is very old" }
       ]
     },
     {
@@ -659,14 +659,14 @@ export const a1Unit5AQuiz = {
       prompt: "Use the adjectives from the board to complete the text.",
       wordBank: ["unusual", "expensive", "modern", "crowded", "dirty"],
       textTemplate:
-        "London is a very (4) ___ city with many new offices. Some buildings, like \"The Gherkin,\" have an (5) ___ shape that looks like a vegetable! It is often (6) ___ with too many people on the trains, and it can be (7) ___ because a coffee costs GBP5.",
+        "London is a very ___ city with many new offices. Some buildings, like \"The Gherkin,\" have an ___ shape that looks like a vegetable! It is often ___ with too many people on the trains, and it can be ___ because a coffee costs GBP5.",
       options: [],
       correctAnswer: "",
       items: [
-        { number: 4, displayNumber: 4, correctAnswer: "modern" },
-        { number: 5, displayNumber: 5, correctAnswer: "unusual" },
-        { number: 6, displayNumber: 6, correctAnswer: "crowded" },
-        { number: 7, displayNumber: 7, correctAnswer: "expensive" }
+        { number: 1, displayNumber: 1, correctAnswer: "modern" },
+        { number: 2, displayNumber: 2, correctAnswer: "unusual" },
+        { number: 3, displayNumber: 3, correctAnswer: "crowded" },
+        { number: 4, displayNumber: 4, correctAnswer: "expensive" }
       ]
     },
     {
