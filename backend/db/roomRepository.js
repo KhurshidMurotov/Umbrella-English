@@ -2,6 +2,7 @@ import { roomStore } from "../models/roomStore.js";
 import { hasDatabase, isDatabaseConnectionError, query, withTransaction } from "./client.js";
 
 const PASS_THRESHOLD = 6;
+const roomPersistenceChains = new Map();
 
 function toNullableBigInt(value) {
   return value ?? null;
@@ -47,6 +48,22 @@ function countScoredQuestions(questions) {
 
 function logDatabaseFallback(context, error) {
   console.warn(`[db-fallback] ${context}: ${error.message}`);
+}
+
+// Serialize room writes so bursts of socket events do not open overlapping transactions.
+function queueRoomPersistence(roomCode, persistSnapshot) {
+  const previous = roomPersistenceChains.get(roomCode) ?? Promise.resolve();
+  const next = previous
+    .catch(() => {})
+    .then(() => persistSnapshot())
+    .finally(() => {
+      if (roomPersistenceChains.get(roomCode) === next) {
+        roomPersistenceChains.delete(roomCode);
+      }
+    });
+
+  roomPersistenceChains.set(roomCode, next);
+  return next;
 }
 
 function mapRoomRow(roomRow, playerRows) {
@@ -229,16 +246,7 @@ async function saveSessionArchive(client, room) {
   }
 }
 
-export async function saveRoom(room) {
-  const normalizedCode = String(room.code ?? "").toUpperCase();
-  room.code = normalizedCode;
-  room.sessionId = createSessionId(room);
-  roomStore.set(normalizedCode, room);
-
-  if (!hasDatabase()) {
-    return;
-  }
-
+async function persistRoomSnapshot(room) {
   try {
     await withTransaction(async (client) => {
       await client.query(
@@ -331,6 +339,20 @@ export async function saveRoom(room) {
 
     throw error;
   }
+}
+
+export async function saveRoom(room) {
+  const normalizedCode = String(room.code ?? "").toUpperCase();
+  room.code = normalizedCode;
+  room.sessionId = createSessionId(room);
+  roomStore.set(normalizedCode, room);
+
+  if (!hasDatabase()) {
+    return;
+  }
+
+  const roomSnapshot = structuredClone(room);
+  await queueRoomPersistence(normalizedCode, () => persistRoomSnapshot(roomSnapshot));
 }
 
 export async function getRoomByCode(code) {
