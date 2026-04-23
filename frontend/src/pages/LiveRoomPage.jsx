@@ -3,15 +3,19 @@ import { io } from "socket.io-client";
 import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import BankedTextQuestion from "../components/BankedTextQuestion";
 import CefrListeningQuestion from "../components/CefrListeningQuestion";
 import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import CheatingDetectedOverlay from "../components/CheatingDetectedOverlay";
 import DragOrderQuestion from "../components/DragOrderQuestion";
 import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
+import ListeningWordInputQuestion from "../components/ListeningWordInputQuestion";
 import LiveLeaderboard from "../components/LiveLeaderboard";
 import ProgressBar from "../components/ProgressBar";
 import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
+import SentenceBuilderQuestion from "../components/SentenceBuilderQuestion";
+import SimpleMatchingQuestion from "../components/SimpleMatchingQuestion";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
@@ -98,6 +102,14 @@ function buildTextInputFeedback(correctAnswer, hint) {
   return parts.join(" ").trim() || "Incorrect answer.";
 }
 
+function formatScoredFeedback(message, awardedScore, responseTimeSeconds, hideResponseTimeFeedback) {
+  if (hideResponseTimeFeedback) {
+    return `${message} +${awardedScore} points`;
+  }
+
+  return `${message} in ${responseTimeSeconds}s. +${awardedScore} points`;
+}
+
 export default function LiveRoomPage() {
   const { roomCode } = useParams();
   const { search } = useLocation();
@@ -123,8 +135,12 @@ export default function LiveRoomPage() {
   const [dragResponse, setDragResponse] = useState([]);
   const [typedResponse, setTypedResponse] = useState("");
   const [groupedChoiceResponse, setGroupedChoiceResponse] = useState({});
+  const [listeningTextResponse, setListeningTextResponse] = useState({});
+  const [bankedTextResponse, setBankedTextResponse] = useState({});
   const [cefrListeningResponse, setCefrListeningResponse] = useState({});
+  const [simpleMatchingResponse, setSimpleMatchingResponse] = useState({});
   const [cefrReadingResponse, setCefrReadingResponse] = useState({});
+  const [sentenceBuilderResponse, setSentenceBuilderResponse] = useState({});
   const { playCorrect, playWrong } = useFeedbackSounds();
   const boardRevealTimeoutRef = useRef(null);
   const boardRevealKeyRef = useRef("");
@@ -137,6 +153,11 @@ export default function LiveRoomPage() {
     role === "player" && roomCode && nameSubmitted && name
       ? `umbrella-live-anti-cheat:${roomCode.toUpperCase()}:${name.trim().toLowerCase()}`
       : null;
+  const roomQuiz = quizCatalog.find((quiz) => quiz.id === room?.quizId) ?? null;
+  const disableAnswerTimer = roomQuiz?.disableAnswerTimer === true;
+  const showLiveRankingDuringTest = roomQuiz?.showLiveRankingDuringTest !== false;
+  const showAverageTimeInResults = roomQuiz?.showAverageTimeInResults !== false;
+  const hideResponseTimeFeedback = roomQuiz?.hideResponseTimeFeedback === true;
 
   const { violations, warning, disqualified, forceDisqualify } = useAntiCheat({
     enabled: role === "player" && Boolean(room?.started),
@@ -226,7 +247,9 @@ export default function LiveRoomPage() {
 
         setFeedbackState({
           type: feedbackType,
-          text: `${safeCorrectCount} / ${safeTotalCount} correct in ${responseTimeSeconds}s. +${awardedScore} points`
+          text: hideResponseTimeFeedback
+            ? `${safeCorrectCount} / ${safeTotalCount} correct. +${awardedScore} points`
+            : `${safeCorrectCount} / ${safeTotalCount} correct in ${responseTimeSeconds}s. +${awardedScore} points`
         });
 
         if (correct) {
@@ -240,7 +263,7 @@ export default function LiveRoomPage() {
       if (correct) {
         setFeedbackState({
           type: "correct",
-          text: `Correct answer in ${responseTimeSeconds}s. +${awardedScore} points`
+          text: formatScoredFeedback("Correct answer.", awardedScore, responseTimeSeconds, hideResponseTimeFeedback)
         });
         playCorrect();
         return;
@@ -249,10 +272,14 @@ export default function LiveRoomPage() {
       setFeedbackState({
         type: timedOut ? "timeout" : hint || correctAnswer ? "hint" : "wrong",
         text: timedOut
-          ? `Time is over. ${responseTimeSeconds}s used. +0 points`
+          ? hideResponseTimeFeedback
+            ? "Time is over. +0 points"
+            : `Time is over. ${responseTimeSeconds}s used. +0 points`
           : hint || correctAnswer
             ? buildTextInputFeedback(correctAnswer, hint)
-            : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
+            : hideResponseTimeFeedback
+              ? "Incorrect answer. +0 points"
+              : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
       });
       playWrong();
     });
@@ -271,7 +298,7 @@ export default function LiveRoomPage() {
       socket.off("roomError");
       socket.off("antiCheatLocked");
     };
-  }, [forceDisqualify, hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
+  }, [forceDisqualify, hideResponseTimeFeedback, hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
 
   const players = room?.players ?? [];
   const connectedPlayers = players.filter((player) => player.connected !== false);
@@ -280,10 +307,6 @@ export default function LiveRoomPage() {
   const serverDisqualified = Boolean(selfPlayer?.disqualified);
   const isLockedFromAntiCheat = disqualified || serverDisqualified;
   const isCefrQuiz = room?.quizId === "cefr-part-1-and-2";
-  const roomQuiz = quizCatalog.find((quiz) => quiz.id === room?.quizId) ?? null;
-  const disableAnswerTimer = roomQuiz?.disableAnswerTimer === true;
-  const showLiveRankingDuringTest = roomQuiz?.showLiveRankingDuringTest !== false;
-  const showAverageTimeInResults = roomQuiz?.showAverageTimeInResults !== false;
   const totalQuestions = room?.questions?.length ?? 10;
   const studentCount = connectedPlayers.length;
   const participantCount = room?.participantCount ?? (connectedPlayers.length + (role === "host" ? 1 : 0));
@@ -298,8 +321,12 @@ export default function LiveRoomPage() {
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
   const isGroupedChoiceQuestion = currentQuestion?.type === "grouped-choice-list";
+  const isListeningTextQuestion = currentQuestion?.type === "listening-text-input-group";
+  const isBankedTextQuestion = currentQuestion?.type === "banked-text-input-group";
   const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
+  const isSimpleMatchingQuestion = currentQuestion?.type === "simple-matching";
   const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
+  const isSentenceBuilderQuestion = currentQuestion?.type === "sentence-builder-group";
   const requiresManualReveal = currentQuestion?.revealMode === "manual-audio";
   const writingFields = currentQuestion?.responseFields ?? [];
   const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
@@ -340,8 +367,12 @@ export default function LiveRoomPage() {
     setDragResponse([]);
     setTypedResponse("");
     setGroupedChoiceResponse({});
+    setListeningTextResponse({});
+    setBankedTextResponse({});
     setCefrListeningResponse({});
+    setSimpleMatchingResponse({});
     setCefrReadingResponse({});
+    setSentenceBuilderResponse({});
     setHasSubmittedResponse(false);
     setFeedbackState(null);
     setTimeoutKey("");
@@ -491,6 +522,36 @@ export default function LiveRoomPage() {
     socket.emit("submitAnswer", { roomCode, answer: groupedChoiceResponse, name });
   }
 
+  function submitListeningTextResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => (listeningTextResponse[item.number] ?? "").trim()).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: listeningTextResponse, name });
+  }
+
+  function submitBankedTextResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => bankedTextResponse[item.number]).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: bankedTextResponse, name });
+  }
+
   function submitCefrListeningResponse() {
     const requiredAnswers = currentQuestion?.items?.length ?? 0;
     if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
@@ -506,6 +567,21 @@ export default function LiveRoomPage() {
     socket.emit("submitAnswer", { roomCode, answer: cefrListeningResponse, name });
   }
 
+  function submitSimpleMatchingResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => simpleMatchingResponse[item.number]).length;
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: simpleMatchingResponse, name });
+  }
+
   function submitCefrReadingResponse() {
     const requiredAnswers = currentQuestion?.people?.length ?? 0;
     if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
@@ -519,6 +595,26 @@ export default function LiveRoomPage() {
 
     setHasSubmittedResponse(true);
     socket.emit("submitAnswer", { roomCode, answer: cefrReadingResponse, name });
+  }
+
+  function submitSentenceBuilderResponse() {
+    const requiredAnswers = currentQuestion?.items?.length ?? 0;
+    if (isLockedFromAntiCheat || hasSubmittedResponse || !requiredAnswers) {
+      return;
+    }
+
+    const answeredCount = currentQuestion.items.filter((item) => {
+      const response = sentenceBuilderResponse[item.number] ?? {};
+      const sequence = Array.isArray(response.sequence) ? response.sequence : [];
+      return (response.text ?? "").trim() && sequence.length >= (item.correctSequence?.length ?? 0) && !sequence.some((word) => !word);
+    }).length;
+
+    if (answeredCount < requiredAnswers) {
+      return;
+    }
+
+    setHasSubmittedResponse(true);
+    socket.emit("submitAnswer", { roomCode, answer: sentenceBuilderResponse, name });
   }
 
   function handleTeacherStartAudio() {
@@ -693,7 +789,9 @@ export default function LiveRoomPage() {
                 <h2 className="text-2xl font-extrabold text-neutral-950">Student-paced monitoring</h2>
               </div>
               <p className="mt-3 text-sm leading-7 text-neutral-600">
-                Students advance independently. Each question uses the configured timer, and correct answers earn up to 100 points depending on speed.
+                {disableAnswerTimer
+                  ? "Students advance independently. This test has no visible timer, and scores are based only on correct answers."
+                  : "Students advance independently. Each question uses the configured timer, and correct answers earn up to 100 points depending on speed."}
               </p>
             </div>
           ) : role === "host" && isQuestionBoardPhase && currentQuestion ? (
@@ -719,10 +817,25 @@ export default function LiveRoomPage() {
                     boardMode={true}
                     passage={currentQuestion.passage}
                   />
+                ) : isListeningTextQuestion ? (
+                  <ListeningWordInputQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                ) : isBankedTextQuestion ? (
+                  <BankedTextQuestion
+                    items={currentQuestion.items}
+                    value={{}}
+                    disabled={true}
+                    boardMode={true}
+                    wordBank={currentQuestion.wordBank}
+                    textTemplate={currentQuestion.textTemplate}
+                  />
                 ) : isCefrListeningQuestion ? (
                   <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                ) : isSimpleMatchingQuestion ? (
+                  <SimpleMatchingQuestion items={currentQuestion.items} choices={currentQuestion.choices} value={{}} disabled={true} boardMode={true} />
                 ) : isCefrReadingQuestion ? (
                   <CefrReadingMatchingQuestion people={currentQuestion.people} choices={currentQuestion.choices} value={{}} disabled={true} boardMode={true} />
+                ) : isSentenceBuilderQuestion ? (
+                  <SentenceBuilderQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
                 ) : currentQuestion.type === "part1-drag-order" ? (
                   <DragOrderQuestion
                     template={currentQuestion.textTemplate}
@@ -747,7 +860,7 @@ export default function LiveRoomPage() {
                       Teacher control
                     </p>
                     <p className="mt-2 text-sm leading-7 text-neutral-300">
-                      Students will not see answer options until you start the audio from this board.
+                      Students will not see the answer area until you start the audio from this board.
                     </p>
                   </div>
                   <button
@@ -943,6 +1056,76 @@ export default function LiveRoomPage() {
                     </>
                   )}
                 </div>
+              ) : isListeningTextQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <>
+                      <ListeningWordInputQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                      <p className="mt-5 text-sm leading-7 text-neutral-600">
+                        The listening audio plays from the teacher board. Students type the missing words on their own devices after you press Start audio.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <ListeningWordInputQuestion
+                        items={currentQuestion.items}
+                        value={listeningTextResponse}
+                        onChange={setListeningTextResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitListeningTextResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => !(listeningTextResponse[item.number] ?? "").trim())
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isBankedTextQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <BankedTextQuestion
+                      items={currentQuestion.items}
+                      value={{}}
+                      disabled={true}
+                      boardMode={true}
+                      wordBank={currentQuestion.wordBank}
+                      textTemplate={currentQuestion.textTemplate}
+                    />
+                  ) : (
+                    <>
+                      <BankedTextQuestion
+                        items={currentQuestion.items}
+                        value={bankedTextResponse}
+                        onChange={setBankedTextResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                        wordBank={currentQuestion.wordBank}
+                        textTemplate={currentQuestion.textTemplate}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitBankedTextResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => !bankedTextResponse[item.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
               ) : isCefrListeningQuestion ? (
                 <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
                   {role === "host" ? (
@@ -968,6 +1151,41 @@ export default function LiveRoomPage() {
                           hasSubmittedResponse ||
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !cefrListeningResponse[item.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isSimpleMatchingQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <SimpleMatchingQuestion
+                      items={currentQuestion.items}
+                      choices={currentQuestion.choices}
+                      value={{}}
+                      disabled={true}
+                      boardMode={true}
+                    />
+                  ) : (
+                    <>
+                      <SimpleMatchingQuestion
+                        items={currentQuestion.items}
+                        choices={currentQuestion.choices}
+                        value={simpleMatchingResponse}
+                        onChange={setSimpleMatchingResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitSimpleMatchingResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => !simpleMatchingResponse[item.number])
                         }
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -1003,6 +1221,38 @@ export default function LiveRoomPage() {
                           hasSubmittedResponse ||
                           isLockedFromAntiCheat ||
                           currentQuestion.people.some((person) => !cefrReadingResponse[person.number])
+                        }
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Submit answers
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : isSentenceBuilderQuestion ? (
+                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  {role === "host" ? (
+                    <SentenceBuilderQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
+                  ) : (
+                    <>
+                      <SentenceBuilderQuestion
+                        items={currentQuestion.items}
+                        value={sentenceBuilderResponse}
+                        onChange={setSentenceBuilderResponse}
+                        disabled={!canAnswerNow || hasSubmittedResponse || isLockedFromAntiCheat}
+                      />
+                      <button
+                        type="button"
+                        onClick={submitSentenceBuilderResponse}
+                        disabled={
+                          !canAnswerNow ||
+                          hasSubmittedResponse ||
+                          isLockedFromAntiCheat ||
+                          currentQuestion.items.some((item) => {
+                            const response = sentenceBuilderResponse[item.number] ?? {};
+                            const sequence = Array.isArray(response.sequence) ? response.sequence : [];
+                            return !(response.text ?? "").trim() || sequence.length < (item.correctSequence?.length ?? 0) || sequence.some((word) => !word);
+                          })
                         }
                         className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -1129,7 +1379,7 @@ export default function LiveRoomPage() {
               </p>
               {role === "host" ? (
                 <div className="mt-6">
-                  <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} />
+                  <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} sortByAverageTime={showAverageTimeInResults} />
                 </div>
               ) : null}
             </div>
@@ -1137,7 +1387,7 @@ export default function LiveRoomPage() {
         </div>
 
         {showSidebarLeaderboard ? (
-          <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} />
+          <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} sortByAverageTime={showAverageTimeInResults} />
         ) : null}
       </div>
     </ShellLayout>

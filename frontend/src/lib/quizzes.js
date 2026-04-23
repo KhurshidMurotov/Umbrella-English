@@ -552,6 +552,185 @@ export const a2Unit7Quiz = {
 a2Unit7Quiz.questions[a2Unit7Quiz.questions.length - 1].passage =
   "Many people eat dried fruit as a snack at work. However, half a cup of dried banana has as much energy as nine slices of bread. Cereal is also popular before going to the gym because the sugar gives you energy, but one cup can have over 20 grams of fat. Fruit yogurt is often full of sugar because the fruit is in a sweet sauce. Finally, nuts are good for you, but only eat a little because they have lots of fat.";
 
+export const a1Unit5AQuiz = {
+  id: "a1-unit-test-5a",
+  title: "A1 Unit Test 5A",
+  description: "5-part unit test with manual-audio listening, board matching and sentence building.",
+  difficulty: "A1",
+  estimatedTime: "12 min",
+  shuffleQuestions: false,
+  shuffleOptions: false,
+  hideTimerControl: true,
+  disableAnswerTimer: true,
+  showLiveRankingDuringTest: false,
+  showAverageTimeInResults: false,
+  hideResponseTimeFeedback: true,
+  fixedUnitScoring: true,
+  defaultQuestionTime: 120,
+  scoringDescription: "No timer is used for this test. Each correct answer gives 1 point.",
+  questions: [
+    {
+      id: "a1u5aq1",
+      part: "Exercise 1",
+      partTitle: "Listening",
+      type: "listening-text-input-group",
+      graded: true,
+      points: 7,
+      prompt: "Listen and write the missing words.",
+      audioSrc: "/a1-unit-5a-ex1.mp3",
+      revealMode: "manual-audio",
+      items: [
+        { number: 1, prompt: "Pedro has got a big ____________.", correctAnswer: "head", acceptedAnswers: ["head"] },
+        { number: 2, prompt: "Has she got a friendly ____________?", correctAnswer: "face", acceptedAnswers: ["face"] },
+        { number: 3, prompt: "Her hands are ____________ small.", correctAnswer: "very", acceptedAnswers: ["very"] },
+        { number: 4, prompt: "We haven't got brown ____________.", correctAnswer: "hair", acceptedAnswers: ["hair"] },
+        { number: 5, prompt: "My legs are ____________ long.", correctAnswer: "really", acceptedAnswers: ["really"] },
+        { number: 6, prompt: "He's got short ____________.", correctAnswer: "arms", acceptedAnswers: ["arms"] },
+        { number: 7, prompt: "I've got tired ____________ after that long walk.", correctAnswer: "feet", acceptedAnswers: ["feet"] }
+      ]
+    },
+    {
+      id: "a1u5aq2",
+      part: "Exercise 2",
+      partTitle: "Phrases In Context",
+      type: "banked-text-input-group",
+      graded: true,
+      points: 4,
+      prompt: "Choose the correct phrase for each gap.",
+      wordBank: [
+        "because it has a beautiful garden",
+        "but they are very expensive",
+        "because he doesn't like suits",
+        "but it is very old"
+      ],
+      textTemplate:
+        "I love that house (2) ___.\nThese shoes are beautiful (3) ___.\nMy brother often wears casual clothes (4) ___.\nWe live in a modern flat (5) ___.",
+      items: [
+        { number: 2, displayNumber: 2, correctAnswer: "because it has a beautiful garden" },
+        { number: 3, displayNumber: 3, correctAnswer: "but they are very expensive" },
+        { number: 4, displayNumber: 4, correctAnswer: "because he doesn't like suits" },
+        { number: 5, displayNumber: 5, correctAnswer: "but it is very old" }
+      ]
+    },
+    {
+      id: "a1u5aq3",
+      part: "Exercise 3A",
+      partTitle: "Match The Opposites",
+      type: "simple-matching",
+      graded: true,
+      points: 3,
+      prompt: "Match the numbers with the correct letters.",
+      items: [
+        { number: 1, prompt: "Modern", correctAnswer: "B" },
+        { number: 2, prompt: "Beautiful", correctAnswer: "C" },
+        { number: 3, prompt: "Exciting", correctAnswer: "A" }
+      ],
+      choices: [
+        { label: "A", text: "Boring" },
+        { label: "B", text: "Traditional / Old" },
+        { label: "C", text: "Ugly" }
+      ]
+    },
+    {
+      id: "a1u5aq4",
+      part: "Exercise 3B",
+      partTitle: "Adjectives",
+      type: "banked-text-input-group",
+      graded: true,
+      points: 4,
+      prompt: "Use the adjectives from the board to complete the text.",
+      wordBank: ["unusual", "expensive", "modern", "crowded", "dirty"],
+      textTemplate:
+        "London is a very (4) ___ city with many new offices. Some buildings, like \"The Gherkin,\" have an (5) ___ shape that looks like a vegetable! It is often (6) ___ with too many people on the trains, and it can be (7) ___ because a coffee costs GBP5.",
+      items: [
+        { number: 4, displayNumber: 4, correctAnswer: "modern" },
+        { number: 5, displayNumber: 5, correctAnswer: "unusual" },
+        { number: 6, displayNumber: 6, correctAnswer: "crowded" },
+        { number: 7, displayNumber: 7, correctAnswer: "expensive" }
+      ]
+    },
+    {
+      id: "a1u5aq5",
+      part: "Exercise 4",
+      partTitle: "Word Order",
+      type: "sentence-builder-group",
+      graded: true,
+      points: 5,
+      prompt: "Build each sentence and type the correct frequency word.",
+      items: [
+        {
+          number: 1,
+          prompt: "(I / 100% / wear / a white shirt / at work)",
+          fixedStart: "I",
+          textPlaceholder: "100% = ...",
+          correctTextAnswer: "always",
+          acceptedTextAnswers: ["always"],
+          wordBank: ["wear", "a white shirt", "at work"],
+          correctSequence: ["wear", "a white shirt", "at work"]
+        },
+        {
+          number: 2,
+          prompt: "(He / 0% / wear / brown boots / in the summer)",
+          fixedStart: "He",
+          textPlaceholder: "0% = ...",
+          correctTextAnswer: "never",
+          acceptedTextAnswers: ["never"],
+          wordBank: ["wears", "brown boots", "in the summer"],
+          correctSequence: ["wears", "brown boots", "in the summer"]
+        },
+        {
+          number: 3,
+          prompt: "(They / 70% / buy / expensive clothes / in Tokyo)",
+          fixedStart: "They",
+          textPlaceholder: "70% = ...",
+          correctTextAnswer: "often",
+          acceptedTextAnswers: ["often"],
+          wordBank: ["buy", "expensive clothes", "in Tokyo"],
+          correctSequence: ["buy", "expensive clothes", "in Tokyo"]
+        },
+        {
+          number: 4,
+          prompt: "(We / 30% / go / to the stadium / on Sundays)",
+          fixedStart: "We",
+          textPlaceholder: "30% = ...",
+          correctTextAnswer: "sometimes",
+          acceptedTextAnswers: ["sometimes"],
+          wordBank: ["go", "to the stadium", "on Sundays"],
+          correctSequence: ["go", "to the stadium", "on Sundays"]
+        },
+        {
+          number: 5,
+          prompt: "(She / 90% / carry / a black bag / to university)",
+          fixedStart: "She",
+          textPlaceholder: "90% = ...",
+          correctTextAnswer: "usually",
+          acceptedTextAnswers: ["usually"],
+          wordBank: ["carries", "a black bag", "to university"],
+          correctSequence: ["carries", "a black bag", "to university"]
+        }
+      ]
+    },
+    {
+      id: "a1u5aq6",
+      part: "Exercise 5",
+      partTitle: "Reading",
+      type: "grouped-choice-list",
+      graded: true,
+      points: 5,
+      prompt: "Read the text and decide if the sentences are true or false.",
+      passage:
+        "A Day in the Life of Marco Rossi\nMarco Rossi is a famous fashion photographer. He lives in a modern apartment in Milan, but he travels a lot for his work. Today, he is in Tokyo because he loves Harajuku fashion.\n\n\"I love this city because the clothes are very unusual and colourful,\" Marco says. \"Young people here wear strange hats and bright yellow T-shirts. My job is exciting, but it is also difficult.\"\n\nMarco usually wakes up at 6:00 a.m. He always has a big breakfast because he works all day. He never wears a suit or a tie to work; he wears blue jeans and a grey jacket.",
+      items: [
+        { number: 1, prompt: "Marco lives in an old house in Japan.", options: ["T", "F"], correctAnswer: "F" },
+        { number: 2, prompt: "He is in Tokyo because he likes the fashion there.", options: ["T", "F"], correctAnswer: "T" },
+        { number: 3, prompt: "Marco thinks his job is easy.", options: ["T", "F"], correctAnswer: "F" },
+        { number: 4, prompt: "He wears a suit when he works.", options: ["T", "F"], correctAnswer: "F" },
+        { number: 5, prompt: "He always has a big breakfast.", options: ["T", "F"], correctAnswer: "T" }
+      ]
+    }
+  ]
+};
+
 export const quizCatalog = [
   defaultQuiz,
   {
@@ -564,5 +743,6 @@ export const quizCatalog = [
   },
   a1Unit4Quiz,
   cefrQuiz,
-  a2Unit7Quiz
+  a2Unit7Quiz,
+  a1Unit5AQuiz
 ];

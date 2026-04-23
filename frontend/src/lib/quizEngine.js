@@ -36,12 +36,28 @@ export function getQuestionTotalUnits(question) {
     return question.items?.length || 1;
   }
 
+  if (question?.type === "listening-text-input-group") {
+    return question.items?.length || 1;
+  }
+
+  if (question?.type === "banked-text-input-group") {
+    return question.items?.length || 1;
+  }
+
   if (question?.type === "cefr-listening-group") {
+    return question.items?.length || 1;
+  }
+
+  if (question?.type === "simple-matching") {
     return question.items?.length || 1;
   }
 
   if (question?.type === "cefr-reading-matching") {
     return question.people?.length || 1;
+  }
+
+  if (question?.type === "sentence-builder-group") {
+    return question.items?.length || 1;
   }
 
   return 1;
@@ -119,7 +135,49 @@ export function evaluateAnswer(question, answer) {
     };
   }
 
+  if (question.type === "listening-text-input-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce((total, item) => {
+      const acceptedAnswers = item.acceptedAnswers?.length ? item.acceptedAnswers : [item.correctAnswer];
+      return total + (compareTextAnswer(selectedAnswers[item.number], acceptedAnswers) ? 1 : 0);
+    }, 0);
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
+  if (question.type === "banked-text-input-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
   if (question.type === "cefr-listening-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce(
+      (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
+      0
+    );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
+  if (question.type === "simple-matching") {
     const selectedAnswers = answer && typeof answer === "object" ? answer : {};
     const correctCount = (question.items ?? []).reduce(
       (total, item) => total + (normalizeAnswerText(selectedAnswers[item.number]) === normalizeAnswerText(item.correctAnswer) ? 1 : 0),
@@ -139,6 +197,28 @@ export function evaluateAnswer(question, answer) {
       (total, person) => total + (normalizeAnswerText(selectedAnswers[person.number]) === normalizeAnswerText(person.correctAnswer) ? 1 : 0),
       0
     );
+
+    return {
+      correct: correctCount === totalCount,
+      correctCount,
+      totalCount
+    };
+  }
+
+  if (question.type === "sentence-builder-group") {
+    const selectedAnswers = answer && typeof answer === "object" ? answer : {};
+    const correctCount = (question.items ?? []).reduce((total, item) => {
+      const response = selectedAnswers[item.number] ?? {};
+      const acceptedAnswers = item.acceptedTextAnswers?.length ? item.acceptedTextAnswers : [item.correctTextAnswer];
+      const textCorrect = compareTextAnswer(response.text, acceptedAnswers);
+      const sequence = Array.isArray(response.sequence) ? response.sequence : [];
+      const sequenceCorrect =
+        Array.isArray(item.correctSequence) &&
+        sequence.length === item.correctSequence.length &&
+        sequence.every((word, index) => normalizeAnswerText(word) === normalizeAnswerText(item.correctSequence[index]));
+
+      return total + (textCorrect && sequenceCorrect ? 1 : 0);
+    }, 0);
 
     return {
       correct: correctCount === totalCount,

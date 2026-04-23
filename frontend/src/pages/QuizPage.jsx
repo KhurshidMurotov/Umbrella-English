@@ -3,12 +3,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Clock3, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AnswerButton from "../components/AnswerButton";
+import BankedTextQuestion from "../components/BankedTextQuestion";
 import CefrListeningQuestion from "../components/CefrListeningQuestion";
 import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
 import DragOrderQuestion from "../components/DragOrderQuestion";
 import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
+import ListeningWordInputQuestion from "../components/ListeningWordInputQuestion";
 import ProgressBar from "../components/ProgressBar";
 import ShellLayout from "../components/ShellLayout";
+import SentenceBuilderQuestion from "../components/SentenceBuilderQuestion";
+import SimpleMatchingQuestion from "../components/SimpleMatchingQuestion";
 import StatPill from "../components/StatPill";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
@@ -90,8 +94,12 @@ export default function QuizPage() {
   const [typedResponse, setTypedResponse] = useState("");
   const [dragResponse, setDragResponse] = useState([]);
   const [groupedChoiceResponse, setGroupedChoiceResponse] = useState({});
+  const [listeningTextResponse, setListeningTextResponse] = useState({});
+  const [bankedTextResponse, setBankedTextResponse] = useState({});
   const [cefrListeningResponse, setCefrListeningResponse] = useState({});
+  const [simpleMatchingResponse, setSimpleMatchingResponse] = useState({});
   const [cefrReadingResponse, setCefrReadingResponse] = useState({});
+  const [sentenceBuilderResponse, setSentenceBuilderResponse] = useState({});
   const [listeningReady, setListeningReady] = useState(false);
   const { playCorrect, playWrong } = useFeedbackSounds();
   const transitionTimeoutRef = useRef(null);
@@ -103,8 +111,12 @@ export default function QuizPage() {
   const isDragOrderQuestion = currentQuestion?.type === "part1-drag-order";
   const isTextInputQuestion = currentQuestion?.type === "part2-text-input";
   const isGroupedChoiceQuestion = currentQuestion?.type === "grouped-choice-list";
+  const isListeningTextQuestion = currentQuestion?.type === "listening-text-input-group";
+  const isBankedTextQuestion = currentQuestion?.type === "banked-text-input-group";
   const isCefrListeningQuestion = currentQuestion?.type === "cefr-listening-group";
+  const isSimpleMatchingQuestion = currentQuestion?.type === "simple-matching";
   const isCefrReadingQuestion = currentQuestion?.type === "cefr-reading-matching";
+  const isSentenceBuilderQuestion = currentQuestion?.type === "sentence-builder-group";
   const writingFields = currentQuestion?.responseFields ?? [];
   const hasStructuredWritingFields = isWritingQuestion && writingFields.length > 0;
   const isBookScoringQuiz = playableQuiz.id === "a1-unit-4-busy-week";
@@ -122,8 +134,12 @@ export default function QuizPage() {
 
   useEffect(() => {
     setGroupedChoiceResponse({});
+    setListeningTextResponse({});
+    setBankedTextResponse({});
     setCefrListeningResponse({});
+    setSimpleMatchingResponse({});
     setCefrReadingResponse({});
+    setSentenceBuilderResponse({});
     setListeningReady(false);
 
     if (audioRef.current) {
@@ -160,8 +176,12 @@ export default function QuizPage() {
     setTypedResponse("");
     setDragResponse([]);
     setGroupedChoiceResponse({});
+    setListeningTextResponse({});
+    setBankedTextResponse({});
     setCefrListeningResponse({});
+    setSimpleMatchingResponse({});
     setCefrReadingResponse({});
+    setSentenceBuilderResponse({});
     setListeningReady(false);
     setLocked(false);
     setFeedbackState(null);
@@ -321,6 +341,22 @@ export default function QuizPage() {
     submitObjectiveAnswer(groupedChoiceResponse);
   }
 
+  function handleListeningTextSubmit() {
+    if (locked || currentQuestion.items.some((item) => !(listeningTextResponse[item.number] ?? "").trim())) {
+      return;
+    }
+
+    submitObjectiveAnswer(listeningTextResponse);
+  }
+
+  function handleBankedTextSubmit() {
+    if (locked || currentQuestion.items.some((item) => !bankedTextResponse[item.number])) {
+      return;
+    }
+
+    submitObjectiveAnswer(bankedTextResponse);
+  }
+
   function handleCefrListeningSubmit() {
     if (locked || currentQuestion.items.some((item) => !cefrListeningResponse[item.number])) {
       return;
@@ -329,12 +365,35 @@ export default function QuizPage() {
     submitObjectiveAnswer(cefrListeningResponse);
   }
 
+  function handleSimpleMatchingSubmit() {
+    if (locked || currentQuestion.items.some((item) => !simpleMatchingResponse[item.number])) {
+      return;
+    }
+
+    submitObjectiveAnswer(simpleMatchingResponse);
+  }
+
   function handleCefrReadingSubmit() {
     if (locked || currentQuestion.people.some((person) => !cefrReadingResponse[person.number])) {
       return;
     }
 
     submitObjectiveAnswer(cefrReadingResponse);
+  }
+
+  function handleSentenceBuilderSubmit() {
+    if (
+      locked ||
+      currentQuestion.items.some((item) => {
+        const response = sentenceBuilderResponse[item.number] ?? {};
+        const sequence = Array.isArray(response.sequence) ? response.sequence : [];
+        return !(response.text ?? "").trim() || sequence.length < (item.correctSequence?.length ?? 0) || sequence.some((word) => !word);
+      })
+    ) {
+      return;
+    }
+
+    submitObjectiveAnswer(sentenceBuilderResponse);
   }
 
   function handleListeningStart() {
@@ -565,6 +624,55 @@ export default function QuizPage() {
                     Submit answers
                   </button>
                 </div>
+              ) : isListeningTextQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <div className="rounded-[22px] bg-amber-50 px-4 py-4 text-sm leading-7 text-neutral-800">
+                    Audio does not start automatically. Press the button below to begin this listening part.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleListeningStart}
+                    disabled={locked}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {listeningReady ? "Play audio again" : "Start audio"}
+                  </button>
+                  <div className="mt-5">
+                    <ListeningWordInputQuestion
+                      items={currentQuestion.items}
+                      value={listeningTextResponse}
+                      onChange={setListeningTextResponse}
+                      disabled={locked || !listeningReady}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleListeningTextSubmit}
+                    disabled={locked || !listeningReady || currentQuestion.items.some((item) => !(listeningTextResponse[item.number] ?? "").trim())}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
+              ) : isBankedTextQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <BankedTextQuestion
+                    items={currentQuestion.items}
+                    value={bankedTextResponse}
+                    onChange={setBankedTextResponse}
+                    disabled={locked}
+                    wordBank={currentQuestion.wordBank}
+                    textTemplate={currentQuestion.textTemplate}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleBankedTextSubmit}
+                    disabled={locked || currentQuestion.items.some((item) => !bankedTextResponse[item.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
               ) : isCefrListeningQuestion ? (
                 <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
                   <div className="rounded-[22px] bg-amber-50 px-4 py-4 text-sm leading-7 text-neutral-800">
@@ -595,6 +703,24 @@ export default function QuizPage() {
                     Submit answers
                   </button>
                 </div>
+              ) : isSimpleMatchingQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <SimpleMatchingQuestion
+                    items={currentQuestion.items}
+                    choices={currentQuestion.choices}
+                    value={simpleMatchingResponse}
+                    onChange={setSimpleMatchingResponse}
+                    disabled={locked}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSimpleMatchingSubmit}
+                    disabled={locked || currentQuestion.items.some((item) => !simpleMatchingResponse[item.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
               ) : isCefrReadingQuestion ? (
                 <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
                   <CefrReadingMatchingQuestion
@@ -608,6 +734,30 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleCefrReadingSubmit}
                     disabled={locked || currentQuestion.people.some((person) => !cefrReadingResponse[person.number])}
+                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Submit answers
+                  </button>
+                </div>
+              ) : isSentenceBuilderQuestion ? (
+                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <SentenceBuilderQuestion
+                    items={currentQuestion.items}
+                    value={sentenceBuilderResponse}
+                    onChange={setSentenceBuilderResponse}
+                    disabled={locked}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSentenceBuilderSubmit}
+                    disabled={
+                      locked ||
+                      currentQuestion.items.some((item) => {
+                        const response = sentenceBuilderResponse[item.number] ?? {};
+                        const sequence = Array.isArray(response.sequence) ? response.sequence : [];
+                        return !(response.text ?? "").trim() || sequence.length < (item.correctSequence?.length ?? 0) || sequence.some((word) => !word);
+                      })
+                    }
                     className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Submit answers

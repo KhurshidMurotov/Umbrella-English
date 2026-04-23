@@ -6,12 +6,12 @@ function formatAverageSeconds(value) {
   return `${value >= 10 ? value.toFixed(1) : value.toFixed(2)}s`;
 }
 
-export default function LiveLeaderboard({ players = [], showTitle = true, showAverageTime = true }) {
+export default function LiveLeaderboard({ players = [], showTitle = true, showAverageTime = true, sortByAverageTime = showAverageTime }) {
   const sortedPlayers = [...players].sort(
     (first, second) =>
       (second.score ?? 0) - (first.score ?? 0) ||
       (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
-      (first.averageResponseTimeSeconds ?? 0) - (second.averageResponseTimeSeconds ?? 0)
+      (sortByAverageTime ? (first.averageResponseTimeSeconds ?? 0) - (second.averageResponseTimeSeconds ?? 0) : 0)
   );
 
   const rankBadge = (index) => {
