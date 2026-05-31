@@ -1328,8 +1328,8 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : (
-                <div className="mt-6 space-y-4">
-                  {currentQuestion.options.map((option) => {
+                <div className="mt-6 space-y-3">
+                  {currentQuestion.options.map((option, optionIndex) => {
                     let state = "default";
                     if (selectedOption === option && feedbackState?.type === "correct") {
                       state = "correct";
@@ -1344,6 +1344,7 @@ export default function LiveRoomPage() {
                         onClick={() => submitAnswer(option)}
                         disabled={role === "host" || !canAnswerNow || selectedOption !== "" || (!disableAnswerTimer && remainingSeconds <= 0) || isLockedFromAntiCheat}
                         state={state}
+                        index={optionIndex}
                       />
                     );
                   })}

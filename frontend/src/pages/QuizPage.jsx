@@ -51,13 +51,13 @@ function renderQuestionPrompt(prompt) {
   const splitPrompt = splitQuestionPrompt(prompt);
 
   if (!splitPrompt) {
-    return <h2 className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{prompt}</h2>;
+    return <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{prompt}</h2>;
   }
 
   return (
     <div className="space-y-3">
-      <h2 className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{splitPrompt.title}</h2>
-      <p className="text-3xl font-extrabold leading-[1.18] text-neutral-950">{splitPrompt.detail}</p>
+      <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.title}</h2>
+      <p className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.detail}</p>
     </div>
   );
 }
@@ -444,15 +444,15 @@ export default function QuizPage() {
   return (
     <ShellLayout>
       <div className="mx-auto max-w-4xl px-0">
-        <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
           <div className="min-w-0">
-            <p className="text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.28em] text-neutral-500">Solo quiz</p>
-            <h1 className="text-xl sm:text-3xl font-extrabold mt-1 truncate">{playableQuiz.title}</h1>
+            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 sm:text-xs">Solo quiz</p>
+            <h1 className="mt-1 truncate text-lg font-black text-neutral-900 sm:text-2xl">{playableQuiz.title}</h1>
           </div>
           {!isWritingQuestion && !disableAnswerTimer ? (
-            <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-sm flex-shrink-0">
-              <Clock3 size={16} className="sm:w-[18px] sm:h-[18px]" />
-              <span className="font-bold text-sm sm:text-base">{timeLeft}s</span>
+            <div className="flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 shadow flex-shrink-0">
+              <Clock3 size={15} className="text-yellow-400" />
+              <span className="font-black text-sm text-white sm:text-base">{timeLeft}s</span>
             </div>
           ) : null}
         </div>
@@ -469,33 +469,33 @@ export default function QuizPage() {
         </div>
 
         {warning ? (
-          <div className="mt-4 sm:mt-5 flex items-center gap-2 sm:gap-3 rounded-[20px] sm:rounded-[24px] border border-amber-300 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-amber-950">
-            <AlertTriangle size={16} className="flex-shrink-0 sm:w-[18px] sm:h-[18px]" />
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border-l-4 border-orange-500 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-900">
+            <AlertTriangle size={16} className="shrink-0 text-orange-500" />
             <span>{warning}</span>
           </div>
         ) : null}
 
-        <div className="mt-5 sm:mt-6 glass-card rounded-[28px] sm:rounded-[36px] p-4 sm:p-6 lg:p-8">
+        <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6 lg:p-8">
           {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
 
-          <div className="mb-4 sm:mb-5 flex items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-3 text-sm text-neutral-500">
-              <Shield size={18} />
-              <span>Anti-cheat is active during the quiz.</span>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 sm:text-sm">
+              <Shield size={14} />
+              <span>Anti-cheat active</span>
             </div>
             {isScoredQuestion(currentQuestion) ? (
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
-                <Sparkles size={16} />
+              <div className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-black text-yellow-800 sm:text-sm">
+                <Sparkles size={13} />
                 {isBookScoringQuiz
-                  ? `${Number(currentQuestion.points) || 2} points for correct answer`
+                  ? `${Number(currentQuestion.points) || 2} pts`
                   : currentQuestion.points
-                    ? `Up to ${currentQuestion.points} points`
+                    ? `Up to ${currentQuestion.points} pts`
                     : "60 base + speed bonus"}
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-neutral-900">
-                <Sparkles size={16} />
-                Included, not scored
+              <div className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-black text-neutral-500 sm:text-sm">
+                <Sparkles size={13} />
+                Not scored
               </div>
             )}
           </div>
@@ -600,7 +600,7 @@ export default function QuizPage() {
                           ? writingFields.some((_, index) => !(writingResponses[index] ?? "").trim())
                           : !writtenResponse.trim())
                       }
-                      className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="btn-primary mt-5 w-full sm:w-auto"
                     >
                       {currentIndex === playableQuiz.questions.length - 1 ? "Finish test" : "Continue"}
                     </button>
@@ -619,7 +619,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleGroupedChoiceSubmit}
                     disabled={locked || currentQuestion.items.some((item) => !groupedChoiceResponse[item.number])}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -633,7 +633,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleListeningStart}
                     disabled={locked}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     {listeningReady ? "Play audio again" : "Start audio"}
                   </button>
@@ -649,7 +649,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleListeningTextSubmit}
                     disabled={locked || !listeningReady || currentQuestion.items.some((item) => !(listeningTextResponse[item.number] ?? "").trim())}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -668,7 +668,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleBankedTextSubmit}
                     disabled={locked || currentQuestion.items.some((item) => !bankedTextResponse[item.number])}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -682,7 +682,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleListeningStart}
                     disabled={locked}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     {listeningReady ? "Play audio again" : "Start audio"}
                   </button>
@@ -698,7 +698,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleCefrListeningSubmit}
                     disabled={locked || !listeningReady || currentQuestion.items.some((item) => !cefrListeningResponse[item.number])}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -716,7 +716,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleSimpleMatchingSubmit}
                     disabled={locked || currentQuestion.items.some((item) => !simpleMatchingResponse[item.number])}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -734,7 +734,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleCefrReadingSubmit}
                     disabled={locked || currentQuestion.people.some((person) => !cefrReadingResponse[person.number])}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -758,7 +758,7 @@ export default function QuizPage() {
                         return !(response.text ?? "").trim() || sequence.length < (item.correctSequence?.length ?? 0) || sequence.some((word) => !word);
                       })
                     }
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -777,7 +777,7 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleDragSubmit}
                     disabled={locked || dragResponse.length < (currentQuestion.correctSequence?.length ?? 0) || dragResponse.some((item) => !item)}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answers
                   </button>
@@ -796,14 +796,14 @@ export default function QuizPage() {
                     type="button"
                     onClick={handleTypedSubmit}
                     disabled={locked || !typedResponse.trim()}
-                    className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary mt-5 w-full sm:w-auto"
                   >
                     Submit answer
                   </button>
                 </div>
               ) : (
                 <div className="mt-8 space-y-4">
-                  {currentQuestion.options.map((option) => {
+                  {currentQuestion.options.map((option, optionIndex) => {
                     let state = "default";
                     if (locked && option === currentQuestion.correctAnswer) {
                       state = "correct";
@@ -811,12 +811,12 @@ export default function QuizPage() {
                       state = "wrong";
                     }
 
-                    return <AnswerButton key={option} label={option} state={state} onClick={() => handleAnswer(option)} disabled={locked} />;
+                    return <AnswerButton key={option} label={option} state={state} onClick={() => handleAnswer(option)} disabled={locked} index={optionIndex} />;
                   })}
                 </div>
               )}
               {feedbackState ? (
-                <div className={`mt-5 rounded-[24px] px-4 py-3 text-sm font-semibold ${feedbackToneClass}`}>
+                <div className={`mt-4 rounded-2xl px-4 py-3 text-sm font-bold ${feedbackToneClass}`}>
                   {feedbackState.text}
                 </div>
               ) : null}

@@ -1,33 +1,47 @@
 import { motion } from "framer-motion";
-import { Clock3, Play, ShieldCheck } from "lucide-react";
+import { Clock3, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function QuizCard({ quiz }) {
+const CARD_TOPS = [
+  "from-yellow-400 to-amber-300",
+  "from-orange-400 to-red-300",
+  "from-blue-500 to-cyan-400",
+  "from-green-500 to-emerald-400",
+];
+
+export default function QuizCard({ quiz, index = 0 }) {
+  const accent = CARD_TOPS[index % CARD_TOPS.length];
+
   return (
-    <motion.div whileHover={{ y: -4, rotate: -0.2 }} className="glass-card rounded-[20px] sm:rounded-[28px] p-3 sm:p-5 lg:p-6">
-      <div className="mb-3 sm:mb-5 flex items-start justify-between gap-3 sm:gap-4">
-        <div className="min-w-0">
-          <span className="inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-xs font-bold uppercase tracking-[0.15em] sm:tracking-[0.24em] text-neutral-900">
+    <motion.div
+      whileHover={{ y: -4, scale: 1.01 }}
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
+      className="overflow-hidden rounded-2xl bg-white shadow-md border border-neutral-100 sm:rounded-3xl"
+    >
+      <div className={`h-2 w-full bg-gradient-to-r ${accent}`} />
+      <div className="p-4 sm:p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-yellow-800">
             {quiz.difficulty}
           </span>
-          <h3 className="mt-2 sm:mt-4 text-lg sm:text-2xl font-extrabold leading-tight">{quiz.title}</h3>
-          <p className="mt-1 sm:mt-2 text-xs sm:text-sm leading-5 sm:leading-6 text-neutral-600 line-clamp-2">{quiz.description}</p>
+          <div className="flex items-center gap-1 text-xs text-neutral-400">
+            <Clock3 size={12} />
+            <span>{quiz.estimatedTime}</span>
+          </div>
         </div>
-        <div className="rounded-[16px] sm:rounded-[24px] bg-neutral-950 p-2 sm:p-3 lg:p-4 text-white shadow-lg flex-shrink-0">
-          <ShieldCheck size={20} className="sm:w-[28px] sm:h-[28px]" />
+
+        <h3 className="text-lg font-extrabold leading-tight text-neutral-900 sm:text-xl">{quiz.title}</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-neutral-500 line-clamp-2">{quiz.description}</p>
+
+        <div className="mt-4">
+          <Link
+            to={`/quiz/${quiz.id}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-800 active:scale-95"
+          >
+            <Play size={13} fill="white" />
+            Start quiz
+          </Link>
         </div>
-      </div>
-
-      <div className="mb-3 sm:mb-6 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-neutral-600">
-        <Clock3 size={14} className="sm:w-[16px] sm:h-[16px]" />
-        <span>{quiz.estimatedTime}</span>
-      </div>
-
-      <div className="flex flex-wrap gap-2 sm:gap-3">
-        <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center gap-1 sm:gap-2 rounded-full bg-neutral-950 px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-neutral-800">
-          <Play size={14} className="sm:w-[16px] sm:h-[16px]" />
-          Start quiz
-        </Link>
       </div>
     </motion.div>
   );

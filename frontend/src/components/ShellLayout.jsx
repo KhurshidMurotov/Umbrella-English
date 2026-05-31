@@ -5,24 +5,30 @@ export default function ShellLayout({ children, showNav = true }) {
   const location = useLocation();
   const links = [
     { to: "/leaderboard", label: "Leaderboard", icon: "🏆" },
-    { to: "/live", label: "Join Live", icon: "🎯" }
+    { to: "/live", label: "Join", icon: "🎯" }
   ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -18 }}
-      transition={{ duration: 0.35 }}
-      className="min-h-screen px-3 py-4 text-neutral-900 sm:px-4 sm:py-6 md:px-6 lg:px-8"
+      exit={{ opacity: 0, y: -16 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen bg-yellow-50 px-3 py-3 sm:px-5 sm:py-4"
     >
       <div className="mx-auto max-w-6xl">
         {showNav ? (
-          <nav className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-full border border-neutral-200 bg-white/90 px-3 py-3 sm:gap-4 sm:px-4 sm:py-3 shadow-sm backdrop-blur" aria-label="Main navigation">
-            <Link to="/" className="text-base font-extrabold tracking-tight text-neutral-950 hover:opacity-80 transition focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg px-2 py-1 outline-none sm:text-lg">
-              Umbrella English
+          <nav
+            className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-neutral-900 px-4 py-3 shadow-lg sm:mb-5 sm:rounded-3xl sm:px-5 sm:py-3.5"
+            aria-label="Main navigation"
+          >
+            <Link
+              to="/"
+              className="text-base font-black tracking-tight text-yellow-400 transition hover:text-yellow-300 outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg px-1 sm:text-lg"
+            >
+              ☂ Umbrella English
             </Link>
-            <div className="flex flex-wrap justify-end gap-2 sm:gap-2">
+            <div className="flex gap-1.5 sm:gap-2">
               {links.map((link) => {
                 const isActive = location.pathname === link.to;
                 return (
@@ -30,14 +36,13 @@ export default function ShellLayout({ children, showNav = true }) {
                     key={link.to}
                     to={link.to}
                     aria-current={isActive ? "page" : undefined}
-                    className={`rounded-full px-2.5 py-2 sm:px-4 sm:py-2 text-[0.65rem] sm:text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 outline-none ${
+                    className={`rounded-xl px-3 py-2 text-xs font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:px-4 sm:text-sm ${
                       isActive
-                        ? "bg-neutral-950 text-white shadow-md"
-                        : "text-neutral-600 hover:bg-amber-100 hover:text-neutral-950"
+                        ? "bg-yellow-400 text-neutral-900"
+                        : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
                     }`}
-                    title={link.label}
                   >
-                    <span className="inline-block mr-1">{link.icon}</span>
+                    <span className="mr-1">{link.icon}</span>
                     {link.label}
                   </Link>
                 );
