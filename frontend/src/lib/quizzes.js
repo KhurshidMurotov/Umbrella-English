@@ -230,10 +230,13 @@ export const a1Unit4QuizV2 = {
   title: "A1 Unit 4 Test_V2",
   description: "Same A1 Unit 4 test — answer in any order, review your work, and submit at the end. No timer.",
   flow: "free-navigation",
+  fixedUnitScoring: true,
   disableAnswerTimer: true,
   hideTimerControl: true,
   scoringDescription:
-    "Self-paced: move between questions freely, change answers any time, and press Submit when you are ready. Each part keeps its book points; there is no speed bonus and no countdown."
+    "Self-paced: move between questions freely, change answers any time, and press Submit when you are ready. Each part keeps its book points; there is no speed bonus and no countdown.",
+  // Same content, but unique question ids so DB seeding never collides with the original.
+  questions: a1Unit4Quiz.questions.map((question) => ({ ...question, id: `v2-${question.id}` }))
 };
 
 export const cefrQuiz = {

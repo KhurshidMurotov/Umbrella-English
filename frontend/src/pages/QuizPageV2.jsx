@@ -2,96 +2,13 @@ import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Shield, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import AnswerButton from "../components/AnswerButton";
-import BankedTextQuestion from "../components/BankedTextQuestion";
-import CefrListeningQuestion from "../components/CefrListeningQuestion";
-import CefrReadingMatchingQuestion from "../components/CefrReadingMatchingQuestion";
-import DragOrderQuestion from "../components/DragOrderQuestion";
-import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
-import ListeningWordInputQuestion from "../components/ListeningWordInputQuestion";
 import ProgressBar from "../components/ProgressBar";
-import SentenceBuilderQuestion from "../components/SentenceBuilderQuestion";
+import SelfPacedAnswerArea, { isQuestionAnswered, renderQuestionPrompt } from "../components/SelfPacedAnswerArea";
 import ShellLayout from "../components/ShellLayout";
-import SimpleMatchingQuestion from "../components/SimpleMatchingQuestion";
 import StatPill from "../components/StatPill";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { buildPlayableQuiz, countScoredQuestions, evaluateAnswer, isScoredQuestion } from "../lib/quizEngine";
 import { saveResult } from "../lib/storage";
-
-function splitQuestionPrompt(prompt) {
-  const separators = [":", "?", "!"];
-  const matches = separators
-    .map((separator) => ({ separator, index: prompt.indexOf(separator) }))
-    .filter((item) => item.index !== -1)
-    .sort((first, second) => first.index - second.index);
-
-  if (!matches.length) {
-    return null;
-  }
-
-  const separatorIndex = matches[0].index;
-  const separator = matches[0].separator;
-  const title = prompt.slice(0, separatorIndex + separator.length).trim();
-  const detail = prompt.slice(separatorIndex + separator.length).trim();
-
-  if (!title || !detail) {
-    return null;
-  }
-
-  return { title, detail };
-}
-
-function renderQuestionPrompt(prompt) {
-  const splitPrompt = splitQuestionPrompt(prompt);
-
-  if (!splitPrompt) {
-    return <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{prompt}</h2>;
-  }
-
-  return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.title}</h2>
-      <p className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.detail}</p>
-    </div>
-  );
-}
-
-// Has this question been given a usable answer? Used for the grid, progress and the submit check.
-function isQuestionAnswered(question, answer) {
-  if (answer == null) {
-    return false;
-  }
-
-  switch (question.type) {
-    case "part1-drag-order": {
-      const required = question.correctSequence?.length ?? 0;
-      return Array.isArray(answer) && answer.length >= required && answer.slice(0, required).every(Boolean);
-    }
-    case "part2-text-input":
-      return String(answer).trim().length > 0;
-    case "writing":
-      return Array.isArray(answer) ? answer.some((value) => String(value ?? "").trim()) : String(answer).trim().length > 0;
-    case "grouped-choice-list":
-    case "listening-text-input-group":
-    case "banked-text-input-group":
-    case "cefr-listening-group":
-    case "simple-matching":
-      return (question.items ?? []).every((item) => {
-        const value = answer[item.number];
-        return value != null && String(value).trim() !== "";
-      });
-    case "cefr-reading-matching":
-      return (question.people ?? []).every((person) => answer[person.number]);
-    case "sentence-builder-group":
-      return (question.items ?? []).every((item) => {
-        const response = answer[item.number] ?? {};
-        const sequence = Array.isArray(response.sequence) ? response.sequence : [];
-        return String(response.text ?? "").trim() && sequence.length >= (item.correctSequence?.length ?? 0) && sequence.every(Boolean);
-      });
-    default:
-      return Boolean(answer);
-  }
-}
 
 export default function QuizPageV2({ quiz }) {
   const navigate = useNavigate();
@@ -203,169 +120,6 @@ export default function QuizPageV2({ quiz }) {
     return groups;
   }, [questions]);
 
-  function renderAnswerArea() {
-    switch (currentQuestion.type) {
-      case "part1-drag-order":
-        return (
-          <DragOrderQuestion
-            template={currentQuestion.textTemplate}
-            wordBank={currentQuestion.wordBank}
-            value={Array.isArray(answer) ? answer : []}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-            showWordBank
-            compactOnMobile
-          />
-        );
-      case "part2-text-input":
-        return (
-          <input
-            type="text"
-            value={answer ?? ""}
-            onChange={(event) => setAnswer(currentQuestion.id, event.target.value)}
-            placeholder="Type your answer"
-            className="w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 text-base outline-none transition focus:border-neutral-950"
-          />
-        );
-      case "grouped-choice-list":
-        return (
-          <GroupedChoiceQuestion
-            items={currentQuestion.items}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-            passage={currentQuestion.passage}
-          />
-        );
-      case "listening-text-input-group":
-        return (
-          <ListeningWordInputQuestion
-            items={currentQuestion.items}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-          />
-        );
-      case "banked-text-input-group":
-        return (
-          <BankedTextQuestion
-            items={currentQuestion.items}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-            wordBank={currentQuestion.wordBank}
-            textTemplate={currentQuestion.textTemplate}
-          />
-        );
-      case "cefr-listening-group":
-        return (
-          <CefrListeningQuestion
-            items={currentQuestion.items}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-          />
-        );
-      case "simple-matching":
-        return (
-          <SimpleMatchingQuestion
-            items={currentQuestion.items}
-            choices={currentQuestion.choices}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-          />
-        );
-      case "cefr-reading-matching":
-        return (
-          <CefrReadingMatchingQuestion
-            people={currentQuestion.people}
-            choices={currentQuestion.choices}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-          />
-        );
-      case "sentence-builder-group":
-        return (
-          <SentenceBuilderQuestion
-            items={currentQuestion.items}
-            value={answer ?? {}}
-            onChange={(value) => setAnswer(currentQuestion.id, value)}
-          />
-        );
-      case "writing": {
-        const fields = currentQuestion.responseFields ?? [];
-        const structured = fields.length > 0;
-        const writingValues = Array.isArray(answer) ? answer : [];
-
-        if (structured) {
-          return (
-            <div className="space-y-4">
-              {currentQuestion.passage ? (
-                <div className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
-                  {currentQuestion.passage}
-                </div>
-              ) : null}
-              {fields.map((field, index) => (
-                <div key={field.id ?? index} className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">{field.prompt}</div>
-                  {field.multiline ? (
-                    <textarea
-                      value={writingValues[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...writingValues];
-                        next[index] = event.target.value;
-                        setAnswer(currentQuestion.id, next);
-                      }}
-                      placeholder={field.placeholder ?? currentQuestion.placeholder}
-                      className="mt-4 min-h-[112px] w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={writingValues[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...writingValues];
-                        next[index] = event.target.value;
-                        setAnswer(currentQuestion.id, next);
-                      }}
-                      placeholder={field.placeholder ?? currentQuestion.placeholder}
-                      className="mt-4 w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition focus:border-neutral-950"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          );
-        }
-
-        return (
-          <div className="space-y-3">
-            {(currentQuestion.instructions ?? []).map((instruction) => (
-              <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
-                {instruction}
-              </div>
-            ))}
-            <textarea
-              value={typeof answer === "string" ? answer : ""}
-              onChange={(event) => setAnswer(currentQuestion.id, event.target.value)}
-              placeholder={currentQuestion.placeholder}
-              className="mt-2 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950"
-            />
-          </div>
-        );
-      }
-      default:
-        return (
-          <div className="space-y-4">
-            {(currentQuestion.options ?? []).map((option, optionIndex) => (
-              <AnswerButton
-                key={option}
-                label={option}
-                index={optionIndex}
-                state={answer === option ? "selected" : "default"}
-                onClick={() => setAnswer(currentQuestion.id, option)}
-              />
-            ))}
-          </div>
-        );
-    }
-  }
-
   return (
     <ShellLayout>
       <div className="mx-auto max-w-4xl">
@@ -450,7 +204,9 @@ export default function QuizPageV2({ quiz }) {
                   : "This writing task is shown as in the book and does not change the score."}
               </p>
 
-              <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">{renderAnswerArea()}</div>
+              <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <SelfPacedAnswerArea question={currentQuestion} value={answer} onChange={(value) => setAnswer(currentQuestion.id, value)} />
+              </div>
             </motion.div>
           </AnimatePresence>
 

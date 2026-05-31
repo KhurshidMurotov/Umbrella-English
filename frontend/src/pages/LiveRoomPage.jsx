@@ -11,6 +11,7 @@ import DragOrderQuestion from "../components/DragOrderQuestion";
 import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
 import ListeningWordInputQuestion from "../components/ListeningWordInputQuestion";
 import LiveLeaderboard from "../components/LiveLeaderboard";
+import LiveSelfPacedExam from "../components/LiveSelfPacedExam";
 import ProgressBar from "../components/ProgressBar";
 import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
@@ -671,6 +672,22 @@ export default function LiveRoomPage() {
 
   // Players never see the top nav; the host only sees it in the waiting room (before the exam starts).
   const showShellNav = role === "host" && !room?.started;
+
+  // Free-navigation (V2) live exams give students the self-paced "answer in any order,
+  // submit at the end" interface instead of the one-question-at-a-time live flow.
+  if (role === "player" && room?.flow === "free-navigation") {
+    return (
+      <ShellLayout showNav={false}>
+        {isLockedFromAntiCheat ? (
+          <CheatingDetectedOverlay
+            title="Cheating detected"
+            subtitle="This session was locked because anti-cheat detected repeated app or tab switching."
+          />
+        ) : null}
+        <LiveSelfPacedExam room={room} roomCode={roomCode} name={name} socket={socket} warning={warning} violations={violations} />
+      </ShellLayout>
+    );
+  }
 
   return (
     <ShellLayout showNav={showShellNav}>

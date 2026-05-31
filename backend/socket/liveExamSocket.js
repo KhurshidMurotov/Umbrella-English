@@ -124,6 +124,7 @@ function roomPayload(room) {
     mode: room.mode,
     quizId: room.quizId,
     quizTitle: room.quizTitle,
+    flow: getQuizConfig(room)?.flow ?? "",
     questionTime: room.questionTime,
     questions: sanitizeQuestions(room.questions),
     currentQuestionIndex: room.currentQuestionIndex,
@@ -721,6 +722,78 @@ export function registerLiveExamSocket(io) {
         advanceStudentPlayer(room, player);
       }
 
+      await persistAndBroadcast(io, room);
+    });
+
+    // Self-paced (free-navigation) exams: the student answers in any order and
+    // submits everything once. We score the whole submission here in one pass.
+    handleAsyncSocketEvent("submitAll", async ({ roomCode, name, answers }) => {
+      const room = await getRoomByCode(roomCode.toUpperCase());
+      if (!room) {
+        return;
+      }
+
+      const player = getPlayer(room, socket, name);
+      if (!player || player.completed || player.disqualified) {
+        if (player?.disqualified) {
+          socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
+        }
+        return;
+      }
+
+      const submitted = answers && typeof answers === "object" ? answers : {};
+
+      player.score = 0;
+      player.correctAnswers = 0;
+      player.answeredQuestions = 0;
+      player.totalResponseTimeMs = 0;
+      player.answerDetails = {};
+
+      let totalScore = 0;
+      let totalCorrect = 0;
+      let totalUnits = 0;
+
+      for (const question of room.questions) {
+        const answer = submitted[question.id];
+
+        if (!isScoredQuestion(question)) {
+          if (question.type === "writing" && typeof answer === "string") {
+            player.writingResponseText = answer.trim();
+          }
+          storeAnswerDetails(
+            player,
+            question,
+            answer ?? "",
+            { correct: false, correctCount: 0, totalCount: 0 },
+            { awardedScore: 0, timedOut: false, ungraded: true }
+          );
+          continue;
+        }
+
+        const outcome = evaluateAnswer(question, answer);
+        const basePoints = Number(question.points) || 1;
+        const awardedScore = outcome.correctCount
+          ? outcome.totalCount > 1
+            ? Math.round(basePoints * (outcome.correctCount / outcome.totalCount))
+            : basePoints
+          : 0;
+
+        storeAnswerDetails(player, question, answer ?? "", outcome, { awardedScore, timedOut: false });
+
+        totalScore += awardedScore;
+        totalCorrect += outcome.correctCount;
+        totalUnits += outcome.totalCount;
+      }
+
+      player.score = totalScore;
+      player.correctAnswers = totalCorrect;
+      player.answeredQuestions = totalUnits;
+      player.completed = true;
+      player.answeredCurrent = true;
+      player.currentQuestionIndex = room.questions.length;
+      player.questionStartedAt = null;
+
+      socket.emit("submitResult", { score: totalScore, correctAnswers: totalCorrect, totalUnits });
       await persistAndBroadcast(io, room);
     });
 

@@ -230,6 +230,19 @@ export const a1Unit4Quiz = {
   ]
 };
 
+// V2 of the A1 Unit 4 test: identical questions/answers, but the live room runs
+// it as a self-paced exam (students navigate freely and submit once at the end).
+export const a1Unit4QuizV2 = {
+  ...a1Unit4Quiz,
+  id: "a1-unit-4-busy-week-v2",
+  title: "A1 Unit 4 Test_V2",
+  description: "Same A1 Unit 4 test — answer in any order, review your work, and submit at the end. No timer.",
+  flow: "free-navigation",
+  fixedUnitScoring: true,
+  // Same content, but unique question ids so DB seeding never collides with the original.
+  questions: a1Unit4Quiz.questions.map((question) => ({ ...question, id: `v2-${question.id}` }))
+};
+
 export const cefrQuiz = {
   id: "cefr-part-1-and-2",
   title: "CEFR Test",
@@ -764,6 +777,7 @@ export const quizzes = [
     questions: defaultQuiz.questions
   },
   a1Unit4Quiz,
+  a1Unit4QuizV2,
   cefrQuiz,
   a2Unit7Quiz,
   a1Unit5AQuiz
