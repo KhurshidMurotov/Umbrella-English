@@ -3,7 +3,10 @@ function normalizeAnswerMap(value) {
 }
 
 function renderTemplateWithSlots(template, items) {
-  const segments = String(template ?? "").split("___");
+  // Strip redundant "(1)" "(2)" markers before each blank — the slot already numbers it.
+  const segments = String(template ?? "")
+    .replace(/\(\d+\)\s*(?=___)/g, "")
+    .split("___");
 
   if (segments.length <= 1) {
     return <div className="whitespace-pre-line">{template}</div>;

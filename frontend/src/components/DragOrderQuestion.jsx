@@ -1,7 +1,11 @@
 import { useMemo } from "react";
 
 function parseTemplate(template) {
-  return String(template ?? "").split("___");
+  // Remove redundant "(1)" "(2)" markers that sit right before each blank —
+  // the slot itself already shows the number.
+  return String(template ?? "")
+    .replace(/\(\d+\)\s*(?=___)/g, "")
+    .split("___");
 }
 
 export default function DragOrderQuestion({
@@ -139,7 +143,7 @@ export default function DragOrderQuestion({
                 }}
                 onClick={() => fillFirstEmpty(word)}
                 disabled={disabled}
-                className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 disabled:opacity-60"
+                className="rounded-xl border-2 border-yellow-300 bg-yellow-50 px-3.5 py-2 text-sm font-bold text-neutral-900 transition active:translate-y-0.5 hover:bg-yellow-100 disabled:opacity-60"
               >
                 {word}
               </button>

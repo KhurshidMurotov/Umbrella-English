@@ -663,8 +663,11 @@ export default function LiveRoomPage() {
         ? "mx-auto w-full max-w-[1280px]"
       : "mx-auto max-w-4xl";
 
+  // Players never see the top nav; the host only sees it in the waiting room (before the exam starts).
+  const showShellNav = role === "host" && !room?.started;
+
   return (
-    <ShellLayout>
+    <ShellLayout showNav={showShellNav}>
       {role === "player" && isLockedFromAntiCheat ? (
         <CheatingDetectedOverlay
           title="Cheating detected"
@@ -697,7 +700,7 @@ export default function LiveRoomPage() {
                 }
               }}
               disabled={!playerName.trim()}
-              className="mt-5 w-full rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary mt-5 w-full justify-center"
             >
               Continue
             </button>
@@ -706,12 +709,12 @@ export default function LiveRoomPage() {
       ) : null}
 
       <div className={layoutClass}>
-        <div className="glass-card rounded-[40px] p-8">
+        <div className="glass-card rounded-3xl p-4 sm:rounded-[40px] sm:p-8">
           {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
 
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl font-extrabold">{room?.quizTitle ?? "Loading room..."}</h1>
+              <h1 className="text-xl font-black sm:text-3xl sm:font-extrabold">{room?.quizTitle ?? "Loading room..."}</h1>
             </div>
             {showTimerBadge ? (
               <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm">
@@ -924,12 +927,12 @@ export default function LiveRoomPage() {
               </div>
               {renderQuestionPrompt(
                 currentQuestion.prompt,
-                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
-                "max-w-4xl text-3xl font-extrabold leading-[1.18] tracking-[-0.02em] break-words text-neutral-950",
+                "max-w-4xl text-xl font-black leading-snug tracking-tight break-words text-neutral-950 sm:text-2xl",
+                "max-w-4xl text-xl font-black leading-snug tracking-tight break-words text-neutral-950 sm:text-2xl",
                 { showTitle: false }
               )}
               {isWritingQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {currentQuestion.passage ? (
                     <div className="mb-5 rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
                       {currentQuestion.passage}
@@ -1015,7 +1018,7 @@ export default function LiveRoomPage() {
                             ? writingFields.some((_, index) => !(writingResponses[index] ?? "").trim())
                             : !textResponse.trim())
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit response
                       </button>
@@ -1023,7 +1026,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isGroupedChoiceQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <GroupedChoiceQuestion
                       items={currentQuestion.items}
@@ -1050,7 +1053,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !groupedChoiceResponse[item.number])
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1058,7 +1061,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isListeningTextQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <>
                       <ListeningWordInputQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
@@ -1083,7 +1086,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !(listeningTextResponse[item.number] ?? "").trim())
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1091,7 +1094,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isBankedTextQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <BankedTextQuestion
                       items={currentQuestion.items}
@@ -1120,7 +1123,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !bankedTextResponse[item.number])
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1128,7 +1131,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isCefrListeningQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <>
                       <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
@@ -1153,7 +1156,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !cefrListeningResponse[item.number])
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1161,7 +1164,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isSimpleMatchingQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <SimpleMatchingQuestion
                       items={currentQuestion.items}
@@ -1188,7 +1191,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.items.some((item) => !simpleMatchingResponse[item.number])
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1196,7 +1199,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isCefrReadingQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <CefrReadingMatchingQuestion
                       people={currentQuestion.people}
@@ -1223,7 +1226,7 @@ export default function LiveRoomPage() {
                           isLockedFromAntiCheat ||
                           currentQuestion.people.some((person) => !cefrReadingResponse[person.number])
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1231,7 +1234,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isSentenceBuilderQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <SentenceBuilderQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
                   ) : (
@@ -1255,7 +1258,7 @@ export default function LiveRoomPage() {
                             return !(response.text ?? "").trim() || sequence.length < (item.correctSequence?.length ?? 0) || sequence.some((word) => !word);
                           })
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1263,7 +1266,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isDragOrderQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <DragOrderQuestion
                       template={currentQuestion.textTemplate}
@@ -1293,7 +1296,7 @@ export default function LiveRoomPage() {
                           dragResponse.length < (currentQuestion.correctSequence?.length ?? 0) ||
                           dragResponse.some((item) => !item)
                         }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answers
                       </button>
@@ -1301,7 +1304,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isTextInputQuestion ? (
-                <div className="mt-6 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <p className="text-sm leading-7 text-neutral-600">
                       Students type the answer. If incorrect, they will receive a short hint.
@@ -1320,7 +1323,7 @@ export default function LiveRoomPage() {
                         type="button"
                         onClick={submitTypedResponse}
                         disabled={!canAnswerNow || hasSubmittedResponse || !typedResponse.trim() || isLockedFromAntiCheat}
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary mt-5 w-full justify-center sm:w-auto"
                       >
                         Submit answer
                       </button>
@@ -1359,7 +1362,7 @@ export default function LiveRoomPage() {
               {role === "host" ? (
                 <button
                   onClick={() => socket.emit("nextQuestion", { roomCode })}
-                  className="mt-6 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white"
+                  className="btn-dark mt-6"
                 >
                   Next question
                 </button>
