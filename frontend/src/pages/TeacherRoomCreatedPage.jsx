@@ -26,7 +26,7 @@ export default function TeacherRoomCreatedPage() {
   const hostUrl = `/live/${roomData.code}?role=host&name=${encodeURIComponent(hostName)}&hostToken=${encodeURIComponent(hostToken)}`;
 
   return (
-    <ShellLayout showNav={false}>
+    <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="glass-card rounded-[36px] p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">

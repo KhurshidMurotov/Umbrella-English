@@ -316,7 +316,7 @@ export default function TeacherStatsPage() {
 
   if (!teacherSession) {
     return (
-      <ShellLayout showNav={false}>
+      <ShellLayout showLinks={false}>
         <div className="mx-auto max-w-xl">
           <div className="glass-card rounded-[36px] p-8 sm:p-10">
             <div className="flex flex-col gap-4 text-center">
@@ -347,7 +347,7 @@ export default function TeacherStatsPage() {
   }
 
   return (
-    <ShellLayout showNav={false}>
+    <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-4 rounded-[36px] border border-neutral-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>

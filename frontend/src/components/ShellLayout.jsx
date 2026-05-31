@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 
-export default function ShellLayout({ children, showNav = true }) {
+export default function ShellLayout({ children, showNav = true, showLinks = true }) {
   const location = useLocation();
   const links = [
     { to: "/leaderboard", label: "Leaderboard", icon: "🏆" },
@@ -29,7 +29,7 @@ export default function ShellLayout({ children, showNav = true }) {
               ☂ Umbrella English
             </Link>
             <div className="flex gap-1.5 sm:gap-2">
-              {links.map((link) => {
+              {showLinks && links.map((link) => {
                 const isActive = location.pathname === link.to;
                 return (
                   <Link

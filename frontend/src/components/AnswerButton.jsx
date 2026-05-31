@@ -14,7 +14,9 @@ export default function AnswerButton({ label, state = "default", onClick, disabl
   let containerClass = "";
   let badgeClass = style.badge;
 
-  if (state === "correct") {
+  if (state === "selected") {
+    containerClass = `${style.base} ring-4 ring-neutral-900 ring-offset-2`;
+  } else if (state === "correct") {
     containerClass = "bg-emerald-500 border-emerald-700 text-white";
     badgeClass = "bg-black/20 text-white";
   } else if (state === "wrong") {
@@ -42,7 +44,7 @@ export default function AnswerButton({ label, state = "default", onClick, disabl
         {style.letter}
       </span>
       <span className="text-sm leading-snug sm:text-base">{label}</span>
-      {state === "correct" ? <CheckCircle2 size={20} className="ml-auto shrink-0" aria-hidden="true" /> : null}
+      {state === "correct" || state === "selected" ? <CheckCircle2 size={20} className="ml-auto shrink-0" aria-hidden="true" /> : null}
       {state === "wrong" ? <XCircle size={20} className="ml-auto shrink-0" aria-hidden="true" /> : null}
     </motion.button>
   );

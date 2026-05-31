@@ -28,7 +28,7 @@ function TeacherLogin({ onLogin }) {
   }
 
   return (
-    <ShellLayout showNav={false}>
+    <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-sm">
         <div className="overflow-hidden rounded-3xl bg-white shadow-lg border border-neutral-100">
           <div className="h-2 w-full bg-gradient-to-r from-yellow-400 to-amber-300" />
@@ -154,7 +154,7 @@ export default function TeacherPage() {
   }
 
   return (
-    <ShellLayout showNav={false}>
+    <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-neutral-900 px-5 py-4 shadow-lg">

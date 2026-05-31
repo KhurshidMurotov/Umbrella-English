@@ -10,6 +10,7 @@ import DragOrderQuestion from "../components/DragOrderQuestion";
 import GroupedChoiceQuestion from "../components/GroupedChoiceQuestion";
 import ListeningWordInputQuestion from "../components/ListeningWordInputQuestion";
 import ProgressBar from "../components/ProgressBar";
+import QuizPageV2 from "./QuizPageV2";
 import ShellLayout from "../components/ShellLayout";
 import SentenceBuilderQuestion from "../components/SentenceBuilderQuestion";
 import SimpleMatchingQuestion from "../components/SimpleMatchingQuestion";
@@ -63,6 +64,17 @@ function renderQuestionPrompt(prompt) {
 }
 
 export default function QuizPage() {
+  const { quizId } = useParams();
+  const selectedQuiz = quizCatalog.find((quiz) => quiz.id === quizId) ?? quizCatalog[0];
+
+  if (selectedQuiz.flow === "free-navigation") {
+    return <QuizPageV2 quiz={selectedQuiz} />;
+  }
+
+  return <ClassicQuizPage />;
+}
+
+function ClassicQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const selectedQuiz = quizCatalog.find((quiz) => quiz.id === quizId) ?? quizCatalog[0];
