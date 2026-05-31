@@ -21,7 +21,6 @@ function sanitizeQuestions(questions) {
     instructions: question.instructions ?? [],
     responseFields: question.responseFields ?? [],
     placeholder: question.placeholder ?? "",
-    hint: question.hint ?? "",
     textTemplate: question.textTemplate ?? "",
     wordBank: question.wordBank ?? [],
     items: question.items ?? [],
@@ -45,8 +44,10 @@ function getQuizConfig(roomOrQuizId) {
   return quizConfigById.get(quizId) ?? null;
 }
 
-function isAnswerTimerDisabled(room) {
-  return getQuizConfig(room)?.disableAnswerTimer === true;
+function isAnswerTimerDisabled() {
+  // The answer countdown is fully removed from live exams: students are never
+  // cut off by time, so the timer is treated as disabled for every room.
+  return true;
 }
 
 function getQuestionTotalUnits(question) {
@@ -219,18 +220,6 @@ function normalizeAnswerText(value) {
     .trim();
 }
 
-function getFeedbackCorrectAnswer(question) {
-  if (!question) {
-    return "";
-  }
-
-  if (question.type === "part2-text-input") {
-    return question.correctAnswer ?? "";
-  }
-
-  return "";
-}
-
 function evaluateAnswer(question, answer) {
   const totalCount = getQuestionTotalUnits(question);
 
@@ -397,8 +386,11 @@ function disqualifyPlayer(room, player, count) {
 }
 
 async function persistAndBroadcast(io, room) {
-  await saveRoom(room);
+  // Broadcast the live state first so clients update instantly. The in-memory room
+  // is already mutated, so we don't make players wait for the database transaction
+  // (which deletes and re-inserts every player row) before they see the new state.
   io.to(room.code).emit("roomState", roomPayload(room));
+  await saveRoom(room);
 }
 
 function createPromptTimerController() {
@@ -722,9 +714,7 @@ export function registerLiveExamSocket(io) {
         timedOut: false,
         responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2)),
         correctCount: outcome.correctCount,
-        totalCount: outcome.totalCount,
-        hint: !outcome.correct && currentQuestion.type === "part2-text-input" ? currentQuestion.hint ?? "" : "",
-        correctAnswer: !outcome.correct ? getFeedbackCorrectAnswer(currentQuestion) : ""
+        totalCount: outcome.totalCount
       });
 
       if (room.mode === "student-paced") {

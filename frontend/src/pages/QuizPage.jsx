@@ -62,20 +62,6 @@ function renderQuestionPrompt(prompt) {
   );
 }
 
-function buildTextInputFeedback(question) {
-  const parts = [];
-
-  if (question?.correctAnswer) {
-    parts.push(`Correct answer: ${question.correctAnswer}.`);
-  }
-
-  if (question?.hint) {
-    parts.push(question.hint);
-  }
-
-  return parts.join(" ").trim() || "Incorrect answer.";
-}
-
 export default function QuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -288,11 +274,9 @@ export default function QuizPage() {
       const hasPartialScore = outcome.totalCount > 1 && outcome.correctCount > 0;
       const feedbackText = hasPartialScore
         ? `${outcome.correctCount} / ${outcome.totalCount} correct. +${awardedScore} points`
-        : isTextInputQuestion
-          ? buildTextInputFeedback(currentQuestion)
-          : "Incorrect answer. +0 points";
+        : "Incorrect answer. +0 points";
       setFeedbackState({
-        type: hasPartialScore ? "partial" : isTextInputQuestion ? "hint" : "wrong",
+        type: hasPartialScore ? "partial" : "wrong",
         text: feedbackText
       });
       playWrong();
@@ -437,7 +421,7 @@ export default function QuizPage() {
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral" || feedbackState?.type === "hint" || feedbackState?.type === "partial"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "partial"
           ? "bg-amber-50 text-amber-950"
         : "bg-rose-50 text-rose-900";
 

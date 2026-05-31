@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { AlertTriangle, CheckCircle2, Clock3, MonitorPlay, PlayCircle, Presentation } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
@@ -88,20 +88,6 @@ function buildWritingSubmission(question, textResponse, writingResponses) {
   return textResponse.trim();
 }
 
-function buildTextInputFeedback(correctAnswer, hint) {
-  const parts = [];
-
-  if (correctAnswer) {
-    parts.push(`Correct answer: ${correctAnswer}.`);
-  }
-
-  if (hint) {
-    parts.push(hint);
-  }
-
-  return parts.join(" ").trim() || "Incorrect answer.";
-}
-
 function formatScoredFeedback(message, awardedScore, responseTimeSeconds, hideResponseTimeFeedback) {
   if (hideResponseTimeFeedback) {
     return `${message} +${awardedScore} points`;
@@ -154,27 +140,41 @@ export default function LiveRoomPage() {
       ? `umbrella-live-anti-cheat:${roomCode.toUpperCase()}:${name.trim().toLowerCase()}`
       : null;
   const roomQuiz = quizCatalog.find((quiz) => quiz.id === room?.quizId) ?? null;
-  const disableAnswerTimer = roomQuiz?.disableAnswerTimer === true;
+  // Timer fully removed from live exams — no countdown, no auto-timeout.
+  const disableAnswerTimer = true;
   const showLiveRankingDuringTest = roomQuiz?.showLiveRankingDuringTest !== false;
   const showAverageTimeInResults = roomQuiz?.showAverageTimeInResults !== false;
   const hideResponseTimeFeedback = roomQuiz?.hideResponseTimeFeedback === true;
+
+  // Stable callback so useAntiCheat doesn't recreate forceDisqualify on every render
+  // (an unstable identity used to tear down the socket listeners constantly).
+  const handleAntiCheatAutoSubmit = useCallback(
+    (reason, count) => {
+      socket.emit("antiCheatFlag", { roomCode, reason, count, name, disqualified: true });
+    },
+    [socket, roomCode, name]
+  );
 
   const { violations, warning, disqualified, forceDisqualify } = useAntiCheat({
     enabled: role === "player" && Boolean(room?.started),
     storageKey: antiCheatStorageKey,
     violationLimit: 2,
-    onAutoSubmit: (reason, count) => {
-      socket.emit("antiCheatFlag", { roomCode, reason, count, name, disqualified: true });
-    }
+    onAutoSubmit: handleAntiCheatAutoSubmit
   });
 
   useEffect(() => {
+    // Only the host board still needs a ticking clock (for the reveal countdown).
+    // Students no longer have a timer, so we skip the interval to avoid constant re-renders.
+    if (role !== "host") {
+      return undefined;
+    }
+
     const tick = window.setInterval(() => {
       setNow(Date.now());
     }, 500);
 
     return () => window.clearInterval(tick);
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     return () => {
@@ -224,14 +224,21 @@ export default function LiveRoomPage() {
       return undefined;
     }
 
-    socket.emit("joinRoom", { roomCode, name, role, hostToken });
+    function emitJoin() {
+      socket.emit("joinRoom", { roomCode, name, role, hostToken });
+    }
+
+    emitJoin();
+    // Re-join automatically if the socket reconnects, so the student lands straight
+    // back into the live question instead of being stuck in the waiting room.
+    socket.on("connect", emitJoin);
 
     socket.on("roomState", (nextRoom) => {
       setRoom(nextRoom);
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, hint, correctAnswer, correctCount, totalCount }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, correctCount, totalCount }) => {
       if (ungraded) {
         setFeedbackState({
           type: "neutral",
@@ -270,16 +277,14 @@ export default function LiveRoomPage() {
       }
 
       setFeedbackState({
-        type: timedOut ? "timeout" : hint || correctAnswer ? "hint" : "wrong",
+        type: timedOut ? "timeout" : "wrong",
         text: timedOut
           ? hideResponseTimeFeedback
             ? "Time is over. +0 points"
             : `Time is over. ${responseTimeSeconds}s used. +0 points`
-          : hint || correctAnswer
-            ? buildTextInputFeedback(correctAnswer, hint)
-            : hideResponseTimeFeedback
-              ? "Incorrect answer. +0 points"
-              : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
+          : hideResponseTimeFeedback
+            ? "Incorrect answer. +0 points"
+            : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
       });
       playWrong();
     });
@@ -293,6 +298,7 @@ export default function LiveRoomPage() {
     });
 
     return () => {
+      socket.off("connect", emitJoin);
       socket.off("roomState");
       socket.off("answerFeedback");
       socket.off("roomError");
@@ -640,7 +646,7 @@ export default function LiveRoomPage() {
       ? "bg-emerald-50 text-emerald-900"
       : feedbackState?.type === "timeout"
         ? "bg-amber-50 text-amber-900"
-        : feedbackState?.type === "neutral" || feedbackState?.type === "hint" || feedbackState?.type === "partial"
+        : feedbackState?.type === "neutral" || feedbackState?.type === "partial"
           ? "bg-amber-50 text-amber-950"
         : "bg-rose-50 text-rose-900";
 
@@ -1307,7 +1313,7 @@ export default function LiveRoomPage() {
                 <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <p className="text-sm leading-7 text-neutral-600">
-                      Students type the answer. If incorrect, they will receive a short hint.
+                      Students type the answer on their own devices.
                     </p>
                   ) : (
                     <>
@@ -1392,7 +1398,12 @@ export default function LiveRoomPage() {
         </div>
 
         {showSidebarLeaderboard ? (
-          <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} sortByAverageTime={showAverageTimeInResults} />
+          <LiveLeaderboard
+            players={players}
+            showAverageTime={showAverageTimeInResults}
+            sortByAverageTime={showAverageTimeInResults}
+            showAnsweredStatus={room?.mode === "instructor-paced" && room?.questionPhase === "answers"}
+          />
         ) : null}
       </div>
     </ShellLayout>
