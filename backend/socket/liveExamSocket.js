@@ -3,9 +3,7 @@ import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
 import { roomStore } from "../models/roomStore.js";
 
 const BASE_CORRECT_POINTS = 60;
-const MAX_SPEED_BONUS = 40;
 const MAX_ANTI_CHEAT_VIOLATIONS = 2;
-const PROMPT_REVEAL_DELAY_MS = 3000;
 const quizConfigById = new Map(quizzes.map((quiz) => [quiz.id, quiz]));
 
 function sanitizeQuestions(questions) {
@@ -44,12 +42,6 @@ function getQuizConfig(roomOrQuizId) {
   return quizConfigById.get(quizId) ?? null;
 }
 
-function isAnswerTimerDisabled() {
-  // The answer countdown is fully removed from live exams: students are never
-  // cut off by time, so the timer is treated as disabled for every room.
-  return true;
-}
-
 function getQuestionTotalUnits(question) {
   if (question?.type === "grouped-choice-list") {
     return question.items?.length || 1;
@@ -82,20 +74,11 @@ function getQuestionTotalUnits(question) {
   return 1;
 }
 
-function getAverageResponseTimeSeconds(player) {
-  if (!player.answeredQuestions) {
-    return 0;
-  }
-
-  return Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2));
-}
-
 function sanitizePlayers(players) {
   return [...players]
     .sort((first, second) =>
       (second.score ?? 0) - (first.score ?? 0) ||
-      (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
-      getAverageResponseTimeSeconds(first) - getAverageResponseTimeSeconds(second)
+      (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0)
     )
     .map((player) => ({
       socketId: player.socketId,
@@ -103,7 +86,6 @@ function sanitizePlayers(players) {
       score: player.score,
       correctAnswers: player.correctAnswers ?? 0,
       answeredQuestions: player.answeredQuestions ?? 0,
-      averageResponseTimeSeconds: getAverageResponseTimeSeconds(player),
       connected: player.connected ?? Boolean(player.socketId),
       disqualified: player.disqualified ?? false,
       violations: player.violations,
@@ -142,13 +124,10 @@ function isAuthorizedHost(room, socket) {
 }
 
 function resetInstructorClock(room) {
+  // Kept only so the room snapshot has a consistent timestamp; the value is no
+  // longer used for scoring or any timer (students are never cut off by time).
   room.questionStartedAt = Date.now();
-  room.questionDeadlineAt = room.questionStartedAt + room.questionTime * 1000;
-}
-
-function setPromptRevealClock(room) {
-  room.questionStartedAt = Date.now();
-  room.questionDeadlineAt = room.questionStartedAt + PROMPT_REVEAL_DELAY_MS;
+  room.questionDeadlineAt = null;
 }
 
 function getPlayer(room, socket, name) {
@@ -159,47 +138,8 @@ function requiresManualReveal(question) {
   return question?.revealMode === "manual-audio";
 }
 
-function getDeadlineAt(room, player) {
-  if (isAnswerTimerDisabled(room)) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  if (room.mode === "student-paced") {
-    const startedAt = player.questionStartedAt ?? Date.now();
-    return startedAt + room.questionTime * 1000;
-  }
-
-  return room.questionDeadlineAt ?? Date.now();
-}
-
-function clampResponseTimeMs(room, responseTimeMs) {
-  return Math.max(0, Math.min(room.questionTime * 1000, responseTimeMs));
-}
-
-function getResponseTimeMs(room, player, answeredAt) {
-  const startedAt = room.mode === "student-paced"
-    ? (player.questionStartedAt ?? answeredAt)
-    : (room.questionStartedAt ?? answeredAt);
-
-  return clampResponseTimeMs(room, answeredAt - startedAt);
-}
-
-function calculateAwardedScore(room, responseTimeMs) {
-  if (room.quizId === "a1-unit-4-busy-week") {
-    return 0;
-  }
-
-  const duration = room.questionTime * 1000;
-  if (!duration) {
-    return BASE_CORRECT_POINTS;
-  }
-
-  const safeResponseTime = clampResponseTimeMs(room, responseTimeMs);
-  const speedRatio = Math.max(0, 1 - safeResponseTime / duration);
-  return BASE_CORRECT_POINTS + Math.round(speedRatio * MAX_SPEED_BONUS);
-}
-
-function getAwardedScore(room, question, responseTimeMs, correct) {
+// Scoring is purely correctness-based — answer speed/time never affects the score.
+function getAwardedScore(room, question, correct) {
   if (!correct || !isScoredQuestion(question)) {
     return 0;
   }
@@ -208,7 +148,7 @@ function getAwardedScore(room, question, responseTimeMs, correct) {
     return Number(question.points) || 1;
   }
 
-  return calculateAwardedScore(room, responseTimeMs);
+  return BASE_CORRECT_POINTS;
 }
 
 function normalizeAnswerText(value) {
@@ -360,9 +300,8 @@ function storeAnswerDetails(player, question, answer, outcome, extra = {}) {
   };
 }
 
-function applyPlayerMetrics(player, { correctCount, totalCount, responseTimeMs, awardedScore }) {
+function applyPlayerMetrics(player, { correctCount, totalCount, awardedScore }) {
   player.answeredQuestions = (player.answeredQuestions ?? 0) + totalCount;
-  player.totalResponseTimeMs = (player.totalResponseTimeMs ?? 0) + responseTimeMs;
   player.score += awardedScore;
   player.correctAnswers = (player.correctAnswers ?? 0) + correctCount;
 }
@@ -394,68 +333,7 @@ async function persistAndBroadcast(io, room) {
   await saveRoom(room);
 }
 
-function createPromptTimerController() {
-  const timers = new Map();
-
-  function clear(roomCode) {
-    const code = String(roomCode ?? "").toUpperCase();
-    const timerId = timers.get(code);
-    if (timerId) {
-      clearTimeout(timerId);
-      timers.delete(code);
-    }
-  }
-
-  function schedule(io, roomCode) {
-    const code = String(roomCode ?? "").toUpperCase();
-    if (!code) {
-      return;
-    }
-
-    clear(code);
-    const room = roomStore.get(code);
-    const deadlineAt = room?.questionDeadlineAt ?? (Date.now() + PROMPT_REVEAL_DELAY_MS);
-    const delayMs = Math.max(0, deadlineAt - Date.now());
-
-    const timerId = setTimeout(async () => {
-      timers.delete(code);
-      const latestRoom = await getRoomByCode(code);
-      if (
-        !latestRoom ||
-        !latestRoom.started ||
-        latestRoom.mode !== "instructor-paced" ||
-        latestRoom.questionPhase !== "prompt"
-      ) {
-        return;
-      }
-
-      if (requiresManualReveal(latestRoom.questions?.[latestRoom.currentQuestionIndex])) {
-        return;
-      }
-
-      if (latestRoom.questionDeadlineAt && Date.now() < latestRoom.questionDeadlineAt) {
-        schedule(io, code);
-        return;
-      }
-
-      latestRoom.questionPhase = "answers";
-      latestRoom.players = latestRoom.players.map((player) => ({
-        ...player,
-        answeredCurrent: false
-      }));
-      resetInstructorClock(latestRoom);
-      await persistAndBroadcast(io, latestRoom);
-    }, delayMs);
-
-    timers.set(code, timerId);
-  }
-
-  return { clear, schedule };
-}
-
 export function registerLiveExamSocket(io) {
-  const promptTimers = createPromptTimerController();
-
   io.on("connection", (socket) => {
     function handleAsyncSocketEvent(eventName, handler) {
       socket.on(eventName, (...args) => {
@@ -507,7 +385,6 @@ export function registerLiveExamSocket(io) {
             score: 0,
             correctAnswers: 0,
             answeredQuestions: 0,
-            totalResponseTimeMs: 0,
             answeredCurrent: false,
             violations: 0,
             currentQuestionIndex: 0,
@@ -520,14 +397,6 @@ export function registerLiveExamSocket(io) {
       }
 
       await persistAndBroadcast(io, room);
-      if (
-        room.started &&
-        room.mode === "instructor-paced" &&
-        room.questionPhase === "prompt" &&
-        !requiresManualReveal(room.questions?.[room.currentQuestionIndex])
-      ) {
-        promptTimers.schedule(io, room.code);
-      }
 
       if (role !== "host") {
         const player = room.players.find((item) => item.name === name);
@@ -544,16 +413,19 @@ export function registerLiveExamSocket(io) {
         return;
       }
 
+      // Only listening questions (manual-audio) still use a "prompt" board phase so the
+      // teacher can start the audio. Every other question opens straight to "answers" —
+      // no board countdown, the question shows immediately.
+      const startsOnPrompt = room.mode === "instructor-paced" && requiresManualReveal(room.questions?.[0]);
+
       room.started = true;
       room.currentQuestionIndex = 0;
-      room.questionPhase = room.mode === "instructor-paced" ? "prompt" : "answers";
-      if (room.mode === "instructor-paced" && !requiresManualReveal(room.questions?.[0])) {
-        setPromptRevealClock(room);
-      } else if (room.mode === "student-paced") {
-        resetInstructorClock(room);
-      } else {
+      room.questionPhase = startsOnPrompt ? "prompt" : "answers";
+      if (startsOnPrompt) {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;
+      } else {
+        resetInstructorClock(room);
       }
       room.players = room.players.map((player) => ({
         ...player,
@@ -562,7 +434,6 @@ export function registerLiveExamSocket(io) {
         score: 0,
         correctAnswers: 0,
         answeredQuestions: 0,
-        totalResponseTimeMs: 0,
         answeredCurrent: false,
         currentQuestionIndex: 0,
         writingResponseText: "",
@@ -572,11 +443,6 @@ export function registerLiveExamSocket(io) {
       }));
 
       await persistAndBroadcast(io, room);
-      if (room.mode === "instructor-paced" && !requiresManualReveal(room.questions?.[0])) {
-        promptTimers.schedule(io, room.code);
-      } else {
-        promptTimers.clear(room.code);
-      }
     });
 
     handleAsyncSocketEvent("revealAnswers", async ({ roomCode }) => {
@@ -597,7 +463,6 @@ export function registerLiveExamSocket(io) {
         answeredCurrent: false
       }));
       resetInstructorClock(room);
-      promptTimers.clear(room.code);
       await persistAndBroadcast(io, room);
     });
 
@@ -655,45 +520,9 @@ export function registerLiveExamSocket(io) {
         return;
       }
 
-      const answeredAt = Date.now();
-      const deadlineAt = getDeadlineAt(room, player);
-      const responseTimeMs = getResponseTimeMs(room, player, answeredAt);
-      if (answeredAt > deadlineAt) {
-        const timeoutOutcome = {
-          correct: false,
-          correctCount: 0,
-          totalCount: getQuestionTotalUnits(currentQuestion)
-        };
-        storeAnswerDetails(player, currentQuestion, answer, timeoutOutcome, {
-          awardedScore: 0,
-          timedOut: true
-        });
-        applyPlayerMetrics(player, {
-          correctCount: 0,
-          totalCount: timeoutOutcome.totalCount,
-          responseTimeMs: room.questionTime * 1000,
-          awardedScore: 0
-        });
-
-        if (room.mode === "student-paced") {
-          advanceStudentPlayer(room, player);
-        } else {
-          player.answeredCurrent = true;
-        }
-
-        socket.emit("answerFeedback", {
-          correct: false,
-          awardedScore: 0,
-          timedOut: true,
-          responseTimeSeconds: Number((room.questionTime).toFixed(2))
-        });
-        await persistAndBroadcast(io, room);
-        return;
-      }
-
       player.answeredCurrent = true;
       const outcome = evaluateAnswer(currentQuestion, answer);
-      const baseAwardedScore = getAwardedScore(room, currentQuestion, responseTimeMs, outcome.correct);
+      const baseAwardedScore = getAwardedScore(room, currentQuestion, outcome.correct);
       const awardedScore =
         outcome.totalCount > 1
           ? Math.round((Number(currentQuestion.points) || baseAwardedScore) * (outcome.correctCount / outcome.totalCount))
@@ -705,7 +534,6 @@ export function registerLiveExamSocket(io) {
       applyPlayerMetrics(player, {
         correctCount: outcome.correctCount,
         totalCount: outcome.totalCount,
-        responseTimeMs,
         awardedScore
       });
 
@@ -713,7 +541,6 @@ export function registerLiveExamSocket(io) {
         correct: outcome.correct,
         awardedScore,
         timedOut: false,
-        responseTimeSeconds: Number((responseTimeMs / 1000).toFixed(2)),
         correctCount: outcome.correctCount,
         totalCount: outcome.totalCount
       });
@@ -746,7 +573,6 @@ export function registerLiveExamSocket(io) {
       player.score = 0;
       player.correctAnswers = 0;
       player.answeredQuestions = 0;
-      player.totalResponseTimeMs = 0;
       player.answerDetails = {};
 
       let totalScore = 0;
@@ -797,59 +623,9 @@ export function registerLiveExamSocket(io) {
       await persistAndBroadcast(io, room);
     });
 
-    handleAsyncSocketEvent("questionTimeout", async ({ roomCode, name }) => {
-      const room = await getRoomByCode(roomCode.toUpperCase());
-      if (!room) {
-        return;
-      }
-
-      const player = getPlayer(room, socket, name);
-      if (!player || player.completed || player.answeredCurrent || player.disqualified) {
-        if (player?.disqualified) {
-          socket.emit("antiCheatLocked", { count: player.violations ?? MAX_ANTI_CHEAT_VIOLATIONS });
-        }
-        return;
-      }
-
-      const questionIndex = room.mode === "student-paced" ? player.currentQuestionIndex : room.currentQuestionIndex;
-      const currentQuestion = room.questions[questionIndex];
-      if (!isScoredQuestion(currentQuestion)) {
-        return;
-      }
-
-      if (isAnswerTimerDisabled(room)) {
-        return;
-      }
-
-      const timeoutOutcome = {
-        correct: false,
-        correctCount: 0,
-        totalCount: getQuestionTotalUnits(currentQuestion)
-      };
-      storeAnswerDetails(player, currentQuestion, "", timeoutOutcome, {
-        awardedScore: 0,
-        timedOut: true
-      });
-      applyPlayerMetrics(player, {
-        correctCount: 0,
-        totalCount: timeoutOutcome.totalCount,
-        responseTimeMs: room.questionTime * 1000,
-        awardedScore: 0
-      });
-
-      if (room.mode === "student-paced") {
-        advanceStudentPlayer(room, player);
-      } else {
-        player.answeredCurrent = true;
-      }
-
-      socket.emit("answerFeedback", {
-        correct: false,
-        awardedScore: 0,
-        timedOut: true,
-        responseTimeSeconds: Number(room.questionTime.toFixed(2))
-      });
-      await persistAndBroadcast(io, room);
+    handleAsyncSocketEvent("questionTimeout", async () => {
+      // The answer timer is fully removed from live exams, so timeouts never apply.
+      // The handler is kept as a no-op for backward compatibility with older clients.
     });
 
     handleAsyncSocketEvent("nextQuestion", async ({ roomCode }) => {
@@ -865,25 +641,23 @@ export function registerLiveExamSocket(io) {
       }
 
       room.currentQuestionIndex = Math.min(room.currentQuestionIndex + 1, room.questions.length);
-      room.questionPhase = room.currentQuestionIndex < room.questions.length ? "prompt" : "answers";
       room.players = room.players.map((player) => ({
         ...player,
         answeredCurrent: false
       }));
 
-      if (room.currentQuestionIndex < room.questions.length) {
-        if (requiresManualReveal(room.questions?.[room.currentQuestionIndex])) {
-          room.questionStartedAt = null;
-          room.questionDeadlineAt = null;
-          promptTimers.clear(room.code);
-        } else {
-          setPromptRevealClock(room);
-          promptTimers.schedule(io, room.code);
-        }
+      const nextQuestion = room.questions?.[room.currentQuestionIndex];
+      const hasMoreQuestions = room.currentQuestionIndex < room.questions.length;
+      // Listening questions still wait on a manual-audio "prompt" board; everything
+      // else opens straight to the answers so the question shows immediately.
+      const startsOnPrompt = hasMoreQuestions && requiresManualReveal(nextQuestion);
+
+      room.questionPhase = startsOnPrompt ? "prompt" : "answers";
+      if (hasMoreQuestions && !startsOnPrompt) {
+        resetInstructorClock(room);
       } else {
         room.questionStartedAt = null;
         room.questionDeadlineAt = null;
-        promptTimers.clear(room.code);
       }
 
       await persistAndBroadcast(io, room);

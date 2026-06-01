@@ -400,8 +400,7 @@ export async function getTopLivePlayers(limit = null) {
       .filter((player) => (player.connected ?? Boolean(player.socketId)) && !player.disqualified)
       .sort((first, second) =>
         (second.score ?? 0) - (first.score ?? 0) ||
-        (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
-        (first.totalResponseTimeMs ?? 0) - (second.totalResponseTimeMs ?? 0)
+        (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0)
       );
 
     const limitedPlayers = safeLimit ? activePlayers.slice(0, safeLimit) : activePlayers;
@@ -410,10 +409,6 @@ export async function getTopLivePlayers(limit = null) {
       name: player.name,
       score: player.score ?? 0,
       correctAnswers: player.correctAnswers ?? 0,
-      averageResponseTimeSeconds:
-        (player.answeredQuestions ?? 0) > 0
-          ? Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2))
-          : 0,
       violations: player.violations ?? 0,
       accuracy:
         (player.answeredQuestions ?? 0) > 0
@@ -422,10 +417,9 @@ export async function getTopLivePlayers(limit = null) {
     }));
   }
 
-  const archiveQuery = `SELECT session_id, name, score, correct_answers, answered_questions,
-            total_response_time_ms, violations
+  const archiveQuery = `SELECT session_id, name, score, correct_answers, answered_questions, violations
      FROM game_session_players
-     ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
+     ORDER BY score DESC, correct_answers DESC
      ${safeLimit ? "LIMIT $1" : ""}`;
   let archiveResult;
   try {
@@ -438,8 +432,7 @@ export async function getTopLivePlayers(limit = null) {
         .filter((player) => (player.connected ?? Boolean(player.socketId)) && !player.disqualified)
         .sort((first, second) =>
           (second.score ?? 0) - (first.score ?? 0) ||
-          (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0) ||
-          (first.totalResponseTimeMs ?? 0) - (second.totalResponseTimeMs ?? 0)
+          (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0)
         )
         .slice(0, safeLimit ?? Number.MAX_SAFE_INTEGER)
         .map((player, index) => ({
@@ -447,10 +440,6 @@ export async function getTopLivePlayers(limit = null) {
           name: player.name,
           score: player.score ?? 0,
           correctAnswers: player.correctAnswers ?? 0,
-          averageResponseTimeSeconds:
-            (player.answeredQuestions ?? 0) > 0
-              ? Number(((player.totalResponseTimeMs ?? 0) / player.answeredQuestions / 1000).toFixed(2))
-              : 0,
           violations: player.violations ?? 0,
           accuracy:
             (player.answeredQuestions ?? 0) > 0
@@ -468,10 +457,6 @@ export async function getTopLivePlayers(limit = null) {
       name: player.name,
       score: player.score,
       correctAnswers: player.correct_answers ?? 0,
-      averageResponseTimeSeconds:
-        player.answered_questions > 0
-          ? Number((player.total_response_time_ms / player.answered_questions / 1000).toFixed(2))
-          : 0,
       violations: player.violations ?? 0,
       accuracy:
         player.answered_questions > 0
@@ -492,7 +477,6 @@ export async function getTopLivePlayers(limit = null) {
       name: player.player_name,
       score: player.score,
       correctAnswers: player.correct_answers ?? 0,
-      averageResponseTimeSeconds: 0,
       violations: player.violations ?? 0,
       accuracy:
         player.total_questions > 0
@@ -501,9 +485,9 @@ export async function getTopLivePlayers(limit = null) {
     }));
   }
 
-  const livePlayersQuery = `SELECT room_code, name, score, correct_answers, answered_questions, total_response_time_ms, violations
+  const livePlayersQuery = `SELECT room_code, name, score, correct_answers, answered_questions, violations
      FROM live_room_players
-     ORDER BY score DESC, correct_answers DESC, total_response_time_ms ASC
+     ORDER BY score DESC, correct_answers DESC
      ${safeLimit ? "LIMIT $1" : ""}`;
   const livePlayersResult = await query(livePlayersQuery, safeLimit ? [safeLimit] : []);
 
@@ -512,10 +496,6 @@ export async function getTopLivePlayers(limit = null) {
     name: player.name,
     score: player.score ?? 0,
     correctAnswers: player.correct_answers ?? 0,
-    averageResponseTimeSeconds:
-      player.answered_questions > 0
-        ? Number((player.total_response_time_ms / player.answered_questions / 1000).toFixed(2))
-        : 0,
     violations: player.violations ?? 0,
     accuracy:
       player.answered_questions > 0
@@ -579,10 +559,6 @@ export async function getRoomSessionStats() {
       score: row.score,
       correctAnswers: row.correct_answers,
       answeredQuestions: row.answered_questions,
-      averageResponseTimeSeconds:
-        row.answered_questions > 0
-          ? Number((row.total_response_time_ms / row.answered_questions / 1000).toFixed(2))
-          : 0,
       violations: row.violations,
       disqualified: row.disqualified,
       currentQuestionIndex: row.current_question_index,

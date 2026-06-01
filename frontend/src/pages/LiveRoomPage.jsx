@@ -22,8 +22,6 @@ import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { API_URL } from "../lib/api";
 import { quizCatalog } from "../lib/quizzes";
 
-const BOARD_REVEAL_DELAY_MS = 3000;
-
 function isScoredQuestion(question) {
   return Boolean(question) && question.graded !== false;
 }
@@ -89,12 +87,8 @@ function buildWritingSubmission(question, textResponse, writingResponses) {
   return textResponse.trim();
 }
 
-function formatScoredFeedback(message, awardedScore, responseTimeSeconds, hideResponseTimeFeedback) {
-  if (hideResponseTimeFeedback) {
-    return `${message} +${awardedScore} points`;
-  }
-
-  return `${message} in ${responseTimeSeconds}s. +${awardedScore} points`;
+function formatScoredFeedback(message, awardedScore) {
+  return `${message} +${awardedScore} points`;
 }
 
 export default function LiveRoomPage() {
@@ -115,7 +109,6 @@ export default function LiveRoomPage() {
   const [roomVerified, setRoomVerified] = useState(role === "host");
   const [playerName, setPlayerName] = useState(initialName || "");
   const [nameSubmitted, setNameSubmitted] = useState(!!initialName || role === "host");
-  const [boardRevealDeadline, setBoardRevealDeadline] = useState(null);
   const [textResponse, setTextResponse] = useState("");
   const [writingResponses, setWritingResponses] = useState([]);
   const [hasSubmittedResponse, setHasSubmittedResponse] = useState(false);
@@ -129,8 +122,6 @@ export default function LiveRoomPage() {
   const [cefrReadingResponse, setCefrReadingResponse] = useState({});
   const [sentenceBuilderResponse, setSentenceBuilderResponse] = useState({});
   const { playCorrect, playWrong } = useFeedbackSounds();
-  const boardRevealTimeoutRef = useRef(null);
-  const boardRevealKeyRef = useRef("");
   const audioRef = useRef(null);
 
   const name = playerName || (role === "host" ? "Host" : "Student");
@@ -144,8 +135,6 @@ export default function LiveRoomPage() {
   // Timer fully removed from live exams — no countdown, no auto-timeout.
   const disableAnswerTimer = true;
   const showLiveRankingDuringTest = roomQuiz?.showLiveRankingDuringTest !== false;
-  const showAverageTimeInResults = roomQuiz?.showAverageTimeInResults !== false;
-  const hideResponseTimeFeedback = roomQuiz?.hideResponseTimeFeedback === true;
 
   // Stable callback so useAntiCheat doesn't recreate forceDisqualify on every render
   // (an unstable identity used to tear down the socket listeners constantly).
@@ -239,7 +228,7 @@ export default function LiveRoomPage() {
       setRoomError("");
     });
 
-    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, responseTimeSeconds, ungraded, text, correctCount, totalCount }) => {
+    socket.on("answerFeedback", ({ correct, awardedScore, timedOut, ungraded, text, correctCount, totalCount }) => {
       if (ungraded) {
         setFeedbackState({
           type: "neutral",
@@ -255,9 +244,7 @@ export default function LiveRoomPage() {
 
         setFeedbackState({
           type: feedbackType,
-          text: hideResponseTimeFeedback
-            ? `${safeCorrectCount} / ${safeTotalCount} correct. +${awardedScore} points`
-            : `${safeCorrectCount} / ${safeTotalCount} correct in ${responseTimeSeconds}s. +${awardedScore} points`
+          text: `${safeCorrectCount} / ${safeTotalCount} correct. +${awardedScore} points`
         });
 
         if (correct) {
@@ -271,7 +258,7 @@ export default function LiveRoomPage() {
       if (correct) {
         setFeedbackState({
           type: "correct",
-          text: formatScoredFeedback("Correct answer.", awardedScore, responseTimeSeconds, hideResponseTimeFeedback)
+          text: formatScoredFeedback("Correct answer.", awardedScore)
         });
         playCorrect();
         return;
@@ -279,13 +266,7 @@ export default function LiveRoomPage() {
 
       setFeedbackState({
         type: timedOut ? "timeout" : "wrong",
-        text: timedOut
-          ? hideResponseTimeFeedback
-            ? "Time is over. +0 points"
-            : `Time is over. ${responseTimeSeconds}s used. +0 points`
-          : hideResponseTimeFeedback
-            ? "Incorrect answer. +0 points"
-            : `Incorrect answer in ${responseTimeSeconds}s. +0 points`
+        text: timedOut ? "Time is over. +0 points" : "Incorrect answer. +0 points"
       });
       playWrong();
     });
@@ -305,7 +286,7 @@ export default function LiveRoomPage() {
       socket.off("roomError");
       socket.off("antiCheatLocked");
     };
-  }, [forceDisqualify, hideResponseTimeFeedback, hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
+  }, [forceDisqualify, hostToken, name, nameSubmitted, role, roomCode, roomVerified, socket]);
 
   const players = room?.players ?? [];
   const connectedPlayers = players.filter((player) => player.connected !== false);
@@ -340,11 +321,7 @@ export default function LiveRoomPage() {
   const isInstructorPaced = room?.mode === "instructor-paced";
   const isQuestionBoardPhase = isInstructorPaced && room?.questionPhase === "prompt";
   const canAnswerNow = Boolean(currentQuestion) && (!isInstructorPaced || room?.questionPhase === "answers");
-  const boardPhaseKey = `${roomCode}-${questionIndex}-${room?.questionPhase ?? "unknown"}`;
   const studentVisiblePassage = currentQuestion?.hidePassageForStudents ? "" : currentQuestion?.passage;
-  const displayBoardCountdown = boardRevealDeadline
-    ? Math.max(1, Math.ceil((boardRevealDeadline - now) / 1000))
-    : Math.ceil(BOARD_REVEAL_DELAY_MS / 1000);
 
   const deadlineAt =
     isScoredQuestion(currentQuestion) && !disableAnswerTimer
@@ -418,35 +395,6 @@ export default function LiveRoomPage() {
       forceDisqualify("server anti-cheat lock", selfPlayer?.violations ?? 2);
     }
   }, [forceDisqualify, selfPlayer?.violations, serverDisqualified]);
-
-  useEffect(() => {
-    if (boardRevealTimeoutRef.current) {
-      window.clearTimeout(boardRevealTimeoutRef.current);
-      boardRevealTimeoutRef.current = null;
-    }
-
-    if (role !== "host" || !isQuestionBoardPhase || !currentQuestion || requiresManualReveal) {
-      boardRevealKeyRef.current = "";
-      setBoardRevealDeadline(null);
-      return undefined;
-    }
-
-    if (boardRevealKeyRef.current !== boardPhaseKey) {
-      boardRevealKeyRef.current = boardPhaseKey;
-      setBoardRevealDeadline(Date.now() + BOARD_REVEAL_DELAY_MS);
-    }
-
-    boardRevealTimeoutRef.current = window.setTimeout(() => {
-      socket.emit("revealAnswers", { roomCode });
-    }, BOARD_REVEAL_DELAY_MS);
-
-    return () => {
-      if (boardRevealTimeoutRef.current) {
-        window.clearTimeout(boardRevealTimeoutRef.current);
-        boardRevealTimeoutRef.current = null;
-      }
-    };
-  }, [boardPhaseKey, currentQuestion, isQuestionBoardPhase, requiresManualReveal, role, roomCode, socket]);
 
   useEffect(() => {
     if (
@@ -883,53 +831,33 @@ export default function LiveRoomPage() {
                   )
                 )}
               </div>
-              {requiresManualReveal ? (
-                <div className="mt-8 flex flex-wrap items-center gap-4 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
-                  <div className="min-w-[260px] flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                      Teacher control
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-neutral-300">
-                      Students will not see the answer area until you start the audio from this board.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleTeacherStartAudio}
-                    className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 font-bold text-neutral-950"
-                  >
-                    <PlayCircle size={18} />
-                    Start audio
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-8 inline-flex min-w-[320px] flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
+              <div className="mt-8 flex flex-wrap items-center gap-4 rounded-[24px] border border-white/10 bg-white/5 px-6 py-5">
+                <div className="min-w-[260px] flex-1">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                    {isWritingQuestion ? "Response area opens in" : "Answers open in"}
+                    Teacher control
                   </p>
-                  <div className="flex items-end gap-4">
-                    <div className="text-7xl font-extrabold leading-none text-white tabular-nums">
-                      {displayBoardCountdown}
-                    </div>
-                    <p className="pb-2 text-base font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      seconds
-                    </p>
-                  </div>
+                  <p className="mt-2 text-sm leading-7 text-neutral-300">
+                    Students will not see the answer area until you start the audio from this board.
+                  </p>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleTeacherStartAudio}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-5 py-3 font-bold text-neutral-950"
+                >
+                  <PlayCircle size={18} />
+                  Start audio
+                </button>
+              </div>
             </div>
           ) : role === "player" && isQuestionBoardPhase && currentQuestion ? (
             <div className="mt-8 rounded-[32px] border border-neutral-200 bg-white p-8 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-neutral-950">
                 <Presentation size={24} />
               </div>
-              <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">
-                {requiresManualReveal ? "Waiting for audio" : "Question on the board"}
-              </h2>
+              <h2 className="mt-5 text-3xl font-extrabold text-neutral-950">Waiting for audio</h2>
               <p className="mt-3 text-sm leading-7 text-neutral-600">
-                {requiresManualReveal
-                  ? "The teacher will start the listening audio from the board. Your answer area will open here immediately after that."
-                  : "Read the question on the host screen. The response area will open here as soon as the board countdown finishes."}
+                The teacher will start the listening audio from the board. Your answer area will open here immediately after that.
               </p>
             </div>
           ) : currentQuestion ? (
@@ -1410,7 +1338,7 @@ export default function LiveRoomPage() {
               </p>
               {role === "host" ? (
                 <div className="mt-6">
-                  <LiveLeaderboard players={players} showAverageTime={showAverageTimeInResults} sortByAverageTime={showAverageTimeInResults} />
+                  <LiveLeaderboard players={players} />
                 </div>
               ) : null}
             </div>
@@ -1420,8 +1348,6 @@ export default function LiveRoomPage() {
         {showSidebarLeaderboard ? (
           <LiveLeaderboard
             players={players}
-            showAverageTime={showAverageTimeInResults}
-            sortByAverageTime={showAverageTimeInResults}
             showAnsweredStatus={room?.mode === "instructor-paced" && room?.questionPhase === "answers"}
           />
         ) : null}
