@@ -670,8 +670,11 @@ export default function LiveRoomPage() {
         ? "mx-auto w-full max-w-[1280px]"
       : "mx-auto max-w-4xl";
 
-  // Players never see the top nav; the host only sees it in the waiting room (before the exam starts).
-  const showShellNav = role === "host" && !room?.started;
+  // Players never see the top nav. The host always keeps the home block so the teacher can
+  // leave at any time — even mid-exam. During the test we hide the Leaderboard/Join links so
+  // only the "☂ Umbrella English" home block remains.
+  const showShellNav = role === "host";
+  const showShellNavLinks = role === "host" && !room?.started;
 
   // Free-navigation (V2) live exams give students the self-paced "answer in any order,
   // submit at the end" interface instead of the one-question-at-a-time live flow.
@@ -690,7 +693,7 @@ export default function LiveRoomPage() {
   }
 
   return (
-    <ShellLayout showNav={showShellNav}>
+    <ShellLayout showNav={showShellNav} showLinks={showShellNavLinks}>
       {role === "player" && isLockedFromAntiCheat ? (
         <CheatingDetectedOverlay
           title="Cheating detected"
