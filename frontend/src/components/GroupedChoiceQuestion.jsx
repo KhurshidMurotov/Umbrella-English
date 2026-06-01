@@ -15,9 +15,9 @@ function GroupedChoiceButtons({ options = [], selectedValue, disabled, onSelect 
             type="button"
             onClick={() => onSelect(label)}
             disabled={disabled}
-            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
+            className={`min-h-[44px] rounded-full border px-5 py-2.5 text-sm font-bold transition active:scale-[0.97] ${
               selectedValue === label
-                ? "border-amber-300 bg-amber-50 text-neutral-950"
+                ? "border-amber-300 bg-amber-300 text-neutral-950 shadow-sm"
                 : "border-neutral-200 bg-white text-neutral-700"
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
@@ -70,11 +70,8 @@ export default function GroupedChoiceQuestion({
           {passage}
         </div>
       ) : null}
-      {items.map((item, index) => (
-        <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
-          <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
-            {item.displayNumber ?? item.number ?? index + 1}
-          </span>
+      {items.map((item, index) => {
+        const buttons = (
           <GroupedChoiceButtons
             options={item.options ?? []}
             selectedValue={answers[item.number]}
@@ -90,8 +87,35 @@ export default function GroupedChoiceQuestion({
               });
             }}
           />
-        </div>
-      ))}
+        );
+        const numberBadge = (
+          <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
+            {item.displayNumber ?? item.number ?? index + 1}
+          </span>
+        );
+
+        // When the item has its own sentence, stack it above the answer buttons so the
+        // student can read what they are answering. On mobile the buttons go full width;
+        // on larger screens they align under the sentence.
+        if (item.prompt) {
+          return (
+            <div key={item.number ?? index} className="rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
+              <div className="flex items-start gap-3">
+                {numberBadge}
+                <p className="text-[15px] leading-7 text-neutral-800 sm:text-base">{item.prompt}</p>
+              </div>
+              <div className="mt-3 sm:pl-11">{buttons}</div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
+            {numberBadge}
+            {buttons}
+          </div>
+        );
+      })}
     </div>
   );
 }
