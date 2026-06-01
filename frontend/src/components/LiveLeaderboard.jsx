@@ -1,4 +1,4 @@
-export default function LiveLeaderboard({ players = [], showTitle = true, showAnsweredStatus = false }) {
+export default function LiveLeaderboard({ players = [], showTitle = true, showAnsweredStatus = false, selfPaced = false }) {
   const sortedPlayers = [...players].sort(
     (first, second) =>
       (second.score ?? 0) - (first.score ?? 0) ||
@@ -57,7 +57,19 @@ export default function LiveLeaderboard({ players = [], showTitle = true, showAn
                     </span>
                   ) : null}
                   {showAnsweredStatus && !isCheater(player) ? (
-                    player.answeredCurrent ? (
+                    selfPaced ? (
+                      // Self-paced tests are submitted once at the end, so per-question
+                      // status is meaningless — show whether the student has submitted.
+                      player.completed ? (
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-emerald-700">
+                          ✓ Done
+                        </span>
+                      ) : (
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-amber-700">
+                          Answering…
+                        </span>
+                      )
+                    ) : player.answeredCurrent ? (
                       <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-emerald-700">
                         ✓ Answered
                       </span>
@@ -70,17 +82,14 @@ export default function LiveLeaderboard({ players = [], showTitle = true, showAn
                 </div>
 
                 <div className="hidden lg:block lg:text-left">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Correct</div>
                   <div className="text-sm font-semibold text-neutral-900">{player.correctAnswers ?? 0}</div>
                 </div>
 
                 <div className="hidden lg:block lg:text-left">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Violations</div>
                   <div className="text-sm font-semibold text-neutral-900">{player.violations ?? 0}</div>
                 </div>
 
                 <div className="hidden lg:block lg:text-left">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Points</div>
                   <div className="text-sm font-bold text-neutral-950">{player.score ?? 0}</div>
                 </div>
               </div>

@@ -1348,7 +1348,11 @@ export default function LiveRoomPage() {
         {showSidebarLeaderboard ? (
           <LiveLeaderboard
             players={players}
-            showAnsweredStatus={room?.mode === "instructor-paced" && room?.questionPhase === "answers"}
+            selfPaced={room?.flow === "free-navigation"}
+            showAnsweredStatus={
+              room?.flow === "free-navigation" ||
+              (room?.mode === "instructor-paced" && room?.questionPhase === "answers")
+            }
           />
         ) : null}
       </div>
