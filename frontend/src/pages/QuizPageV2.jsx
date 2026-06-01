@@ -204,7 +204,7 @@ export default function QuizPageV2({ quiz }) {
                   : "This writing task is shown as in the book and does not change the score."}
               </p>
 
-              <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+              <div className="mt-8 rounded-[28px] bg-white p-5">
                 <SelfPacedAnswerArea question={currentQuestion} value={answer} onChange={(value) => setAnswer(currentQuestion.id, value)} />
               </div>
             </motion.div>

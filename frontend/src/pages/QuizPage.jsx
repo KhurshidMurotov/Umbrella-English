@@ -522,7 +522,7 @@ function ClassicQuizPage() {
               </p>
               {isWritingQuestion ? (
                 <div className="mt-8">
-                  <div className="rounded-[28px] border border-neutral-200 bg-white p-5">
+                  <div className="rounded-[28px] bg-white p-5">
                     {currentQuestion.passage ? (
                       <div className="mb-5 rounded-[24px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
                         {currentQuestion.passage}
@@ -603,7 +603,7 @@ function ClassicQuizPage() {
                   </div>
                 </div>
               ) : isGroupedChoiceQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <GroupedChoiceQuestion
                     items={currentQuestion.items}
                     value={groupedChoiceResponse}
@@ -621,7 +621,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isListeningTextQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <div className="rounded-[22px] bg-amber-50 px-4 py-4 text-sm leading-7 text-neutral-800">
                     Audio does not start automatically. Press the button below to begin this listening part.
                   </div>
@@ -651,7 +651,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isBankedTextQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <BankedTextQuestion
                     items={currentQuestion.items}
                     value={bankedTextResponse}
@@ -670,7 +670,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isCefrListeningQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <div className="rounded-[22px] bg-amber-50 px-4 py-4 text-sm leading-7 text-neutral-800">
                     Audio does not start automatically. Press the button below to begin this listening part.
                   </div>
@@ -700,7 +700,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isSimpleMatchingQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <SimpleMatchingQuestion
                     items={currentQuestion.items}
                     choices={currentQuestion.choices}
@@ -718,7 +718,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isCefrReadingQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <CefrReadingMatchingQuestion
                     people={currentQuestion.people}
                     choices={currentQuestion.choices}
@@ -736,7 +736,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isSentenceBuilderQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <SentenceBuilderQuestion
                     items={currentQuestion.items}
                     value={sentenceBuilderResponse}
@@ -760,7 +760,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isDragOrderQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <DragOrderQuestion
                     template={currentQuestion.textTemplate}
                     wordBank={currentQuestion.wordBank}
@@ -779,7 +779,7 @@ function ClassicQuizPage() {
                   </button>
                 </div>
               ) : isTextInputQuestion ? (
-                <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+                <div className="mt-8 rounded-[28px] bg-white p-5">
                   <input
                     type="text"
                     value={typedResponse}

@@ -886,7 +886,7 @@ export default function LiveRoomPage() {
                 { showTitle: false }
               )}
               {isWritingQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {currentQuestion.passage ? (
                     <div className="mb-5 rounded-[24px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
                       {currentQuestion.passage}
@@ -980,7 +980,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isGroupedChoiceQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <GroupedChoiceQuestion
                       items={currentQuestion.items}
@@ -1015,7 +1015,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isListeningTextQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <>
                       <ListeningWordInputQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
@@ -1048,7 +1048,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isBankedTextQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <BankedTextQuestion
                       items={currentQuestion.items}
@@ -1085,7 +1085,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isCefrListeningQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <>
                       <CefrListeningQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
@@ -1118,7 +1118,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isSimpleMatchingQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <SimpleMatchingQuestion
                       items={currentQuestion.items}
@@ -1153,7 +1153,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isCefrReadingQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <CefrReadingMatchingQuestion
                       people={currentQuestion.people}
@@ -1188,7 +1188,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isSentenceBuilderQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <SentenceBuilderQuestion items={currentQuestion.items} value={{}} disabled={true} boardMode={true} />
                   ) : (
@@ -1220,7 +1220,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isDragOrderQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <DragOrderQuestion
                       template={currentQuestion.textTemplate}
@@ -1258,7 +1258,7 @@ export default function LiveRoomPage() {
                   )}
                 </div>
               ) : isTextInputQuestion ? (
-                <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-3 sm:rounded-[28px] sm:p-5">
+                <div className="mt-6 rounded-3xl bg-white p-3 sm:rounded-[28px] sm:p-5">
                   {role === "host" ? (
                     <p className="text-sm leading-7 text-neutral-600">
                       Students type the answer on their own devices.

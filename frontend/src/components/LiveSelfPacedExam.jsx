@@ -210,7 +210,7 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
               </button>
             ) : null}
 
-            <div className="mt-8 rounded-[28px] border border-neutral-200 bg-white p-5">
+            <div className="mt-8 rounded-[28px] bg-white p-5">
               {currentQuestion ? (
                 <SelfPacedAnswerArea question={currentQuestion} value={answer} onChange={(value) => setAnswer(currentQuestion.id, value)} />
               ) : null}
