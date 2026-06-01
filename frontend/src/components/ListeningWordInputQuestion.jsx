@@ -31,7 +31,7 @@ export default function ListeningWordInputQuestion({
   return (
     <div className="space-y-4">
       {items.map((item, index) => (
-        <div key={item.number ?? index} className="rounded-[24px] border border-neutral-200 bg-white p-4">
+        <div key={item.number ?? index} className="rounded-[24px] bg-neutral-50 p-4">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
               {item.displayNumber ?? item.number ?? index + 1}

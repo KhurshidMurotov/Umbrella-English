@@ -44,11 +44,10 @@ export default function SimpleMatchingQuestion({
   }
 
   return (
-    <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <div key={item.number ?? index} className="flex items-center gap-3 rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-3">
-            <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div key={item.number ?? index} className="flex items-center gap-3 rounded-[18px] bg-neutral-50 px-4 py-3">
+          <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
               {item.displayNumber ?? item.number ?? index + 1}
             </span>
             <div className="min-w-0 flex-1">
@@ -79,6 +78,5 @@ export default function SimpleMatchingQuestion({
           </div>
         ))}
       </div>
-    </div>
   );
 }

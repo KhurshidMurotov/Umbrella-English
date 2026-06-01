@@ -66,7 +66,7 @@ export default function GroupedChoiceQuestion({
   return (
     <div className="space-y-3">
       {passage ? (
-        <div className="rounded-[24px] border border-neutral-200 bg-white px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
+        <div className="rounded-[24px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
           {passage}
         </div>
       ) : null}
@@ -99,7 +99,7 @@ export default function GroupedChoiceQuestion({
         // on larger screens they align under the sentence.
         if (item.prompt) {
           return (
-            <div key={item.number ?? index} className="rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
+            <div key={item.number ?? index} className="rounded-[20px] bg-neutral-50 px-4 py-4">
               <div className="flex items-start gap-3">
                 {numberBadge}
                 <p className="text-[15px] leading-7 text-neutral-800 sm:text-base">{item.prompt}</p>
@@ -110,7 +110,7 @@ export default function GroupedChoiceQuestion({
         }
 
         return (
-          <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
+          <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] bg-neutral-50 px-4 py-4">
             {numberBadge}
             {buttons}
           </div>

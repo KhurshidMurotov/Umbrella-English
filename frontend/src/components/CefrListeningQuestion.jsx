@@ -61,7 +61,7 @@ export default function CefrListeningQuestion({
   return (
     <div className="space-y-4">
       {items.map((item) => (
-        <div key={item.number} className="rounded-[24px] border border-neutral-200 bg-white p-4">
+        <div key={item.number} className="rounded-[24px] bg-neutral-50 p-4">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
               {item.number}

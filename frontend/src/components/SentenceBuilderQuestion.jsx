@@ -90,7 +90,7 @@ export default function SentenceBuilderQuestion({
         }
 
         return (
-          <div key={item.number ?? index} className="rounded-[22px] border border-neutral-200 bg-white p-4">
+          <div key={item.number ?? index} className="rounded-[22px] bg-neutral-50 p-4">
             <div className="flex items-start gap-3">
               <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
                 {item.displayNumber ?? item.number ?? index + 1}
@@ -98,7 +98,7 @@ export default function SentenceBuilderQuestion({
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-7 text-neutral-800">{item.prompt}</p>
 
-                <div className="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-3">
+                <div className="mt-4 rounded-[18px] bg-white p-3">
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-500">Build sentence</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {item.fixedStart ? (

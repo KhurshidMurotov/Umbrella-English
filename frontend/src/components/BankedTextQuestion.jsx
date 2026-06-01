@@ -66,7 +66,7 @@ export default function BankedTextQuestion({
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] border border-neutral-200 bg-white px-4 py-4">
+        <div key={item.number ?? index} className="flex flex-wrap items-center gap-3 rounded-[20px] bg-neutral-50 px-4 py-4">
           <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
             {item.displayNumber ?? item.number ?? index + 1}
           </span>

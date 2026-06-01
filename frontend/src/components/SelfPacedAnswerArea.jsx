@@ -158,12 +158,12 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
         return (
           <div className="space-y-4">
             {question.passage ? (
-              <div className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
+              <div className="rounded-[20px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
                 {question.passage}
               </div>
             ) : null}
             {fields.map((field, index) => (
-              <div key={field.id ?? index} className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+              <div key={field.id ?? index} className="rounded-[24px] bg-neutral-50 p-4">
                 <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">{field.prompt}</div>
                 {field.multiline ? (
                   <textarea

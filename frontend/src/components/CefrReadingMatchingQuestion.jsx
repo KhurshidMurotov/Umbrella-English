@@ -49,11 +49,11 @@ export default function CefrReadingMatchingQuestion({
   }
 
   return (
-    <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
+    <div>
       <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">Match Letters To Numbers</p>
       <div className="mt-4 space-y-3">
         {people.map((person, index) => (
-          <div key={person.number} className="flex items-center gap-3 rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <div key={person.number} className="flex items-center gap-3 rounded-[18px] bg-neutral-50 px-4 py-3">
             <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
               {index + 1}
             </span>

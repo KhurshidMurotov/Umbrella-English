@@ -62,7 +62,7 @@ export default function DragOrderQuestion({
   return (
     <div className="space-y-4">
       {compactOnMobile ? (
-        <div className="rounded-[20px] border border-neutral-200 bg-white p-4 sm:hidden">
+        <div className="rounded-[20px] bg-neutral-50 p-4 sm:hidden">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Slots</p>
           <div className="mt-3 space-y-2">
             {Array.from({ length: slotCount }, (_, index) => (
@@ -98,7 +98,7 @@ export default function DragOrderQuestion({
         </div>
       ) : null}
 
-      <div className={`rounded-[20px] border border-neutral-200 bg-white p-4 leading-8 text-neutral-900 ${compactOnMobile ? "hidden sm:block" : ""}`}>
+      <div className={`rounded-[20px] bg-neutral-50 p-4 leading-8 text-neutral-900 ${compactOnMobile ? "hidden sm:block" : ""}`}>
         {segments.map((segment, index) => (
           <span key={`segment-${index}`}>
             {segment}
@@ -130,7 +130,7 @@ export default function DragOrderQuestion({
       </div>
 
       {showWordBank ? (
-        <div className="rounded-[20px] border border-neutral-200 bg-neutral-50 p-4">
+        <div className="rounded-[20px] bg-neutral-50 p-4">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Word bank</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {availableWords.map((word) => (

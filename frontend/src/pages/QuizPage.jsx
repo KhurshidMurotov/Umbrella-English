@@ -524,7 +524,7 @@ function ClassicQuizPage() {
                 <div className="mt-8">
                   <div className="rounded-[28px] border border-neutral-200 bg-white p-5">
                     {currentQuestion.passage ? (
-                      <div className="mb-5 rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
+                      <div className="mb-5 rounded-[24px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
                         {currentQuestion.passage}
                       </div>
                     ) : null}
@@ -532,7 +532,7 @@ function ClassicQuizPage() {
                     {hasStructuredWritingFields ? (
                       <div className="mt-4 space-y-4">
                         {writingFields.map((field, index) => (
-                          <div key={field.id ?? field.prompt ?? index} className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+                          <div key={field.id ?? field.prompt ?? index} className="rounded-[24px] bg-neutral-50 p-4">
                             <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
                               {field.prompt}
                             </div>
