@@ -1,72 +1,64 @@
+import { GraduationCap, Key, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import QuizCard from "../components/QuizCard";
 import ShellLayout from "../components/ShellLayout";
 import { useQuizCatalog } from "../lib/quizCatalog";
 
+// Shared inner container: keeps text/cards at a comfortable width and aligned with the nav,
+// while each <section> band paints its background edge-to-edge.
+const CONTAINER = "mx-auto max-w-7xl px-4 sm:px-6 lg:px-10";
+
 export default function HomePage() {
   const { quizzes: quizCatalog } = useQuizCatalog();
 
   return (
-    <ShellLayout>
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 via-amber-300 to-orange-300 p-6 sm:rounded-[32px] sm:p-8 lg:p-10">
-        <div className="relative z-10">
-          <span className="inline-flex rounded-full bg-black/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-neutral-900">
-            🎓 English platform
+    <ShellLayout fullBleed>
+      {/* Hero — full-bleed gradient band, separate from the transparent nav above it */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-yellow-400 via-amber-300 to-orange-300">
+        <div className={`${CONTAINER} relative z-10 py-16 sm:py-20 lg:py-28`}>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-black">
+            <GraduationCap size={14} />
+            English platform
           </span>
-          <h1 className="mt-4 max-w-2xl text-3xl font-black leading-tight text-neutral-900 sm:text-4xl lg:text-5xl">
+          <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.05] text-neutral-900 sm:text-5xl lg:text-7xl">
             Learn English.<br />Play. Win.
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-neutral-800 sm:text-base">
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-800 sm:mt-5 sm:text-lg">
             Solo quizzes with timer and anti-cheat, plus live rooms where your class competes in real time.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3 sm:mt-9">
             <Link
               to="/live"
-              className="rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:bg-neutral-800 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-black shadow-lg transition hover:bg-neutral-100 active:scale-95 lg:text-base"
             >
-              🎯 Join Live Room
+              <Target size={18} />
+              Join Live Room
             </Link>
             <Link
               to="/teacher"
-              className="rounded-2xl bg-white/70 px-5 py-3 text-sm font-black text-neutral-900 shadow transition hover:bg-white active:scale-95"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white/70 px-6 py-3.5 text-sm font-black text-black shadow transition hover:bg-white active:scale-95 lg:text-base"
             >
-              🔑 Teacher area
+              <Key size={18} />
+              Teacher area
             </Link>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/20 sm:h-60 sm:w-60" />
-        <div className="pointer-events-none absolute -bottom-8 right-20 h-28 w-28 rounded-full bg-black/5 sm:h-36 sm:w-36" />
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/20 sm:h-72 sm:w-72 lg:h-96 lg:w-96" />
+        <div className="pointer-events-none absolute -bottom-10 right-32 h-32 w-32 rounded-full bg-black/5 sm:h-44 sm:w-44 lg:h-56 lg:w-56" />
       </section>
 
-      {/* Feature pills */}
-      <section className="mt-4 grid gap-3 sm:mt-5 sm:grid-cols-2">
-        <div className="rounded-2xl bg-white p-4 shadow-sm border border-neutral-100 sm:p-5">
-          <div className="text-2xl">📝</div>
-          <p className="mt-2 font-extrabold text-neutral-900">Solo quizzes</p>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-500">
-            Shuffled answers, timer, instant score — test yourself anytime.
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-4 shadow-sm border border-neutral-100 sm:p-5">
-          <div className="text-2xl">⚡</div>
-          <p className="mt-2 font-extrabold text-neutral-900">Live rooms</p>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-500">
-            Join by code or QR, compete in real time, see the leaderboard.
-          </p>
-        </div>
-      </section>
-
-      {/* Quiz catalog */}
-      <section className="mt-6 sm:mt-8">
-        <div className="mb-4">
-          <p className="text-xs font-black uppercase tracking-widest text-neutral-400">Sample tests</p>
-          <h2 className="mt-1 text-2xl font-black text-neutral-900 sm:text-3xl">Choose a quiz</h2>
-        </div>
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-          {quizCatalog.map((quiz, index) => (
-            <QuizCard key={quiz.id} quiz={quiz} index={index} />
-          ))}
+      {/* Quiz catalog — tinted band for rhythm */}
+      <section className="bg-neutral-50">
+        <div className={`${CONTAINER} py-14 sm:py-16 lg:py-24`}>
+          <div className="mb-6 sm:mb-8">
+            <p className="text-xs font-black uppercase tracking-widest text-neutral-400">Sample tests</p>
+            <h2 className="mt-1 text-3xl font-black text-neutral-900 sm:text-4xl lg:text-5xl">Choose a quiz</h2>
+          </div>
+          <div className="grid gap-5 sm:gap-6 md:grid-cols-2 lg:gap-7 xl:grid-cols-3">
+            {quizCatalog.map((quiz, index) => (
+              <QuizCard key={quiz.id} quiz={quiz} index={index} />
+            ))}
+          </div>
         </div>
       </section>
     </ShellLayout>
