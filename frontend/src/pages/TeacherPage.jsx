@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, LogOut, UserRound } from "lucide-react";
+import { Hammer, LockKeyhole, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import ErrorAlert from "../components/ErrorAlert";
 import ShellLayout from "../components/ShellLayout";
 import { API_URL } from "../lib/api";
-import { quizCatalog } from "../lib/quizzes";
+import { useQuizCatalog } from "../lib/quizCatalog";
 import { getTeacherSession, loginTeacher, logoutTeacher } from "../lib/teacherAuth";
 
 const TIMER_OPTIONS = [10, 15, 20, 30];
@@ -85,11 +85,12 @@ function TeacherLogin({ onLogin }) {
 }
 
 export default function TeacherPage() {
+  const { quizzes: quizCatalog } = useQuizCatalog();
   const [teacherSession, setTeacherSession] = useState(null);
   const [hostName, setHostName] = useState("Teacher");
   const [mode, setMode] = useState("instructor-paced");
   const [questionTime, setQuestionTime] = useState(15);
-  const [selectedQuizId, setSelectedQuizId] = useState(quizCatalog[0]?.id ?? "");
+  const [selectedQuizId, setSelectedQuizId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -98,6 +99,13 @@ export default function TeacherPage() {
   const timerOptions = selectedQuiz?.timerOptions ?? TIMER_OPTIONS;
   const timerLabel = selectedQuiz?.timerLabel ?? "Time per question";
   const hideTimerControl = selectedQuiz?.hideTimerControl === true;
+
+  // Keep a valid selection as the catalog loads / changes.
+  useEffect(() => {
+    if (quizCatalog.length && !quizCatalog.some((quiz) => quiz.id === selectedQuizId)) {
+      setSelectedQuizId(quizCatalog[0].id);
+    }
+  }, [quizCatalog, selectedQuizId]);
 
   useEffect(() => {
     setQuestionTime(selectedQuiz?.defaultQuestionTime ?? timerOptions[0] ?? TIMER_OPTIONS[0]);
@@ -163,6 +171,13 @@ export default function TeacherPage() {
             <h1 className="mt-0.5 text-xl font-black text-white sm:text-2xl">Create live exam</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/teacher/builder"
+              className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-xs font-black text-neutral-900 transition hover:bg-yellow-300 sm:text-sm"
+            >
+              <Hammer size={14} />
+              Build tests
+            </Link>
             <Link
               to="/teacher/stats"
               className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-xs font-black text-neutral-900 transition hover:bg-yellow-300 sm:text-sm"

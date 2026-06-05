@@ -19,7 +19,7 @@ import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useFeedbackSounds } from "../hooks/useFeedbackSounds";
 import { useQuizTimer } from "../hooks/useQuizTimer";
 import { buildPlayableQuiz, calculateQuestionScore, computeScore, countScoredQuestions, evaluateAnswer, isScoredQuestion } from "../lib/quizEngine";
-import { quizCatalog } from "../lib/quizzes";
+import { fetchQuizById } from "../lib/quizCatalog";
 import { saveResult } from "../lib/storage";
 
 const QUESTION_TIME = 15;
@@ -65,19 +65,52 @@ function renderQuestionPrompt(prompt) {
 
 export default function QuizPage() {
   const { quizId } = useParams();
-  const selectedQuiz = quizCatalog.find((quiz) => quiz.id === quizId) ?? quizCatalog[0];
+  const [quiz, setQuiz] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (selectedQuiz.flow === "free-navigation") {
-    return <QuizPageV2 quiz={selectedQuiz} />;
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    fetchQuizById(quizId).then((resolved) => {
+      if (active) {
+        setQuiz(resolved);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [quizId]);
+
+  if (loading) {
+    return (
+      <ShellLayout>
+        <p className="mx-auto max-w-3xl text-sm text-neutral-500">Loading test…</p>
+      </ShellLayout>
+    );
   }
 
-  return <ClassicQuizPage />;
+  if (!quiz) {
+    return (
+      <ShellLayout>
+        <div className="mx-auto max-w-md rounded-3xl border border-neutral-100 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-xl font-black text-neutral-900">Test not found</h1>
+          <p className="mt-2 text-sm text-neutral-500">This test may have been removed.</p>
+        </div>
+      </ShellLayout>
+    );
+  }
+
+  if (quiz.flow === "free-navigation") {
+    return <QuizPageV2 quiz={quiz} />;
+  }
+
+  return <ClassicQuizPage quiz={quiz} />;
 }
 
-function ClassicQuizPage() {
-  const { quizId } = useParams();
+function ClassicQuizPage({ quiz }) {
   const navigate = useNavigate();
-  const selectedQuiz = quizCatalog.find((quiz) => quiz.id === quizId) ?? quizCatalog[0];
+  const selectedQuiz = quiz;
   const playableQuiz = useMemo(() => buildPlayableQuiz(selectedQuiz), [selectedQuiz]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState("");

@@ -5,6 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
+import { loadQuizConfigs } from "./data/quizConfigRegistry.js";
+import { getQuizzes } from "./db/quizRepository.js";
 import { initializeDatabase } from "./db/schema.js";
 import { loadLocalEnv } from "./lib/env.js";
 import liveRoutes from "./routes/liveRoutes.js";
@@ -47,6 +49,15 @@ registerLiveExamSocket(io);
 const PORT = process.env.PORT || 4000;
 
 await initializeDatabase();
+
+// Seed the live-exam config registry with every quiz the backend knows about
+// (built-ins + any teacher-created tests persisted in the DB) so custom tests
+// honor their own flow/scoring in live rooms after a restart.
+try {
+  loadQuizConfigs(await getQuizzes());
+} catch (error) {
+  console.error("Failed to load quiz configs into registry:", error.message);
+}
 
 server.listen(PORT, () => {
   console.log(`Umbrella quiz backend running on port ${PORT}`);

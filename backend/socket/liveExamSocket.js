@@ -1,10 +1,9 @@
-import { quizzes } from "../data/quizStore.js";
+import { getQuizConfig } from "../data/quizConfigRegistry.js";
 import { getRoomByCode, saveRoom } from "../db/roomRepository.js";
 import { roomStore } from "../models/roomStore.js";
 
 const BASE_CORRECT_POINTS = 60;
 const MAX_ANTI_CHEAT_VIOLATIONS = 2;
-const quizConfigById = new Map(quizzes.map((quiz) => [quiz.id, quiz]));
 
 function sanitizeQuestions(questions) {
   return questions.map((question) => ({
@@ -35,11 +34,6 @@ function sanitizeQuestions(questions) {
 
 function isScoredQuestion(question) {
   return Boolean(question) && question.graded !== false;
-}
-
-function getQuizConfig(roomOrQuizId) {
-  const quizId = typeof roomOrQuizId === "string" ? roomOrQuizId : roomOrQuizId?.quizId;
-  return quizConfigById.get(quizId) ?? null;
 }
 
 function getQuestionTotalUnits(question) {

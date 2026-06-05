@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import QuizCard from "../components/QuizCard";
 import ShellLayout from "../components/ShellLayout";
-import { quizCatalog } from "../lib/quizzes";
+import { useQuizCatalog } from "../lib/quizCatalog";
 
 export default function HomePage() {
+  const { quizzes: quizCatalog } = useQuizCatalog();
+
   return (
     <ShellLayout>
       {/* Hero */}

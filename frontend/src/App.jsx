@@ -5,6 +5,7 @@ import QuizPage from "./pages/QuizPage";
 import ResultsPage from "./pages/ResultsPage";
 import LiveHubPage from "./pages/LiveHubPage";
 import LiveRoomPage from "./pages/LiveRoomPage";
+import TeacherBuilderPage from "./pages/TeacherBuilderPage";
 import TeacherPage from "./pages/TeacherPage";
 import TeacherRoomCreatedPage from "./pages/TeacherRoomCreatedPage";
 import TeacherStatsPage from "./pages/TeacherStatsPage";
@@ -23,6 +24,8 @@ export default function App() {
         <Route path="/live" element={<LiveHubPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/teacher" element={<TeacherPage />} />
+        <Route path="/teacher/builder" element={<TeacherBuilderPage />} />
+        <Route path="/teacher/builder/:id" element={<TeacherBuilderPage />} />
         <Route path="/teacher/room" element={<TeacherRoomCreatedPage />} />
         <Route path="/teacher/stats" element={<TeacherStatsPage />} />
         <Route path="/live/:roomCode" element={<LiveRoomPage />} />
