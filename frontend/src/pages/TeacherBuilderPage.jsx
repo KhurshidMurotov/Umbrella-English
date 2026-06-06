@@ -33,7 +33,7 @@ function emptyDraft() {
     estimatedTime: "",
     flow: "",
     fixedUnitScoring: true,
-    showLiveRankingDuringTest: false,
+    showLiveRankingDuringTest: true,
     shuffleQuestions: false,
     shuffleOptions: false,
     questions: []
@@ -63,7 +63,7 @@ function hydrate(quiz, { stripIds = false } = {}) {
     estimatedTime: quiz.estimatedTime ?? "",
     flow: quiz.flow === "free-navigation" ? "free-navigation" : "",
     fixedUnitScoring: quiz.fixedUnitScoring !== false,
-    showLiveRankingDuringTest: quiz.showLiveRankingDuringTest === true,
+    showLiveRankingDuringTest: quiz.showLiveRankingDuringTest !== false,
     shuffleQuestions: quiz.shuffleQuestions === true,
     shuffleOptions: quiz.shuffleOptions === true,
     questions: (quiz.questions ?? []).map((question) => withKeys(question, stripIds))
@@ -135,25 +135,25 @@ function BuilderList({ session }) {
         ) : (
           <div className="space-y-6">
             <section>
-              <p className="mb-3 text-sm font-black text-neutral-700">Your tests</p>
+              <p className="eyebrow" style={{ marginBottom: 12 }}>Your tests</p>
               {custom.length ? (
                 <div className="space-y-2">
                   {custom.map((quiz) => (
-                    <div key={quiz.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+                    <div key={quiz.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-extrabold text-neutral-900">{quiz.title}</p>
-                        <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <p className="eyebrow" style={{ marginTop: 2 }}>
                           {(quiz.questions?.length ?? 0)} questions · {quiz.flow === "free-navigation" ? "Self-paced" : "Instructor-paced"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Link to={`/teacher/builder/${encodeURIComponent(quiz.id)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50">
+                        <Link to={`/teacher/builder/${encodeURIComponent(quiz.id)}`} className="btn-ghost btn-sm">
                           <Pencil size={14} /> Edit
                         </Link>
-                        <button type="button" onClick={() => navigate("/teacher/builder/new", { state: { duplicateFrom: quiz.id } })} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50">
+                        <button type="button" onClick={() => navigate("/teacher/builder/new", { state: { duplicateFrom: quiz.id } })} className="btn-ghost btn-sm">
                           <Copy size={14} /> Duplicate
                         </button>
-                        <button type="button" onClick={() => handleDelete(quiz)} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-400 transition hover:border-rose-300 hover:text-rose-600">
+                        <button type="button" onClick={() => handleDelete(quiz)} className="btn-ghost btn-sm" style={{ color: "var(--ink-400)" }}>
                           <Trash2 size={14} /> Delete
                         </button>
                       </div>
@@ -161,22 +161,22 @@ function BuilderList({ session }) {
                   ))}
                 </div>
               ) : (
-                <p className="rounded-2xl border border-dashed border-neutral-200 bg-white p-6 text-center text-sm text-neutral-400">
+                <p style={{ borderRadius: "var(--r-lg)", border: "2px dashed var(--ink-300)", background: "var(--card)", padding: 24, textAlign: "center", fontSize: 14, color: "var(--ink-400)" }}>
                   No custom tests yet. Click “New test” to build one.
                 </p>
               )}
             </section>
 
             <section>
-              <p className="mb-3 text-sm font-black text-neutral-700">Sample tests (duplicate to edit)</p>
+              <p className="eyebrow" style={{ marginBottom: 12 }}>Sample tests (duplicate to edit)</p>
               <div className="space-y-2">
                 {builtIn.map((quiz) => (
-                  <div key={quiz.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                  <div key={quiz.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-extrabold text-neutral-900">{quiz.title}</p>
-                      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">{(quiz.questions?.length ?? 0)} questions</p>
+                      <p className="eyebrow" style={{ marginTop: 2 }}>{(quiz.questions?.length ?? 0)} questions</p>
                     </div>
-                    <button type="button" onClick={() => navigate("/teacher/builder/new", { state: { duplicateFrom: quiz.id } })} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50">
+                    <button type="button" onClick={() => navigate("/teacher/builder/new", { state: { duplicateFrom: quiz.id } })} className="btn-ghost btn-sm">
                       <Copy size={14} /> Duplicate to edit
                     </button>
                   </div>
@@ -355,22 +355,37 @@ function BuilderEditor({ session, quizId }) {
           ))}
 
           {showTypePicker ? (
-            <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-              <p className="mb-3 text-sm font-black text-neutral-700">Choose a question type</p>
+            <div className="card">
+              <p className="eyebrow" style={{ marginBottom: 12 }}>Choose a question type</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {QUESTION_TYPE_OPTIONS.map((option) => (
-                  <button key={option.type} type="button" onClick={() => addQuestion(option.type)} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left transition hover:border-yellow-400 hover:bg-white">
-                    <p className="text-sm font-extrabold text-neutral-900">{option.label}</p>
-                    <p className="mt-0.5 text-xs text-neutral-500">{option.hint}</p>
+                  <button
+                    key={option.type}
+                    type="button"
+                    onClick={() => addQuestion(option.type)}
+                    className="text-left"
+                    style={{ borderRadius: "var(--r-md)", border: "var(--border-thin)", background: "var(--card)", padding: "12px 16px", cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    <p style={{ fontWeight: 800 }}>{option.label}</p>
+                    <p className="muted" style={{ marginTop: 2, fontSize: 13 }}>{option.hint}</p>
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setShowTypePicker(false)} className="mt-3 text-xs font-bold text-neutral-400 hover:text-neutral-700">
+              <button
+                type="button"
+                onClick={() => setShowTypePicker(false)}
+                style={{ marginTop: 12, fontSize: 13, fontWeight: 700, color: "var(--ink-400)", background: "none", border: "none", cursor: "pointer" }}
+              >
                 Cancel
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => setShowTypePicker(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-300 bg-white py-4 text-sm font-bold text-neutral-600 transition hover:border-yellow-400 hover:text-neutral-900">
+            <button
+              type="button"
+              onClick={() => setShowTypePicker(true)}
+              className="flex w-full items-center justify-center gap-2"
+              style={{ borderRadius: "var(--r-lg)", border: "2px dashed var(--ink-300)", background: "var(--card)", padding: "16px 0", fontWeight: 800, fontSize: 14, color: "var(--ink-500)", cursor: "pointer", fontFamily: "inherit" }}
+            >
               <Plus size={16} />
               Add question
             </button>

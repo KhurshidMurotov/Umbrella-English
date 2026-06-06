@@ -314,7 +314,7 @@ export function normalizeQuiz(input, { existingId } = {}) {
     fixedUnitScoring: input.fixedUnitScoring !== false,
     disableAnswerTimer: true,
     hideTimerControl: true,
-    showLiveRankingDuringTest: input.showLiveRankingDuringTest === true,
+    showLiveRankingDuringTest: input.showLiveRankingDuringTest !== false,
     shuffleQuestions: input.shuffleQuestions === true,
     shuffleOptions: input.shuffleOptions === true,
     scoringDescription:

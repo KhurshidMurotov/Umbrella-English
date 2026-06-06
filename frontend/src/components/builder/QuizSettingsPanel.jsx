@@ -1,3 +1,4 @@
+import { Footprints, Mic } from "lucide-react";
 import { Labeled, TextArea, TextInput, Toggle } from "./inputs";
 
 export default function QuizSettingsPanel({ draft, onChange }) {
@@ -23,26 +24,31 @@ export default function QuizSettingsPanel({ draft, onChange }) {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-black text-neutral-700">Live exam pacing</p>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Live exam pacing</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {[
-            { value: "", label: "🎙 Instructor-paced", hint: "Teacher advances each question" },
-            { value: "free-navigation", label: "🏃 Self-paced", hint: "Answer in any order, submit at end" }
-          ].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => patch({ flow: option.value })}
-              className={`rounded-xl border px-4 py-3 text-left transition ${
-                (draft.flow ?? "") === option.value
-                  ? "border-yellow-400 bg-yellow-50 ring-2 ring-yellow-200"
-                  : "border-neutral-200 bg-neutral-50 hover:bg-white"
-              }`}
-            >
-              <p className="text-sm font-extrabold text-neutral-900">{option.label}</p>
-              <p className="mt-0.5 text-xs text-neutral-500">{option.hint}</p>
-            </button>
-          ))}
+            { value: "", label: "Instructor-paced", hint: "Teacher advances each question", Icon: Mic },
+            { value: "free-navigation", label: "Self-paced", hint: "Answer in any order, submit at end", Icon: Footprints }
+          ].map((option) => {
+            const active = (draft.flow ?? "") === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => patch({ flow: option.value })}
+                className="text-left"
+                style={{
+                  borderRadius: "var(--r-md)", padding: "12px 16px", cursor: "pointer", fontFamily: "inherit",
+                  border: active ? "var(--border)" : "var(--border-thin)",
+                  background: active ? "var(--yellow-100)" : "var(--card)",
+                  boxShadow: active ? "var(--pop-sm)" : "none"
+                }}
+              >
+                <p style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><option.Icon size={16} />{option.label}</p>
+                <p className="muted" style={{ marginTop: 2, fontSize: 13 }}>{option.hint}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
