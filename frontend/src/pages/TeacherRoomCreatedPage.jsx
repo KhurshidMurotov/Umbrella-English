@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MonitorPlay } from "lucide-react";
 import QRCodePanel from "../components/QRCodePanel";
 import ShellLayout from "../components/ShellLayout";
-import { API_URL } from "../lib/api";
 
 export default function TeacherRoomCreatedPage() {
   const location = useLocation();
@@ -27,43 +26,32 @@ export default function TeacherRoomCreatedPage() {
 
   return (
     <ShellLayout showLinks={false}>
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="glass-card rounded-[36px] p-8">
+      <div className="fade-in space-y-6" style={{ maxWidth: 980, margin: "0 auto" }}>
+        <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">Room created</p>
-              <h1 className="mt-2 text-4xl font-extrabold text-neutral-950">Your live exam is ready</h1>
+              <p className="eyebrow">Room created</p>
+              <h1 className="h1" style={{ marginTop: 6 }}>Your live exam is ready</h1>
             </div>
-            <Link
-              to="/teacher"
-              className="rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white"
-            >
-              Back to teacher panel
-            </Link>
+            <Link to="/teacher" className="btn-ghost">Back to teacher panel</Link>
           </div>
-
-          <p className="mt-4 text-sm leading-7 text-neutral-600">
+          <p className="muted" style={{ marginTop: 14, lineHeight: 1.6 }}>
             Share this room code with students or open the host view to start the live session.
           </p>
         </div>
 
-        <div className="glass-card rounded-[36px] p-8">
-          <div className="rounded-[26px] border border-neutral-200 bg-white p-6">
-            <p className="text-xs uppercase tracking-[0.24em] text-neutral-500">Room code</p>
-            <div className="mt-3 text-5xl font-extrabold text-neutral-950">{roomData.code}</div>
-            <p className="mt-2 text-sm text-neutral-500">
-              {roomData.mode} / {roomData.questionTime}s per question
-            </p>
-            <Link
-              to={hostUrl}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white"
-            >
+        <div className="card">
+          <div className="card-tight" style={{ background: "var(--paper)", border: "var(--border-thin)" }}>
+            <p className="eyebrow">Room code</p>
+            <div style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 48, letterSpacing: ".1em" }}>{roomData.code}</div>
+            <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>{roomData.mode} · {roomData.questionTime}s per question</p>
+            <Link to={hostUrl} className="btn-dark" style={{ marginTop: 18 }}>
               <MonitorPlay size={16} />
               Open host room
             </Link>
           </div>
 
-          <div className="mt-6">
+          <div style={{ marginTop: 18 }}>
             <QRCodePanel
               value={playerUrl}
               title="Student QR"

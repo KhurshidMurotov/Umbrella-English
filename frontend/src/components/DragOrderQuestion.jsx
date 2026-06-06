@@ -62,8 +62,8 @@ export default function DragOrderQuestion({
   return (
     <div className="space-y-4">
       {compactOnMobile ? (
-        <div className="rounded-[20px] bg-neutral-50 p-4 sm:hidden">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Slots</p>
+        <div className="card sm:hidden">
+          <p className="eyebrow">Slots</p>
           <div className="mt-3 space-y-2">
             {Array.from({ length: slotCount }, (_, index) => (
               <div
@@ -76,20 +76,19 @@ export default function DragOrderQuestion({
                     placeWord(index, word);
                   }
                 }}
-                className={`flex items-center gap-3 rounded-[14px] border px-3 py-3 ${
-                  value[index] ? "border-amber-300 bg-amber-50 text-neutral-900" : "border-dashed border-neutral-300 bg-neutral-50 text-neutral-500"
-                }`}
+                className="flex items-center gap-3"
+                style={{
+                  borderRadius: "var(--r-sm)", padding: "10px 12px",
+                  border: value[index] ? "var(--border)" : "2px dashed var(--ink-300)",
+                  background: value[index] ? "var(--yellow-100)" : "var(--card)"
+                }}
                 title={disabled ? "" : "Drop a word here"}
               >
-                <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-neutral-700">
-                  {index + 1}
-                </span>
-                <span className="min-w-0 flex-1 text-sm font-semibold">
-                  {value[index] || "Empty"}
-                </span>
+                <span className="qnum alt" style={{ width: 30, height: 30, fontSize: 13 }}>{index + 1}</span>
+                <span className="min-w-0 flex-1" style={{ fontWeight: 700 }}>{value[index] || "Empty"}</span>
                 {!disabled && value[index] ? (
-                  <button type="button" onClick={() => clearSlot(index)} className="text-xs font-bold text-neutral-500">
-                    x
+                  <button type="button" onClick={() => clearSlot(index)} style={{ fontWeight: 800, color: "var(--ink-400)", background: "none", border: "none", cursor: "pointer" }}>
+                    ✕
                   </button>
                 ) : null}
               </div>
@@ -98,7 +97,7 @@ export default function DragOrderQuestion({
         </div>
       ) : null}
 
-      <div className={`rounded-[20px] bg-neutral-50 p-4 leading-8 text-neutral-900 ${compactOnMobile ? "hidden sm:block" : ""}`}>
+      <div className={`card ${compactOnMobile ? "hidden sm:block" : ""}`} style={{ lineHeight: 2.2 }}>
         {segments.map((segment, index) => (
           <span key={`segment-${index}`}>
             {segment}
@@ -112,15 +111,14 @@ export default function DragOrderQuestion({
                     placeWord(index, word);
                   }
                 }}
-                className={`mx-1 inline-flex min-w-[140px] items-center justify-center rounded-[12px] border px-2 py-1 text-sm font-semibold ${
-                  value[index] ? "border-amber-300 bg-amber-50 text-neutral-900" : "border-dashed border-neutral-300 bg-neutral-50 text-neutral-500"
-                }`}
+                className={`qslot${value[index] ? " filled" : ""}`}
+                style={{ minWidth: 140 }}
                 title={disabled ? "" : "Drop a word here"}
               >
                 {value[index] || `(${index + 1})`}
                 {!disabled && value[index] ? (
-                  <button type="button" onClick={() => clearSlot(index)} className="ml-2 text-xs text-neutral-500">
-                    x
+                  <button type="button" onClick={() => clearSlot(index)} style={{ marginLeft: 8, fontSize: 12, color: "var(--ink-400)", background: "none", border: "none", cursor: "pointer" }}>
+                    ✕
                   </button>
                 ) : null}
               </span>
@@ -130,8 +128,8 @@ export default function DragOrderQuestion({
       </div>
 
       {showWordBank ? (
-        <div className="rounded-[20px] bg-neutral-50 p-4">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Word bank</p>
+        <div className="card">
+          <p className="eyebrow">Word bank</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {availableWords.map((word) => (
               <button
@@ -143,7 +141,7 @@ export default function DragOrderQuestion({
                 }}
                 onClick={() => fillFirstEmpty(word)}
                 disabled={disabled}
-                className="rounded-xl border-2 border-yellow-300 bg-yellow-50 px-3.5 py-2 text-sm font-bold text-neutral-900 transition active:translate-y-0.5 hover:bg-yellow-100 disabled:opacity-60"
+                className="qchip"
               >
                 {word}
               </button>

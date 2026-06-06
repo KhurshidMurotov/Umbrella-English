@@ -13,44 +13,39 @@ export default function QRCodePanel({ value, title = "QR access", caption = "Sca
     }
   }, [value]);
 
+  const frame = { borderRadius: "var(--r-lg)", background: "#fff", border: "var(--border)", padding: 16, marginTop: 12 };
+
   if (!value) {
     return (
-      <div className="glass-card rounded-[28px] p-5 text-center">
-        <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">{title}</p>
-        <div className="rounded-[24px] bg-white p-4 h-48 flex items-center justify-center">
-          <p className="text-neutral-400">Loading QR code...</p>
+      <div className="glass-card p-5 text-center">
+        <p className="eyebrow">{title}</p>
+        <div style={{ ...frame, height: 192, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p className="muted">Loading QR code…</p>
         </div>
-        <p className="mt-4 text-sm text-neutral-500">{caption}</p>
+        <p className="muted" style={{ marginTop: 14, fontSize: 14 }}>{caption}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="glass-card rounded-[28px] p-5 text-center">
-        <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">{title}</p>
-        <div className="rounded-[24px] bg-rose-50 border border-rose-200 p-4 h-48 flex items-center justify-center">
-          <p className="text-rose-700">{error}</p>
+      <div className="glass-card p-5 text-center">
+        <p className="eyebrow">{title}</p>
+        <div style={{ borderRadius: "var(--r-lg)", background: "var(--tomato-soft)", border: "1.5px solid var(--tomato)", padding: 16, marginTop: 12, height: 192, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "var(--tomato)" }}>{error}</p>
         </div>
-        <p className="mt-4 text-sm text-neutral-500">{caption}</p>
+        <p className="muted" style={{ marginTop: 14, fontSize: 14 }}>{caption}</p>
       </div>
     );
   }
 
   return (
-    <div className="glass-card rounded-[28px] p-6 text-center">
-      <p className="text-xs font-black uppercase tracking-[0.3em] text-neutral-500">{title}</p>
-      <div className="rounded-[24px] bg-white p-4 inline-block">
-        <QRCode
-          value={value}
-          size={200}
-          level="H"
-          includeMargin={true}
-          role="img"
-          aria-label={`QR code for joining exam room`}
-        />
+    <div className="glass-card p-6 text-center">
+      <p className="eyebrow">{title}</p>
+      <div style={{ ...frame, display: "inline-block" }}>
+        <QRCode value={value} size={200} level="H" includeMargin role="img" aria-label="QR code for joining exam room" />
       </div>
-      <p className="mt-4 text-sm text-neutral-600">{caption}</p>
+      <p className="muted" style={{ marginTop: 14, fontSize: 14 }}>{caption}</p>
     </div>
   );
 }

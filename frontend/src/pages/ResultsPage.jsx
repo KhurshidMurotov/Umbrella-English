@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { BarChart3, RotateCcw, Search } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import ShellLayout from "../components/ShellLayout";
@@ -22,52 +21,51 @@ export default function ResultsPage() {
 
   return (
     <ShellLayout>
-      <div className="mx-auto max-w-4xl">
-        <div className="glass-card overflow-hidden rounded-[40px]">
-          <div className="bg-neutral-950 px-8 py-10 text-white">
-            <p className="text-sm uppercase tracking-[0.3em] text-amber-300">Results</p>
-            <h1 className="mt-3 text-4xl font-extrabold">{result.title}</h1>
-            <div className="mt-8 flex flex-wrap items-end gap-4">
+      <div className="fade-in" style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          {/* Dark header */}
+          <div className="card-dark" style={{ borderRadius: 0, boxShadow: "none", border: "none", padding: "34px 28px" }}>
+            <div className="eyebrow" style={{ color: "var(--yellow-400)" }}>Results</div>
+            <h1 className="h1" style={{ color: "#fff", marginTop: 8 }}>{result.title}</h1>
+            <div className="row" style={{ marginTop: 22, alignItems: "flex-end", gap: 20 }}>
               <div>
-                <div className="text-sm uppercase tracking-[0.24em] text-neutral-400">Score</div>
-                <div className="text-6xl font-extrabold text-amber-300">{result.score}</div>
+                <div className="eyebrow" style={{ color: "var(--ink-300)" }}>Score</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 60, color: "var(--yellow-400)", lineHeight: 1 }}>
+                  {result.score}
+                </div>
               </div>
-              <div className="rounded-[24px] bg-white/10 px-4 py-3 text-sm text-neutral-200">
-                Finished by: <span className="font-bold capitalize text-white">{result.endedBy}</span>
+              <div className="chip" style={{ background: "rgba(255,255,255,.1)", color: "#fff", border: "none" }}>
+                Finished · {result.endedBy}
               </div>
             </div>
           </div>
 
-          <div className="p-8">
-            <div className="grid gap-4 md:grid-cols-4">
+          {/* Body */}
+          <div style={{ padding: 24 }}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatPill label="Accuracy" value={`${result.accuracy}%`} />
-              <StatPill label="Correct" value={result.correctAnswers} />
-              <StatPill label="Wrong" value={result.wrongAnswers} />
-              <StatPill label="Streak" value={result.streak} />
+              <StatPill label="Correct" value={result.correctAnswers} tone="grass" />
+              <StatPill label="Wrong" value={result.wrongAnswers} tone="tomato" />
+              <StatPill label="Streak" value={result.streak} tone="yellow" />
             </div>
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-8 rounded-[32px] bg-amber-50 p-6">
-              <div className="flex items-center gap-3 text-neutral-700">
-                <BarChart3 size={20} />
-                <span className="font-bold">Stats snapshot</span>
+            <div
+              className="card-tight"
+              style={{ marginTop: 18, background: "var(--yellow-50)", border: "1.5px solid var(--yellow-600)" }}
+            >
+              <div className="row" style={{ gap: 8, fontWeight: 800, flexWrap: "nowrap" }}>
+                <BarChart3 size={18} />
+                <span style={{ whiteSpace: "nowrap" }}>Stats snapshot</span>
               </div>
-              <p className="mt-3 text-sm leading-7 text-neutral-600">
-                You answered {result.correctAnswers} out of {result.totalQuestions} questions correctly with {result.violations} anti-cheat violations recorded.
+              <p className="muted" style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6 }}>
+                You answered {result.correctAnswers} of {result.totalQuestions} questions correctly with {result.violations} anti-cheat violations recorded.
+                The scoring model gives up to 100 points per question based on correctness and speed.
               </p>
-              <p className="mt-2 text-sm leading-7 text-neutral-600">
-                The scoring model now gives up to 100 points per question based on both correctness and speed.
-              </p>
-            </motion.div>
+            </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/" className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-5 py-3 font-bold text-white">
-                <RotateCcw size={18} />
-                Play again
-              </Link>
-              <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-neutral-900 px-5 py-3 font-bold text-neutral-950">
-                <Search size={18} />
-                Find new quiz
-              </Link>
+            <div className="row" style={{ marginTop: 20 }}>
+              <Link to="/" className="btn-dark"><RotateCcw size={18} />Play again</Link>
+              <Link to="/" className="btn-ghost"><Search size={18} />Find new quiz</Link>
             </div>
           </div>
         </div>

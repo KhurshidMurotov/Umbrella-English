@@ -14,7 +14,7 @@ import { getTeacherSession } from "../lib/teacherAuth";
 function AccessGate() {
   return (
     <ShellLayout showLinks={false}>
-      <div className="mx-auto max-w-md rounded-3xl border border-neutral-100 bg-white p-8 text-center shadow-sm">
+      <div className="card mx-auto max-w-md p-8 text-center">
         <h1 className="text-xl font-black text-neutral-900">Teacher access required</h1>
         <p className="mt-2 text-sm text-neutral-500">Log in to the teacher area to build tests.</p>
         <Link to="/teacher" className="btn-dark mt-5 inline-flex justify-center px-5 py-3 text-sm">
@@ -112,7 +112,7 @@ function BuilderList({ session }) {
   return (
     <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-4xl">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-neutral-900 px-5 py-4 shadow-lg">
+        <div className="card card-dark mb-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-3">
             <Link to="/teacher" className="rounded-xl border border-neutral-700 bg-neutral-800 p-2 text-neutral-300 transition hover:bg-neutral-700">
               <ArrowLeft size={16} />
@@ -311,7 +311,7 @@ function BuilderEditor({ session, quizId }) {
   return (
     <ShellLayout showLinks={false}>
       <div className="mx-auto max-w-3xl">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-neutral-900 px-5 py-4 shadow-lg">
+        <div className="card card-dark mb-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-3">
             <Link to="/teacher/builder" className="rounded-xl border border-neutral-700 bg-neutral-800 p-2 text-neutral-300 transition hover:bg-neutral-700">
               <ArrowLeft size={16} />

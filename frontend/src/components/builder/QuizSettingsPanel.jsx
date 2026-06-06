@@ -6,7 +6,7 @@ export default function QuizSettingsPanel({ draft, onChange }) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:p-5">
+    <div className="card space-y-4">
       <Labeled label="Test title">
         <TextInput value={draft.title} onChange={(value) => patch({ title: value })} placeholder="My Unit 3 Test" />
       </Labeled>

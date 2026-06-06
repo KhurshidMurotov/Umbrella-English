@@ -1,48 +1,28 @@
-import { motion } from "framer-motion";
-import { Clock3, Play } from "lucide-react";
+import { Clock3, ListChecks, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CARD_TOPS = [
-  "from-yellow-400 to-amber-300",
-  "from-orange-400 to-red-300",
-  "from-blue-500 to-cyan-400",
-  "from-green-500 to-emerald-400",
-];
-
-export default function QuizCard({ quiz, index = 0 }) {
-  const accent = CARD_TOPS[index % CARD_TOPS.length];
+export default function QuizCard({ quiz }) {
+  const count = quiz.questions?.length ?? 0;
 
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className="overflow-hidden rounded-2xl bg-white shadow-md border border-neutral-100 sm:rounded-3xl"
-    >
-      <div className={`h-2 w-full bg-gradient-to-r ${accent}`} />
-      <div className="p-4 sm:p-5">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-yellow-800">
-            {quiz.difficulty}
-          </span>
-          <div className="flex items-center gap-1 text-xs text-neutral-400">
-            <Clock3 size={12} />
-            <span>{quiz.estimatedTime}</span>
-          </div>
+    <div className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 10, background: "var(--yellow-400)", borderBottom: "var(--border)" }} />
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div className="spread">
+          <span className="chip chip-yellow">{quiz.difficulty || "Quiz"}</span>
+          {quiz.estimatedTime ? <span className="meta"><Clock3 size={13} />{quiz.estimatedTime}</span> : null}
         </div>
-
-        <h3 className="text-lg font-extrabold leading-tight text-neutral-900 sm:text-xl">{quiz.title}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-neutral-500 line-clamp-2">{quiz.description}</p>
-
-        <div className="mt-4">
-          <Link
-            to={`/quiz/${quiz.id}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-800 active:scale-95"
-          >
-            <Play size={13} fill="white" />
-            Start quiz
-          </Link>
+        <h3 className="h3" style={{ marginTop: 14 }}>{quiz.title}</h3>
+        {quiz.description ? (
+          <p className="muted" style={{ marginTop: 6, fontSize: 14, lineHeight: 1.5, flex: 1 }}>{quiz.description}</p>
+        ) : (
+          <div style={{ flex: 1 }} />
+        )}
+        <div className="spread" style={{ marginTop: 18 }}>
+          <span className="meta"><ListChecks size={13} />{count} questions</span>
+          <Link to={`/quiz/${quiz.id}`} className="btn-dark btn-sm"><Play size={16} />Start quiz</Link>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

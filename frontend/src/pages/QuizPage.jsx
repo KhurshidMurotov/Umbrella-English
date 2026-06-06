@@ -475,13 +475,13 @@ function ClassicQuizPage({ quiz }) {
       <div className="mx-auto max-w-4xl px-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 sm:text-xs">Solo quiz</p>
-            <h1 className="mt-1 truncate text-lg font-black text-neutral-900 sm:text-2xl">{playableQuiz.title}</h1>
+            <div className="eyebrow">Solo quiz</div>
+            <h1 className="h2 truncate" style={{ marginTop: 4 }}>{playableQuiz.title}</h1>
           </div>
           {!isWritingQuestion && !disableAnswerTimer ? (
-            <div className="flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 shadow flex-shrink-0">
-              <Clock3 size={15} className="text-yellow-400" />
-              <span className="font-black text-sm text-white sm:text-base">{timeLeft}s</span>
+            <div className="chip chip-ink" style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 14, letterSpacing: ".06em" }}>
+              <Clock3 size={14} />
+              {timeLeft}s
             </div>
           ) : null}
         </div>
@@ -504,28 +504,25 @@ function ClassicQuizPage({ quiz }) {
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6 lg:p-8">
+        <div className="card" style={{ marginTop: 16 }}>
           {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
 
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 sm:text-sm">
-              <Shield size={14} />
-              <span>Anti-cheat active</span>
-            </div>
+            <span className="meta"><Shield size={14} />Anti-cheat active</span>
             {isScoredQuestion(currentQuestion) ? (
-              <div className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-black text-yellow-800 sm:text-sm">
+              <span className="chip chip-yellow">
                 <Sparkles size={13} />
                 {isBookScoringQuiz
                   ? `${Number(currentQuestion.points) || 2} pts`
                   : currentQuestion.points
                     ? `Up to ${currentQuestion.points} pts`
                     : "60 base + speed bonus"}
-              </div>
+              </span>
             ) : (
-              <div className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-black text-neutral-500 sm:text-sm">
+              <span className="chip">
                 <Sparkles size={13} />
                 Not scored
-              </div>
+              </span>
             )}
           </div>
 

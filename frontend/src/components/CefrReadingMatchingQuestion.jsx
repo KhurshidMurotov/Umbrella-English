@@ -15,31 +15,27 @@ export default function CefrReadingMatchingQuestion({
   if (boardMode) {
     return (
       <div className="space-y-6">
-        <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
-          <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">People</p>
+        <div className="card">
+          <p className="eyebrow">People</p>
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
             {people.map((person, index) => (
-              <div key={person.number} className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-4 py-4">
+              <div key={person.number} className="qitem">
                 <div className="flex items-start gap-3">
-                  <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-sm font-black text-neutral-950">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm leading-7 text-neutral-800">{person.text}</p>
+                  <span className="qnum alt">{index + 1}</span>
+                  <p style={{ lineHeight: 1.7 }}>{person.text}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-neutral-200 bg-white p-5">
-          <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">Places</p>
+        <div className="card">
+          <p className="eyebrow">Places</p>
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
             {choices.map((choice) => (
-              <div key={choice.label} className="rounded-[20px] border border-neutral-200 bg-neutral-50 px-4 py-4">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-neutral-950">
-                  {choice.label}. {choice.title}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-neutral-800">{choice.text}</p>
+              <div key={choice.label} className="qitem">
+                <p className="eyebrow" style={{ color: "var(--ink)" }}>{choice.label}. {choice.title}</p>
+                <p style={{ marginTop: 8, lineHeight: 1.7 }}>{choice.text}</p>
               </div>
             ))}
           </div>
@@ -50,15 +46,13 @@ export default function CefrReadingMatchingQuestion({
 
   return (
     <div>
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-neutral-500">Match Letters To Numbers</p>
+      <p className="eyebrow">Match letters to numbers</p>
       <div className="mt-4 space-y-3">
         {people.map((person, index) => (
-          <div key={person.number} className="flex items-center gap-3 rounded-[18px] bg-neutral-50 px-4 py-3">
-            <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
-              {index + 1}
-            </span>
+          <div key={person.number} className="qitem flex items-center gap-3">
+            <span className="qnum">{index + 1}</span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">Choose A Letter</p>
+              <p className="eyebrow">Choose a letter</p>
             </div>
             <select
               value={answers[person.number] ?? ""}
@@ -66,14 +60,10 @@ export default function CefrReadingMatchingQuestion({
                 if (disabled || !onChange) {
                   return;
                 }
-
-                onChange({
-                  ...answers,
-                  [person.number]: event.target.value
-                });
+                onChange({ ...answers, [person.number]: event.target.value });
               }}
               disabled={disabled}
-              className="rounded-[14px] border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-900 outline-none focus:border-neutral-950 disabled:bg-neutral-100"
+              className="qselect"
             >
               <option value="">-</option>
               {choices.map((choice) => (

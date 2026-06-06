@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Shield, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Play, Shield, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
 import SelfPacedAnswerArea, { isQuestionAnswered, renderQuestionPrompt } from "../components/SelfPacedAnswerArea";
@@ -125,14 +125,12 @@ export default function QuizPageV2({ quiz }) {
       <div className="mx-auto max-w-4xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 sm:text-xs">Solo quiz · self-paced</p>
-            <h1 className="mt-1 truncate text-lg font-black text-neutral-900 sm:text-2xl">{playableQuiz.title}</h1>
+            <div className="eyebrow">Solo quiz · self-paced</div>
+            <h1 className="h2 truncate" style={{ marginTop: 4 }}>{playableQuiz.title}</h1>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 shadow flex-shrink-0">
-            <CheckCircle2 size={15} className="text-yellow-400" />
-            <span className="font-black text-sm text-white sm:text-base">
-              {answeredCount}/{questions.length} answered
-            </span>
+          <div className="chip chip-ink" style={{ flexShrink: 0 }}>
+            <CheckCircle2 size={14} />
+            {answeredCount}/{questions.length} answered
           </div>
         </div>
 
@@ -153,58 +151,43 @@ export default function QuizPageV2({ quiz }) {
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6 lg:p-8">
+        <div className="card" style={{ marginTop: 16 }}>
           {currentQuestion.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
 
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 sm:text-sm">
-              <Shield size={14} />
-              <span>Anti-cheat active</span>
-            </div>
+            <span className="meta"><Shield size={14} />Anti-cheat active</span>
             {scored ? (
-              <div className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-black text-yellow-800 sm:text-sm">
-                <Sparkles size={13} />
-                {`${Number(currentQuestion.points) || 2} pts`}
-              </div>
+              <span className="chip chip-yellow"><Sparkles size={13} />{`${Number(currentQuestion.points) || 2} pts`}</span>
             ) : (
-              <div className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-black text-neutral-500 sm:text-sm">
-                <Sparkles size={13} />
-                Not scored
-              </div>
+              <span className="chip"><Sparkles size={13} />Not scored</span>
             )}
           </div>
 
           <AnimatePresence mode="wait">
             <motion.div key={currentQuestion.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
               <div className="mb-5 flex flex-wrap items-center gap-3">
-                {currentQuestion.part ? (
-                  <span className="rounded-full bg-amber-300 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-neutral-900">{currentQuestion.part}</span>
-                ) : null}
-                {currentQuestion.partTitle ? (
-                  <span className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">{currentQuestion.partTitle}</span>
-                ) : null}
+                {currentQuestion.part ? <span className="chip chip-yellow">{currentQuestion.part}</span> : null}
+                {currentQuestion.partTitle ? <span className="eyebrow">{currentQuestion.partTitle}</span> : null}
                 {isQuestionAnswered(currentQuestion, answer) ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-                    <CheckCircle2 size={12} /> Answered
-                  </span>
+                  <span className="chip chip-grass"><CheckCircle2 size={12} /> Answered</span>
                 ) : null}
               </div>
 
               {renderQuestionPrompt(currentQuestion.prompt)}
 
               {currentQuestion.audioSrc ? (
-                <button type="button" onClick={playAudio} className="btn-dark mt-4 inline-flex items-center gap-2 px-4 py-2.5 text-sm">
-                  ▶ Play audio
+                <button type="button" onClick={playAudio} className="btn-dark btn-sm" style={{ marginTop: 16 }}>
+                  <Play size={15} /> Play audio
                 </button>
               ) : null}
 
-              <p className="mt-3 text-sm text-neutral-500">
+              <p className="muted" style={{ marginTop: 12, fontSize: 14 }}>
                 {scored
                   ? `This question gives ${Number(currentQuestion.points) || 2} points when correct. Answers are checked when you submit.`
                   : "This writing task is shown as in the book and does not change the score."}
               </p>
 
-              <div className="mt-8 rounded-[28px] bg-white p-5">
+              <div style={{ marginTop: 24 }}>
                 <SelfPacedAnswerArea question={currentQuestion} value={answer} onChange={(value) => setAnswer(currentQuestion.id, value)} />
               </div>
             </motion.div>
@@ -212,25 +195,16 @@ export default function QuizPageV2({ quiz }) {
 
           {/* Back / Next */}
           <div className="mt-6 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => goToIndex(currentIndex - 1)}
-              disabled={currentIndex === 0}
-              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <button type="button" onClick={() => goToIndex(currentIndex - 1)} disabled={currentIndex === 0} className="btn-ghost">
               <ArrowLeft size={16} />
               Back
             </button>
             {isLast ? (
-              <button type="button" onClick={handleSubmit} className="btn-primary px-6 py-3">
+              <button type="button" onClick={handleSubmit} className="btn-primary">
                 Submit test
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => goToIndex(currentIndex + 1)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-black text-white transition hover:bg-neutral-800"
-              >
+              <button type="button" onClick={() => goToIndex(currentIndex + 1)} className="btn-dark">
                 Next
                 <ArrowRight size={16} />
               </button>
@@ -239,8 +213,8 @@ export default function QuizPageV2({ quiz }) {
         </div>
 
         {/* Question overview grid */}
-        <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6">
-          <p className="mb-3 text-sm font-black text-neutral-700">Jump to a question</p>
+        <div className="card" style={{ marginTop: 16 }}>
+          <p className="eyebrow" style={{ marginBottom: 12 }}>Jump to a question</p>
           <div className="space-y-4">
             {partGroups.map((group) => (
               <div key={group.label}>
@@ -302,19 +276,15 @@ export default function QuizPageV2({ quiz }) {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 10 }}
               onClick={(event) => event.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+              className="card w-full max-w-sm"
             >
-              <h3 className="text-lg font-black text-neutral-900">Submit the test?</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-600">
-                You still have <span className="font-black text-neutral-900">{unansweredCount}</span> unanswered question
+              <h3 className="h3">Submit the test?</h3>
+              <p className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
+                You still have <span style={{ fontWeight: 800, color: "var(--ink)" }}>{unansweredCount}</span> unanswered question
                 {unansweredCount > 1 ? "s" : ""}. They will be marked as incorrect.
               </p>
               <div className="mt-5 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50"
-                >
+                <button type="button" onClick={() => setShowConfirm(false)} className="btn-ghost flex-1">
                   Keep answering
                 </button>
                 <button
@@ -323,7 +293,7 @@ export default function QuizPageV2({ quiz }) {
                     setShowConfirm(false);
                     finishQuiz("completed");
                   }}
-                  className="btn-primary flex-1 justify-center py-3"
+                  className="btn-primary flex-1"
                 >
                   Submit anyway
                 </button>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Hourglass, Shield, Sparkles, Trophy } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Hourglass, Play, Shield, Sparkles, Trophy } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import SelfPacedAnswerArea, { buildWritingString, isQuestionAnswered, renderQuestionPrompt } from "./SelfPacedAnswerArea";
 
@@ -100,13 +100,13 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
   if (!room?.started && !completed) {
     return (
       <div className="mx-auto max-w-2xl">
-        <div className="glass-card rounded-[32px] p-8 text-center">
-          <Hourglass className="mx-auto text-yellow-500" size={36} />
-          <h1 className="mt-4 text-2xl font-black text-neutral-900">{room?.quizTitle ?? "Test"}</h1>
-          <p className="mt-3 text-sm leading-7 text-neutral-600">
+        <div className="glass-card p-8 text-center">
+          <Hourglass className="mx-auto" style={{ color: "var(--yellow-600)" }} size={36} />
+          <h1 className="h2" style={{ marginTop: 16 }}>{room?.quizTitle ?? "Test"}</h1>
+          <p className="muted" style={{ marginTop: 12, lineHeight: 1.7 }}>
             You're in! Waiting for the teacher to start the test. When it begins you can answer the questions in any order and submit when you're done.
           </p>
-          <p className="mt-4 text-xs font-black uppercase tracking-widest text-neutral-400">Room {roomCode?.toUpperCase()}</p>
+          <p className="eyebrow" style={{ marginTop: 16 }}>Room {roomCode?.toUpperCase()}</p>
         </div>
       </div>
     );
@@ -119,17 +119,17 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
     const total = result?.totalUnits ?? selfPlayer?.answeredQuestions ?? 0;
     return (
       <div className="mx-auto max-w-2xl">
-        <div className="glass-card overflow-hidden rounded-[32px]">
-          <div className="bg-neutral-950 px-8 py-10 text-center text-white">
-            <Trophy className="mx-auto text-amber-300" size={40} />
-            <p className="mt-4 text-sm uppercase tracking-[0.3em] text-amber-300">Submitted</p>
-            <div className="mt-2 text-6xl font-extrabold text-amber-300">{score}</div>
-            <p className="mt-2 text-sm text-neutral-300">points</p>
+        <div className="glass-card overflow-hidden" style={{ padding: 0 }}>
+          <div className="card-dark" style={{ borderRadius: 0, border: "none", boxShadow: "none", padding: "40px 32px", textAlign: "center" }}>
+            <Trophy className="mx-auto" style={{ color: "var(--yellow-400)" }} size={40} />
+            <p className="eyebrow" style={{ color: "var(--yellow-400)", marginTop: 16 }}>Submitted</p>
+            <div style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 60, color: "var(--yellow-400)", lineHeight: 1 }}>{score}</div>
+            <p style={{ marginTop: 8, fontSize: 14, color: "var(--ink-300)" }}>points</p>
           </div>
-          <div className="p-8 text-center">
-            <p className="text-sm leading-7 text-neutral-600">
-              You answered <span className="font-black text-neutral-900">{correct}</span> of{" "}
-              <span className="font-black text-neutral-900">{total}</span> correctly. Your teacher can see your result on the live ranking.
+          <div style={{ padding: 32, textAlign: "center" }}>
+            <p className="muted" style={{ lineHeight: 1.7 }}>
+              You answered <span style={{ fontWeight: 800, color: "var(--ink)" }}>{correct}</span> of{" "}
+              <span style={{ fontWeight: 800, color: "var(--ink)" }}>{total}</span> correctly. Your teacher can see your result on the live ranking.
             </p>
           </div>
         </div>
@@ -145,14 +145,12 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
     <div className="mx-auto max-w-4xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-5">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 sm:text-xs">Live test · self-paced</p>
-          <h1 className="mt-1 truncate text-lg font-black text-neutral-900 sm:text-2xl">{room?.quizTitle}</h1>
+          <div className="eyebrow">Live test · self-paced</div>
+          <h1 className="h2 truncate" style={{ marginTop: 4 }}>{room?.quizTitle}</h1>
         </div>
-        <div className="flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 shadow flex-shrink-0">
-          <CheckCircle2 size={15} className="text-yellow-400" />
-          <span className="font-black text-sm text-white sm:text-base">
-            {answeredCount}/{questions.length} answered
-          </span>
+        <div className="chip chip-ink" style={{ flexShrink: 0 }}>
+          <CheckCircle2 size={14} />
+          {answeredCount}/{questions.length} answered
         </div>
       </div>
 
@@ -165,52 +163,37 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6 lg:p-8">
+      <div className="card" style={{ marginTop: 16 }}>
         {currentQuestion?.audioSrc ? <audio ref={audioRef} src={currentQuestion.audioSrc} preload="auto" className="hidden" /> : null}
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 sm:text-sm">
-            <Shield size={14} />
-            <span>Anti-cheat active{violations ? ` · ${violations} warning${violations > 1 ? "s" : ""}` : ""}</span>
-          </div>
+          <span className="meta"><Shield size={14} />Anti-cheat active{violations ? ` · ${violations} warning${violations > 1 ? "s" : ""}` : ""}</span>
           {scored ? (
-            <div className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-1.5 text-xs font-black text-yellow-800 sm:text-sm">
-              <Sparkles size={13} />
-              {`${Number(currentQuestion.points) || 2} pts`}
-            </div>
+            <span className="chip chip-yellow"><Sparkles size={13} />{`${Number(currentQuestion.points) || 2} pts`}</span>
           ) : (
-            <div className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-black text-neutral-500 sm:text-sm">
-              <Sparkles size={13} />
-              Not scored
-            </div>
+            <span className="chip"><Sparkles size={13} />Not scored</span>
           )}
         </div>
 
         <AnimatePresence mode="wait">
           <motion.div key={currentQuestion?.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
             <div className="mb-5 flex flex-wrap items-center gap-3">
-              {currentQuestion?.part ? (
-                <span className="rounded-full bg-amber-300 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-neutral-900">{currentQuestion.part}</span>
-              ) : null}
-              {currentQuestion?.partTitle ? (
-                <span className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">{currentQuestion.partTitle}</span>
-              ) : null}
+              {currentQuestion?.part ? <span className="chip chip-yellow">{currentQuestion.part}</span> : null}
+              {currentQuestion?.partTitle ? <span className="eyebrow">{currentQuestion.partTitle}</span> : null}
               {isQuestionAnswered(currentQuestion, answer) ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-                  <CheckCircle2 size={12} /> Answered
-                </span>
+                <span className="chip chip-grass"><CheckCircle2 size={12} /> Answered</span>
               ) : null}
             </div>
 
             {currentQuestion ? renderQuestionPrompt(currentQuestion.prompt) : null}
 
             {currentQuestion?.audioSrc ? (
-              <button type="button" onClick={playAudio} className="btn-dark mt-4 inline-flex items-center gap-2 px-4 py-2.5 text-sm">
-                ▶ Play audio
+              <button type="button" onClick={playAudio} className="btn-dark btn-sm" style={{ marginTop: 16 }}>
+                <Play size={15} /> Play audio
               </button>
             ) : null}
 
-            <div className="mt-8 rounded-[28px] bg-white p-5">
+            <div style={{ marginTop: 24 }}>
               {currentQuestion ? (
                 <SelfPacedAnswerArea question={currentQuestion} value={answer} onChange={(value) => setAnswer(currentQuestion.id, value)} />
               ) : null}
@@ -219,25 +202,16 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
         </AnimatePresence>
 
         <div className="mt-6 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => goToIndex(currentIndex - 1)}
-            disabled={currentIndex === 0}
-            className="inline-flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          <button type="button" onClick={() => goToIndex(currentIndex - 1)} disabled={currentIndex === 0} className="btn-ghost">
             <ArrowLeft size={16} />
             Back
           </button>
           {isLast ? (
-            <button type="button" onClick={handleSubmit} className="btn-primary px-6 py-3">
+            <button type="button" onClick={handleSubmit} className="btn-primary">
               Submit test
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => goToIndex(currentIndex + 1)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-black text-white transition hover:bg-neutral-800"
-            >
+            <button type="button" onClick={() => goToIndex(currentIndex + 1)} className="btn-dark">
               Next
               <ArrowRight size={16} />
             </button>
@@ -246,8 +220,8 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
       </div>
 
       {/* Question overview grid */}
-      <div className="mt-4 rounded-3xl bg-white border border-neutral-100 shadow-md p-4 sm:p-6">
-        <p className="mb-3 text-sm font-black text-neutral-700">Jump to a question</p>
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 12 }}>Jump to a question</p>
         <div className="space-y-4">
           {partGroups.map((group) => (
             <div key={group.label}>
@@ -307,19 +281,15 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 10 }}
               onClick={(event) => event.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+              className="card w-full max-w-sm"
             >
-              <h3 className="text-lg font-black text-neutral-900">Submit the test?</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-600">
-                You still have <span className="font-black text-neutral-900">{unansweredCount}</span> unanswered question
+              <h3 className="h3">Submit the test?</h3>
+              <p className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
+                You still have <span style={{ fontWeight: 800, color: "var(--ink)" }}>{unansweredCount}</span> unanswered question
                 {unansweredCount > 1 ? "s" : ""}. They will be marked as incorrect.
               </p>
               <div className="mt-5 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50"
-                >
+                <button type="button" onClick={() => setShowConfirm(false)} className="btn-ghost flex-1">
                   Keep answering
                 </button>
                 <button
@@ -328,7 +298,7 @@ export default function LiveSelfPacedExam({ room, roomCode, name, socket, warnin
                     setShowConfirm(false);
                     submitAll();
                   }}
-                  className="btn-primary flex-1 justify-center py-3"
+                  className="btn-primary flex-1"
                 >
                   Submit anyway
                 </button>

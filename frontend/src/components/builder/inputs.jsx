@@ -1,15 +1,12 @@
 import { Plus, Trash2 } from "lucide-react";
 
-const baseInputClass =
-  "w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:bg-white focus:ring-2 focus:ring-yellow-200";
-
 export function Labeled({ label, hint, children }) {
   return (
-    <label className="block">
-      {label ? <span className="mb-1.5 block text-sm font-black text-neutral-700">{label}</span> : null}
+    <div className="field">
+      {label ? <label>{label}</label> : null}
       {children}
-      {hint ? <span className="mt-1 block text-xs text-neutral-400">{hint}</span> : null}
-    </label>
+      {hint ? <span style={{ fontSize: 12, color: "var(--ink-400)" }}>{hint}</span> : null}
+    </div>
   );
 }
 
@@ -20,7 +17,7 @@ export function TextInput({ value, onChange, placeholder, className = "", ...res
       value={value ?? ""}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className={`${baseInputClass} ${className}`}
+      className={`inp ${className}`}
       {...rest}
     />
   );
@@ -33,7 +30,8 @@ export function TextArea({ value, onChange, placeholder, rows = 3, className = "
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`${baseInputClass} leading-7 ${className}`}
+      className={`inp ${className}`}
+      style={{ lineHeight: 1.7 }}
     />
   );
 }
@@ -45,7 +43,7 @@ export function NumberInput({ value, onChange, min = 0, className = "" }) {
       min={min}
       value={value ?? 0}
       onChange={(event) => onChange(Number(event.target.value))}
-      className={`${baseInputClass} ${className}`}
+      className={`inp ${className}`}
     />
   );
 }
@@ -55,16 +53,21 @@ export function Toggle({ checked, onChange, label }) {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition ${
-        checked
-          ? "border-yellow-400 bg-yellow-50 text-yellow-900 ring-2 ring-yellow-200"
-          : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-white"
-      }`}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 8,
+        borderRadius: "var(--r-md)", padding: "9px 13px", fontWeight: 800, fontSize: 14,
+        cursor: "pointer", fontFamily: "inherit", color: "var(--ink)",
+        border: checked ? "var(--border)" : "var(--border-thin)",
+        background: checked ? "var(--yellow-100)" : "var(--card)",
+        boxShadow: checked ? "var(--pop-sm)" : "none"
+      }}
     >
       <span
-        className={`inline-flex h-4 w-4 items-center justify-center rounded-[5px] border ${
-          checked ? "border-yellow-500 bg-yellow-400 text-neutral-900" : "border-neutral-300 bg-white"
-        }`}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 16, height: 16, borderRadius: 5, border: "var(--border-thin)", fontSize: 11,
+          background: checked ? "var(--ink)" : "var(--card)", color: "var(--yellow-400)"
+        }}
       >
         {checked ? "✓" : ""}
       </span>
@@ -79,7 +82,11 @@ export function RemoveButton({ onClick, title = "Remove" }) {
       type="button"
       onClick={onClick}
       title={title}
-      className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-rose-300 hover:text-rose-600"
+      style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        width: 38, height: 38, flex: "0 0 auto", borderRadius: "var(--r-sm)",
+        border: "var(--border-thin)", background: "var(--card)", color: "var(--ink-400)", cursor: "pointer"
+      }}
     >
       <Trash2 size={15} />
     </button>
@@ -91,7 +98,11 @@ export function AddButton({ onClick, label }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-neutral-600 transition hover:border-yellow-400 hover:text-neutral-900"
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6, borderRadius: "var(--r-md)",
+        border: "2px dashed var(--ink-300)", background: "var(--card)", padding: "9px 14px",
+        fontWeight: 800, fontSize: 14, color: "var(--ink-500)", cursor: "pointer", fontFamily: "inherit"
+      }}
     >
       <Plus size={15} />
       {label}

@@ -36,13 +36,13 @@ export function renderQuestionPrompt(prompt) {
   const splitPrompt = splitQuestionPrompt(prompt);
 
   if (!splitPrompt) {
-    return <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{prompt}</h2>;
+    return <h2 className="h2">{prompt}</h2>;
   }
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.title}</h2>
-      <p className="text-xl font-black leading-tight text-neutral-900 sm:text-2xl">{splitPrompt.detail}</p>
+    <div className="space-y-2">
+      <h2 className="h2">{splitPrompt.title}</h2>
+      <p className="h2" style={{ color: "var(--ink-700)" }}>{splitPrompt.detail}</p>
     </div>
   );
 }
@@ -97,6 +97,8 @@ export function buildWritingString(question, answer) {
   return String(answer ?? "").trim();
 }
 
+const FIELD_PROMPT_STYLE = { background: "var(--yellow-50)", border: "1.5px solid var(--yellow-600)", borderRadius: "var(--r-md)", padding: "10px 14px", fontWeight: 600, lineHeight: 1.5 };
+
 // Controlled answer input for one question, with no correctness feedback (answers are
 // reviewed and submitted at the end). Used by the solo V2 page and the live free-nav exam.
 export default function SelfPacedAnswerArea({ question, value, onChange, disabled = false }) {
@@ -121,7 +123,7 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
           placeholder="Type your answer"
-          className="w-full rounded-[18px] border border-neutral-200 bg-white px-4 py-3 text-base outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+          className="inp"
         />
       );
     case "grouped-choice-list":
@@ -157,14 +159,10 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
       if (structured) {
         return (
           <div className="space-y-4">
-            {question.passage ? (
-              <div className="rounded-[20px] bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-800 whitespace-pre-line">
-                {question.passage}
-              </div>
-            ) : null}
+            {question.passage ? <div className="qpassage">{question.passage}</div> : null}
             {fields.map((field, index) => (
-              <div key={field.id ?? index} className="rounded-[24px] bg-neutral-50 p-4">
-                <div className="rounded-[18px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">{field.prompt}</div>
+              <div key={field.id ?? index} className="qitem">
+                <div style={FIELD_PROMPT_STYLE}>{field.prompt}</div>
                 {field.multiline ? (
                   <textarea
                     value={writingValues[index] ?? ""}
@@ -175,7 +173,8 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
                     }}
                     disabled={disabled}
                     placeholder={field.placeholder ?? question.placeholder}
-                    className="mt-4 min-h-[112px] w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                    className="inp"
+                    style={{ marginTop: 14, minHeight: 112, lineHeight: 1.7 }}
                   />
                 ) : (
                   <input
@@ -188,7 +187,8 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
                     }}
                     disabled={disabled}
                     placeholder={field.placeholder ?? question.placeholder}
-                    className="mt-4 w-full rounded-[20px] border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                    className="inp"
+                    style={{ marginTop: 14 }}
                   />
                 )}
               </div>
@@ -200,23 +200,22 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
       return (
         <div className="space-y-3">
           {(question.instructions ?? []).map((instruction) => (
-            <div key={instruction} className="rounded-[20px] bg-amber-50 px-4 py-3 text-sm font-semibold text-neutral-800">
-              {instruction}
-            </div>
+            <div key={instruction} style={FIELD_PROMPT_STYLE}>{instruction}</div>
           ))}
           <textarea
             value={typeof value === "string" ? value : ""}
             onChange={(event) => onChange(event.target.value)}
             disabled={disabled}
             placeholder={question.placeholder}
-            className="mt-2 min-h-[200px] w-full rounded-[24px] border border-neutral-200 bg-white px-4 py-4 text-base leading-7 text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+            className="inp"
+            style={{ marginTop: 8, minHeight: 200, lineHeight: 1.7 }}
           />
         </div>
       );
     }
     default:
       return (
-        <div className="space-y-4">
+        <div className="answers">
           {(question.options ?? []).map((option, optionIndex) => (
             <AnswerButton
               key={option}
@@ -229,5 +228,5 @@ export default function SelfPacedAnswerArea({ question, value, onChange, disable
           ))}
         </div>
       );
-  }
+    }
 }

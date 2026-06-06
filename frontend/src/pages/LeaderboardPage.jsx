@@ -37,11 +37,13 @@ export default function LeaderboardPage() {
 
   return (
     <ShellLayout>
-      <section className="mx-auto max-w-5xl">
-        <div className="glass-card rounded-[36px] p-6 sm:p-8">
-          <LiveLeaderboard players={leaderboard} showTitle={false} />
+      <div className="fade-in" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div style={{ marginBottom: 18 }}>
+          <div className="eyebrow">Leaderboard</div>
+          <h1 className="h1" style={{ marginTop: 6 }}>Live ranking</h1>
         </div>
-      </section>
+        <LiveLeaderboard players={leaderboard} showTitle={false} />
+      </div>
     </ShellLayout>
   );
 }

@@ -132,7 +132,7 @@ export default function QuestionEditor({ question, index, total, onChange, onRem
   const choiceLabels = (question.choices ?? []).map((choice) => choice.label).filter(Boolean);
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+    <div className="card">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

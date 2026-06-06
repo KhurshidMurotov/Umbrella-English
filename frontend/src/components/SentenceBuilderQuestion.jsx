@@ -25,23 +25,17 @@ export default function SentenceBuilderQuestion({
     if (disabled || !onChange) {
       return;
     }
-
-    onChange({
-      ...answers,
-      [itemNumber]: nextItemValue
-    });
+    onChange({ ...answers, [itemNumber]: nextItemValue });
   }
 
   if (boardMode) {
     return (
       <div className="space-y-4">
         {items.map((item, index) => (
-          <div key={item.number ?? index} className="rounded-[24px] border border-neutral-200 bg-white p-4">
+          <div key={item.number ?? index} className="card">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-sm font-black text-neutral-950">
-                {item.displayNumber ?? item.number ?? index + 1}
-              </span>
-              <p className="text-sm leading-7 text-neutral-800">{item.prompt}</p>
+              <span className="qnum alt">{item.displayNumber ?? item.number ?? index + 1}</span>
+              <p style={{ lineHeight: 1.7 }}>{item.prompt}</p>
             </div>
           </div>
         ))}
@@ -59,25 +53,17 @@ export default function SentenceBuilderQuestion({
         function placeWord(slotIndex, word) {
           const nextSequence = [...itemState.sequence];
           const duplicateIndex = nextSequence.findIndex((entry) => entry === word);
-
           if (duplicateIndex !== -1) {
             nextSequence[duplicateIndex] = "";
           }
-
           nextSequence[slotIndex] = word;
-          updateItem(item.number, {
-            text: itemState.text,
-            sequence: nextSequence
-          });
+          updateItem(item.number, { text: itemState.text, sequence: nextSequence });
         }
 
         function clearSlot(slotIndex) {
           const nextSequence = [...itemState.sequence];
           nextSequence[slotIndex] = "";
-          updateItem(item.number, {
-            text: itemState.text,
-            sequence: nextSequence
-          });
+          updateItem(item.number, { text: itemState.text, sequence: nextSequence });
         }
 
         function fillFirstEmpty(word) {
@@ -85,37 +71,30 @@ export default function SentenceBuilderQuestion({
           if (firstEmpty === -1) {
             return;
           }
-
           placeWord(firstEmpty, word);
         }
 
         return (
-          <div key={item.number ?? index} className="rounded-[22px] bg-neutral-50 p-4">
+          <div key={item.number ?? index} className="qitem">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
-                {item.displayNumber ?? item.number ?? index + 1}
-              </span>
+              <span className="qnum">{item.displayNumber ?? item.number ?? index + 1}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm leading-7 text-neutral-800">{item.prompt}</p>
+                <p style={{ lineHeight: 1.7 }}>{item.prompt}</p>
 
-                <div className="mt-4 rounded-[18px] bg-white p-3">
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-500">Build sentence</p>
+                <div style={{ marginTop: 14, background: "var(--card)", border: "var(--border-thin)", borderRadius: "var(--r-md)", padding: 12 }}>
+                  <p className="eyebrow">Build sentence</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {item.fixedStart ? (
-                      <span className="rounded-full bg-white px-3 py-2 text-sm font-bold text-neutral-900">{item.fixedStart}</span>
+                      <span style={{ borderRadius: "var(--r-pill)", border: "var(--border-thin)", padding: "8px 14px", fontWeight: 800, fontSize: 14 }}>{item.fixedStart}</span>
                     ) : null}
                     <input
                       type="text"
                       value={itemState.text}
-                      onChange={(event) =>
-                        updateItem(item.number, {
-                          text: event.target.value,
-                          sequence: itemState.sequence
-                        })
-                      }
+                      onChange={(event) => updateItem(item.number, { text: event.target.value, sequence: itemState.sequence })}
                       disabled={disabled}
                       placeholder={item.textPlaceholder ?? "Type the missing word"}
-                      className="min-w-[140px] flex-1 rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 outline-none transition focus:border-neutral-950 disabled:bg-neutral-100"
+                      className="inp"
+                      style={{ flex: 1, width: "auto", minWidth: 140, borderRadius: "var(--r-pill)" }}
                     />
                     {itemState.sequence.map((word, slotIndex) => (
                       <button
@@ -123,9 +102,8 @@ export default function SentenceBuilderQuestion({
                         type="button"
                         onClick={() => clearSlot(slotIndex)}
                         disabled={disabled || !word}
-                        className={`rounded-full border px-3 py-2 text-sm font-semibold ${
-                          word ? "border-amber-300 bg-amber-50 text-neutral-900" : "border-dashed border-neutral-300 bg-white text-neutral-400"
-                        } disabled:cursor-default`}
+                        className={`qslot${word ? " filled" : ""}`}
+                        style={{ minWidth: 96, cursor: word ? "pointer" : "default" }}
                       >
                         {word || `Slot ${slotIndex + 1}`}
                       </button>
@@ -134,16 +112,10 @@ export default function SentenceBuilderQuestion({
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-500">Choose phrases</p>
+                  <p className="eyebrow">Choose phrases</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {availableWords.map((word) => (
-                      <button
-                        key={`${item.number}-${word}`}
-                        type="button"
-                        onClick={() => fillFirstEmpty(word)}
-                        disabled={disabled}
-                        className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 disabled:opacity-60"
-                      >
+                      <button key={`${item.number}-${word}`} type="button" onClick={() => fillFirstEmpty(word)} disabled={disabled} className="qchip">
                         {word}
                       </button>
                     ))}

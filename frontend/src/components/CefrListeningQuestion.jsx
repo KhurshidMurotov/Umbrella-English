@@ -8,16 +8,11 @@ function ListeningOptionButton({ option, selected, disabled, onSelect }) {
       type="button"
       onClick={() => onSelect(option.label)}
       disabled={disabled}
-      className={`rounded-[18px] border px-3 py-3 text-left text-sm transition ${
-        selected
-          ? "border-amber-300 bg-amber-50 text-neutral-950"
-          : "border-neutral-200 bg-white text-neutral-700"
-      } disabled:cursor-not-allowed disabled:opacity-60`}
+      className={`qopt${selected ? " on" : ""}`}
+      style={disabled ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
     >
-      <span className="block text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
-        {option.label}
-      </span>
-      <span className="mt-2 block font-semibold leading-6">{option.text}</span>
+      <span className="ql">{option.label}</span>
+      <span style={{ fontWeight: 600, lineHeight: 1.5 }}>{option.text}</span>
     </button>
   );
 }
@@ -35,19 +30,15 @@ export default function CefrListeningQuestion({
     return (
       <div className="grid gap-4 lg:grid-cols-2">
         {items.map((item) => (
-          <div key={item.number} className="rounded-[24px] border border-neutral-200 bg-white p-4">
+          <div key={item.number} className="card">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-300 text-sm font-black text-neutral-950">
-                {item.number}
-              </span>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
-                Choose The Best Reply
-              </p>
+              <span className="qnum alt">{item.number}</span>
+              <p className="eyebrow">Choose the best reply</p>
             </div>
             <div className="mt-4 space-y-3">
               {item.options.map((option) => (
-                <div key={`${item.number}-${option.label}`} className="rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-800">
-                  <span className="font-black text-neutral-950">{option.label}) </span>
+                <div key={`${item.number}-${option.label}`} className="qitem">
+                  <span style={{ fontWeight: 800 }}>{option.label}) </span>
                   <span>{option.text}</span>
                 </div>
               ))}
@@ -61,14 +52,10 @@ export default function CefrListeningQuestion({
   return (
     <div className="space-y-4">
       {items.map((item) => (
-        <div key={item.number} className="rounded-[24px] bg-neutral-50 p-4">
+        <div key={item.number} className="qitem">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-neutral-950 text-sm font-black text-white">
-              {item.number}
-            </span>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
-              Select A, B Or C
-            </p>
+            <span className="qnum">{item.number}</span>
+            <p className="eyebrow">Select A, B or C</p>
           </div>
           <div className="mt-4 grid gap-3">
             {item.options.map((option) => (
@@ -81,11 +68,7 @@ export default function CefrListeningQuestion({
                   if (disabled || !onChange) {
                     return;
                   }
-
-                  onChange({
-                    ...answers,
-                    [item.number]: nextLabel
-                  });
+                  onChange({ ...answers, [item.number]: nextLabel });
                 }}
               />
             ))}

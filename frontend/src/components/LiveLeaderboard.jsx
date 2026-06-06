@@ -1,3 +1,5 @@
+import { AlertTriangle, Check } from "lucide-react";
+
 export default function LiveLeaderboard({ players = [], showTitle = true, showAnsweredStatus = false, selfPaced = false }) {
   const sortedPlayers = [...players].sort(
     (first, second) =>
@@ -5,123 +7,45 @@ export default function LiveLeaderboard({ players = [], showTitle = true, showAn
       (second.correctAnswers ?? 0) - (first.correctAnswers ?? 0)
   );
 
-  const rankBadge = (index) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return null;
-  };
-
-  const rowClasses = (index) => {
-    if (index === 0) return "border-amber-200 bg-amber-50";
-    if (index === 1) return "border-slate-200 bg-slate-100";
-    if (index === 2) return "border-amber-100 bg-amber-50";
-    return "border-neutral-200 bg-white";
-  };
-
+  const medal = (index) => (index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null);
   const isCheater = (player) => Boolean(player?.disqualified) || (player?.violations ?? 0) >= 2;
 
   return (
-    <div className="glass-card rounded-[28px] p-4 sm:p-6">
-      {showTitle ? <h3 className="text-base font-extrabold text-neutral-950 sm:text-lg">Live ranking</h3> : null}
-      <div className={`${showTitle ? "mt-4" : "mt-0"} hidden grid-cols-[minmax(0,2.6fr)_0.9fr_1fr_0.8fr] gap-3 px-4 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500 lg:grid xl:text-xs`}>
-        <div>Player</div>
-        <div>Correct</div>
-        <div>Violations</div>
-        <div>Points</div>
-      </div>
-
-      <div className="mt-3 max-h-[560px] overflow-y-auto space-y-3" role="list" aria-label="Live quiz leaderboard">
-        {sortedPlayers.length ? (
-          sortedPlayers.map((player, index) => (
-            <div
-              key={player.id ?? `${player.name}-${index}`}
-              role="listitem"
-              className={`relative overflow-hidden rounded-[18px] border px-3 py-4 sm:px-4 sm:py-4 ${rowClasses(index)} ${
-                isCheater(player) ? "opacity-75 saturate-0" : ""
-              }`}
-            >
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,2.6fr)_0.9fr_1fr_0.8fr] lg:items-center">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 text-[0.8rem] font-extrabold text-neutral-950">
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-neutral-950 xl:text-lg" title={player.name}>
-                      {player.name}
-                    </p>
-                  </div>
-                  {rankBadge(index) ? (
-                    <span className="rounded-full bg-white/80 px-2 py-1 text-[0.65rem] font-bold text-neutral-700 shadow-sm">
-                      {rankBadge(index)}
-                    </span>
-                  ) : null}
-                  {showAnsweredStatus && !isCheater(player) ? (
-                    selfPaced ? (
-                      // Self-paced tests are submitted once at the end, so per-question
-                      // status is meaningless — show whether the student has submitted.
-                      player.completed ? (
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-emerald-700">
-                          ✓ Done
-                        </span>
-                      ) : (
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-amber-700">
-                          Answering…
-                        </span>
-                      )
-                    ) : player.answeredCurrent ? (
-                      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-emerald-700">
-                        ✓ Answered
-                      </span>
-                    ) : (
-                      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-[0.6rem] font-black uppercase tracking-wide text-neutral-400">
-                        Waiting
-                      </span>
-                    )
-                  ) : null}
-                </div>
-
-                <div className="hidden lg:block lg:text-left">
-                  <div className="text-sm font-semibold text-neutral-900">{player.correctAnswers ?? 0}</div>
-                </div>
-
-                <div className="hidden lg:block lg:text-left">
-                  <div className="text-sm font-semibold text-neutral-900">{player.violations ?? 0}</div>
-                </div>
-
-                <div className="hidden lg:block lg:text-left">
-                  <div className="text-sm font-bold text-neutral-950">{player.score ?? 0}</div>
-                </div>
+    <div>
+      {showTitle ? <h3 className="h3" style={{ marginBottom: 14 }}>Live ranking</h3> : null}
+      {sortedPlayers.length ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 11 }} role="list" aria-label="Live quiz leaderboard">
+          {sortedPlayers.map((player, index) => {
+            const cheater = isCheater(player);
+            return (
+              <div
+                key={player.id ?? `${player.name}-${index}`}
+                role="listitem"
+                className={`lb-row${index === 0 && !cheater ? " top" : ""}${cheater ? " cheater" : ""}`}
+              >
+                <span className="rank">{index + 1}</span>
+                <span className="name" title={player.name}>{player.name}</span>
+                {medal(index) ? <span style={{ fontSize: 18 }}>{medal(index)}</span> : null}
+                {cheater ? <span className="chip chip-tomato"><AlertTriangle size={13} />Cheater</span> : null}
+                {showAnsweredStatus && !cheater ? (
+                  selfPaced ? (
+                    player.completed
+                      ? <span className="chip chip-grass">Done</span>
+                      : <span className="chip chip-yellow">Answering</span>
+                  ) : player.answeredCurrent
+                    ? <span className="chip chip-grass">Answered</span>
+                    : <span className="chip" style={{ color: "var(--ink-400)" }}>Waiting</span>
+                ) : null}
+                <span className="meta"><Check size={13} />{player.correctAnswers ?? 0}</span>
+                {(player.violations ?? 0) > 0 ? <span className="meta"><AlertTriangle size={13} />{player.violations}</span> : null}
+                <span className="pts">{player.score ?? 0}</span>
               </div>
-
-              <div className="mt-4 flex gap-3 overflow-x-auto lg:hidden px-1 pb-1">
-                <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Correct</div>
-                  <div className="mt-1 text-sm font-semibold text-neutral-900">{player.correctAnswers ?? 0}</div>
-                </div>
-                <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Violations</div>
-                  <div className="mt-1 text-sm font-semibold text-neutral-900">{player.violations ?? 0}</div>
-                </div>
-                <div className="min-w-[110px] rounded-[18px] border border-neutral-200 bg-slate-50 px-3 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">Points</div>
-                  <div className="mt-1 text-base font-bold text-neutral-950 sm:text-lg">{player.score ?? 0}</div>
-                </div>
-              </div>
-
-              {isCheater(player) ? (
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-neutral-950/35">
-                  <span className="rounded-full border border-red-200/90 bg-red-600 px-4 py-2 text-sm font-extrabold uppercase tracking-[0.12em] text-white shadow-lg">
-                    Cheater detected!
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-neutral-500">Players will appear here after joining the room.</p>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted" style={{ fontSize: 14 }}>Players will appear here after joining the room.</p>
+      )}
     </div>
   );
 }
